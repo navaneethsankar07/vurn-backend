@@ -6,23 +6,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
 
-
 ENVIRONMENT = os.getenv("DJANGO_ENV", "development")
-
-
 env.read_env(BASE_DIR / f".env.{ENVIRONMENT}")
 
-# Application definition
+# -----------------------------------------------------------------------------
+# Django Core
+# -----------------------------------------------------------------------------
+
 INSTALLED_APPS = [
+    # Django Apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-Party Apps
+    'rest_framework',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -51,7 +57,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# -----------------------------------------------------------------------------
 # Database
+# -----------------------------------------------------------------------------
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -63,7 +72,10 @@ DATABASES = {
     }
 }
 
-# Password validation
+# -----------------------------------------------------------------------------
+# Authentication
+# -----------------------------------------------------------------------------
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -79,7 +91,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# -----------------------------------------------------------------------------
 # Internationalization
+# -----------------------------------------------------------------------------
+
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -88,5 +103,18 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
+# -----------------------------------------------------------------------------
+# Static Files
+# -----------------------------------------------------------------------------
+
 STATIC_URL = 'static/'
+
+# -----------------------------------------------------------------------------
+# Django REST Framework
+# -----------------------------------------------------------------------------
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
