@@ -1,13 +1,9 @@
 from pathlib import Path
 import environ
-import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
-
-ENVIRONMENT = os.getenv("DJANGO_ENV", "development")
-env.read_env(BASE_DIR / f".env.{ENVIRONMENT}")
 
 # -----------------------------------------------------------------------------
 # Django Core
@@ -21,10 +17,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-Party Apps
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -61,20 +57,23 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # -----------------------------------------------------------------------------
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DATABASE_NAME"),
-        "USER": env("DATABASE_USER"),
-        "PASSWORD": env("DATABASE_PASSWORD"),
-        "HOST": env("DATABASE_HOST"),
-        "PORT": env("DATABASE_PORT"),
+
+def get_database_config():
+    return {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DATABASE_NAME"),
+            "USER": env("DATABASE_USER"),
+            "PASSWORD": env("DATABASE_PASSWORD"),
+            "HOST": env("DATABASE_HOST"),
+            "PORT": env("DATABASE_PORT"),
+        }
     }
-}
 
 # -----------------------------------------------------------------------------
 # Authentication
 # -----------------------------------------------------------------------------
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
