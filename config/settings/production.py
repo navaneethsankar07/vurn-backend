@@ -11,3 +11,24 @@ DATABASES = get_database_config()
 
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+
+REDIS_HOST = env("REDIS_HOST")
+REDIS_PORT = env.int("REDIS_PORT")
+REDIS_DB = env.int("REDIS_DB")
+REDIS_PASSWORD = env("REDIS_PASSWORD", default="")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": (
+            f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+            if REDIS_PASSWORD
+            else f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+        ),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+        },
+    }
+}

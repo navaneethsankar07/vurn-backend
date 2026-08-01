@@ -150,4 +150,9 @@ EMAIL_HOST = env("EMAIL_HOST")
 EMAIL_PORT = env.int("EMAIL_PORT")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 
+# -----------------------------------------------------------------------------
+# OTP Configuration
+# -----------------------------------------------------------------------------
+OTP_LENGTH = 6
+OTP_EXPIRATION_SECONDS = 300 
 
