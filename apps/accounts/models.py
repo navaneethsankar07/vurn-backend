@@ -12,6 +12,7 @@ class UserManager(BaseUserManager):
         password=None,
         first_name="",
         last_name="",
+        password_is_hashed=False,
         **extra_fields,
     ):
         if not email:
@@ -30,8 +31,11 @@ class UserManager(BaseUserManager):
             last_name=last_name,
             **extra_fields,
         )
+        if password_is_hashed:
+            user.password = password
+        else:
+            user.set_password(password)
 
-        user.set_password(password)
         user.save(using=self._db)
         return user
 

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from django.conf import settings
 from apps.accounts.validators import (
     validate_username,
     validate_user_password,
@@ -22,3 +22,11 @@ class SendOTPSerializer(serializers.Serializer):
                 {"confirm_password": "Passwords do not match."}
             )
         return data
+
+
+class RegisterSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    otp = serializers.CharField(
+        min_length=settings.OTP_LENGTH, max_length=settings.OTP_LENGTH
+    )

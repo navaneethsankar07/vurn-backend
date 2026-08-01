@@ -16,3 +16,10 @@ class RegistrationDataExpiredException(AccountsException):
 
 class InvalidOTPException(AccountsException):
     pass
+
+class InvalidOTPException(Exception):
+    pass
+
+
+class RegistrationDataExpiredException(Exception):
+    pass
