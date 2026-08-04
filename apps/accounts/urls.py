@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SendOTPView, RegisterView
+from .views import LoginView, SendOTPView, RegisterView
 
 urlpatterns = [
     path(
@@ -12,4 +12,9 @@ urlpatterns = [
         RegisterView.as_view(),
         name="register",
     ),
+    path(
+        "login/",
+        LoginView.as_view(),
+        name="login",
+    )
 ]

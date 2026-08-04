@@ -30,3 +30,11 @@ class RegisterSerializer(serializers.Serializer):
     otp = serializers.CharField(
         min_length=settings.OTP_LENGTH, max_length=settings.OTP_LENGTH
     )
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    password = serializers.CharField(
+        write_only=True,
+    )
