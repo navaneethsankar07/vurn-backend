@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.exceptions import TokenError
 
 from .exceptions import (
     EmailAlreadyExistsException,
@@ -21,6 +22,7 @@ from .serializers import (
 )
 from .services.login_service import LoginService
 from .services.registration_service import RegistrationService
+from .services.logout_service import LogoutService
 
 
 class SendOTPView(APIView):
@@ -207,3 +209,38 @@ class RefreshTokenView(APIView):
             )
 
         return response
+
+
+class LogoutView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if refresh_token is None:
+            return Response(
+                {"error": "Refresh token not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            LogoutService.logout(refresh_token)
+
+            response = Response(
+                {"message": "Logout successful."},
+                status=status.HTTP_200_OK,
+            )
+
+            response.delete_cookie(
+                key="refresh_token",
+                path="/api/v1/auth/",
+                samesite="Lax",
+            )
+
+            return response
+
+        except TokenError:
+            return Response(
+                {"error": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
