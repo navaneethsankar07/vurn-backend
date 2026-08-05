@@ -11,12 +11,3 @@ class TokenService:
             "access": str(refresh.access_token),
             "refresh": str(refresh),
         }
-
-    @staticmethod
-    def refresh_access_token(refresh_token: str):
-        refresh = RefreshToken(refresh_token)
-
-        return {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        }

@@ -1,16 +1,11 @@
+from django.conf import settings
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.conf import settings
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from apps.accounts.serializers import (
-    LoginSerializer,
-    SendOTPSerializer,
-    RegisterSerializer,
-)
-from apps.accounts.services.registration_service import RegistrationService
-from apps.accounts.exceptions import (
+from .exceptions import (
     EmailAlreadyExistsException,
     EmailNotVerifiedException,
     InactiveAccountException,
@@ -19,7 +14,13 @@ from apps.accounts.exceptions import (
     InvalidOTPException,
     RegistrationDataExpiredException,
 )
-from apps.accounts.services.login_service import LoginService
+from .serializers import (
+    LoginSerializer,
+    SendOTPSerializer,
+    RegisterSerializer,
+)
+from .services.login_service import LoginService
+from .services.registration_service import RegistrationService
 
 
 class SendOTPView(APIView):
@@ -197,9 +198,7 @@ class RefreshTokenView(APIView):
                 key="refresh_token",
                 value=serializer.validated_data["refresh"],
                 max_age=int(
-                    settings.SIMPLE_JWT[
-                        "REFRESH_TOKEN_LIFETIME"
-                    ].total_seconds()
+                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
                 ),
                 httponly=True,
                 secure=not settings.DEBUG,

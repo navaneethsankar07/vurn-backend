@@ -3,7 +3,6 @@ from django.contrib.auth.hashers import make_password
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.constants import (
     REGISTRATION_DATA_PREFIX,
@@ -16,8 +15,10 @@ from apps.accounts.exceptions import (
     UsernameAlreadyExistsException,
 )
 from apps.accounts.models import User
-from apps.accounts.services.email_service import EmailService
-from apps.accounts.services.otp_service import OTPService
+
+from .email_service import EmailService
+from .otp_service import OTPService
+from .token_service import TokenService
 
 
 class RegistrationService:
@@ -25,15 +26,6 @@ class RegistrationService:
     @staticmethod
     def _registration_key(email: str) -> str:
         return f"{REGISTRATION_DATA_PREFIX}:{email.lower()}"
-
-    @staticmethod
-    def _generate_tokens(user: User) -> dict:
-        refresh = RefreshToken.for_user(user)
-
-        return {
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-        }
 
     @classmethod
     def send_registration_otp(cls, validated_data: dict) -> None:
@@ -49,9 +41,7 @@ class RegistrationService:
             )
 
         if User.objects.filter(username=username).exists():
-            raise UsernameAlreadyExistsException(
-                "Username is already taken."
-            )
+            raise UsernameAlreadyExistsException("Username is already taken.")
 
         registration_data = {
             "email": email,
@@ -96,18 +86,12 @@ class RegistrationService:
             email,
             otp,
         ):
-            raise InvalidOTPException(
-                "Invalid or expired OTP."
-            )
+            raise InvalidOTPException("Invalid or expired OTP.")
 
-        registration_data = cache.get(
-            cls._registration_key(email)
-        )
+        registration_data = cache.get(cls._registration_key(email))
 
         if registration_data is None:
-            raise RegistrationDataExpiredException(
-                "Registration session has expired."
-            )
+            raise RegistrationDataExpiredException("Registration session has expired.")
 
         user = User.objects.create_user(
             email=registration_data["email"],
@@ -123,11 +107,9 @@ class RegistrationService:
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
-        tokens = cls._generate_tokens(user)
+        tokens = TokenService.generate_tokens(user)
 
-        cache.delete(
-            cls._registration_key(email)
-        )
+        cache.delete(cls._registration_key(email))
 
         return {
             "user": user,
