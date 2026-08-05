@@ -12,12 +12,14 @@ from .exceptions import (
     EmailNotVerifiedException,
     InactiveAccountException,
     InvalidCredentialsException,
+    InvalidGoogleTokenException,
     UsernameAlreadyExistsException,
     InvalidOTPException,
     RegistrationDataExpiredException,
 )
 from .serializers import (
     CurrentUserSerializer,
+    GoogleAuthSerializer,
     LoginSerializer,
     SendOTPSerializer,
     RegisterSerializer,
@@ -26,6 +28,7 @@ from .services.login_service import LoginService
 from .services.logout_service import LogoutService
 from .services.profile_service import ProfileService
 from .services.registration_service import RegistrationService
+from .services.oauth.google_auth_service import GoogleAuthService
 
 
 class SendOTPView(APIView):
@@ -258,3 +261,55 @@ class CurrentUserView(APIView):
         serializer = CurrentUserSerializer(user)
 
         return Response(serializer.data)
+
+
+class GoogleAuthView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = GoogleAuthService.authenticate(
+                serializer.validated_data["id_token"]
+            )
+
+            user = result["user"]
+
+            response = Response(
+                {
+                    "message": "Login successful.",
+                    "user": {
+                        "id": user.id,
+                        "email": user.email,
+                        "username": user.username,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    },
+                    "access": result["access"],
+                },
+                status=status.HTTP_200_OK,
+            )
+
+            response.set_cookie(
+                key="refresh_token",
+                value=result["refresh"],
+                max_age=int(
+                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
+                ),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                path="/api/v1/auth/",
+            )
+
+            return response
+
+        except InvalidGoogleTokenException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )

@@ -8,7 +8,6 @@ from .validators import (
 )
 
 
-
 class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(max_length=15, validators=[validate_username])
@@ -31,7 +30,7 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     otp = serializers.CharField(
-        min_length=settings.OTP_LENGTH, 
+        min_length=settings.OTP_LENGTH,
         max_length=settings.OTP_LENGTH,
     )
 
@@ -62,3 +61,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = fields
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    code = serializers.CharField()

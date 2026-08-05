@@ -156,3 +156,10 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 OTP_LENGTH = 6
 OTP_EXPIRATION_SECONDS = 300 
 
+#  -----------------------------------------------------------------------------
+# Google Client Configuration
+# -----------------------------------------------------------------------------GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET")
+
+

@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import (
     CurrentUserView,
+    GoogleAuthTestView,
+    GoogleAuthView,
     LoginView,
     LogoutView,
     RefreshTokenView,
@@ -38,5 +40,10 @@ urlpatterns = [
         "me/",
         CurrentUserView.as_view(),
         name="current-user",
+    ),
+    path(
+        "google/",
+        GoogleAuthView.as_view(),
+        name="google-auth",
     ),
 ]

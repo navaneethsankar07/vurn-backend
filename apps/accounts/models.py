@@ -1,3 +1,5 @@
+from tkinter import NO
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -31,7 +33,9 @@ class UserManager(BaseUserManager):
             last_name=last_name,
             **extra_fields,
         )
-        if password_is_hashed:
+        if password is None:
+            user.set_unusable_password()
+        elif password_is_hashed:
             user.password = password
         else:
             user.set_password(password)
@@ -146,3 +150,64 @@ class User(AbstractBaseUser):
 
     def __str__(self):
         return self.username
+
+
+class SocialAccount(models.Model):
+    class Provider(models.TextChoices):
+        GOOGLE = "google", "Google"
+        GITHUB = "github", "GitHub"
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="social_accounts",
+    )
+
+    provider = models.CharField(
+        max_length=20,
+        choices=Provider.choices,
+    )
+
+    provider_user_id = models.CharField(
+        max_length=255,
+    )
+
+    provider_email = models.EmailField(blank=True, null=True)
+
+    provider_display_name = models.CharField(max_length=255, blank=True)
+
+    avatar_url = models.URLField(
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(
+        default=timezone.now,
+        editable=False,
+    )
+
+    class Meta:
+        db_table = "social_accounts"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "provider",
+                    "provider_user_id",
+                ],
+                name="unique_provider_account",
+            )
+        ]
+
+        indexes = [
+            models.Index(
+                fields=["provider", "provider_user_id"],
+                name="idx_social_provider",
+            ),
+            models.Index(
+                fields=["provider_email"],
+                name="idx_social_email",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.provider}: {self.provider_email}"

@@ -13,17 +13,17 @@ class RegistrationDataExpiredException(AccountsException):
 class InvalidOTPException(AccountsException):
     pass
 
-class InvalidOTPException(Exception):
+class InvalidCredentialsException(AccountsException):
     pass
 
-class RegistrationDataExpiredException(Exception):
+class EmailNotVerifiedException(AccountsException):
     pass
 
-class InvalidCredentialsException(Exception):
+class InactiveAccountException(AccountsException):
     pass
 
-class EmailNotVerifiedException(Exception):
+class OAuthAuthenticationException(AccountsException):
     pass
 
-class InactiveAccountException(Exception):
+class InvalidGoogleTokenException(OAuthAuthenticationException):
     pass
