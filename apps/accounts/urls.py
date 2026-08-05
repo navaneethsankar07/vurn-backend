@@ -1,5 +1,12 @@
 from django.urls import path
-from .views import LoginView, LogoutView, RefreshTokenView, SendOTPView, RegisterView
+from .views import (
+    CurrentUserView,
+    LoginView,
+    LogoutView,
+    RefreshTokenView,
+    SendOTPView,
+    RegisterView,
+)
 
 urlpatterns = [
     path(
@@ -26,5 +33,10 @@ urlpatterns = [
         "logout/",
         LogoutView.as_view(),
         name="logout",
+    ),
+    path(
+        "me/",
+        CurrentUserView.as_view(),
+        name="current-user",
     ),
 ]

@@ -1,9 +1,12 @@
-from rest_framework import serializers
 from django.conf import settings
-from apps.accounts.validators import (
+from rest_framework import serializers
+
+from .models import User
+from .validators import (
     validate_username,
     validate_user_password,
 )
+
 
 
 class SendOTPSerializer(serializers.Serializer):
@@ -28,7 +31,8 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     otp = serializers.CharField(
-        min_length=settings.OTP_LENGTH, max_length=settings.OTP_LENGTH
+        min_length=settings.OTP_LENGTH, 
+        max_length=settings.OTP_LENGTH,
     )
 
 
@@ -38,3 +42,23 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(
         write_only=True,
     )
+
+
+class CurrentUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "avatar",
+            "is_email_verified",
+            "is_super_admin",
+            "created_at",
+        ]
+
+        read_only_fields = fields

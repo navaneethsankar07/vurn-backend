@@ -1,10 +1,11 @@
 from django.conf import settings
 
 from rest_framework import status
-from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from .exceptions import (
     EmailAlreadyExistsException,
@@ -16,13 +17,15 @@ from .exceptions import (
     RegistrationDataExpiredException,
 )
 from .serializers import (
+    CurrentUserSerializer,
     LoginSerializer,
     SendOTPSerializer,
     RegisterSerializer,
 )
 from .services.login_service import LoginService
-from .services.registration_service import RegistrationService
 from .services.logout_service import LogoutService
+from .services.profile_service import ProfileService
+from .services.registration_service import RegistrationService
 
 
 class SendOTPView(APIView):
@@ -244,3 +247,14 @@ class LogoutView(APIView):
                 {"error": "Invalid or expired refresh token."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = ProfileService.get_current_user(request.user)
+
+        serializer = CurrentUserSerializer(user)
+
+        return Response(serializer.data)
