@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import LoginView, SendOTPView, RegisterView
+from .views import LoginView, RefreshTokenView, SendOTPView, RegisterView
 
 urlpatterns = [
     path(
@@ -16,5 +16,10 @@ urlpatterns = [
         "login/",
         LoginView.as_view(),
         name="login",
-    )
+    ),
+    path(
+    "refresh/",
+    RefreshTokenView.as_view(),
+    name="refresh-token",
+),
 ]

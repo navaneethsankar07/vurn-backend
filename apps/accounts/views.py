@@ -2,8 +2,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.conf import settings
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
-from apps.accounts.serializers import LoginSerializer, SendOTPSerializer, RegisterSerializer
+from apps.accounts.serializers import (
+    LoginSerializer,
+    SendOTPSerializer,
+    RegisterSerializer,
+)
 from apps.accounts.services.registration_service import RegistrationService
 from apps.accounts.exceptions import (
     EmailAlreadyExistsException,
@@ -14,7 +19,7 @@ from apps.accounts.exceptions import (
     InvalidOTPException,
     RegistrationDataExpiredException,
 )
-from backend.apps.accounts.services.login_service import LoginService
+from apps.accounts.services.login_service import LoginService
 
 
 class SendOTPView(APIView):
@@ -103,18 +108,12 @@ class LoginView(APIView):
     permission_classes = []
 
     def post(self, request):
-        serializer = LoginSerializer(
-            data=request.data
-        )
+        serializer = LoginSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        serializer.is_valid(raise_exception=True)
 
         try:
-            result = LoginService.login(
-                **serializer.validated_data
-            )
+            result = LoginService.login(**serializer.validated_data)
 
             user = result["user"]
 
@@ -137,9 +136,7 @@ class LoginView(APIView):
                 key="refresh_token",
                 value=result["refresh"],
                 max_age=int(
-                    settings.SIMPLE_JWT[
-                        "REFRESH_TOKEN_LIFETIME"
-                    ].total_seconds()
+                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
                 ),
                 httponly=True,
                 secure=not settings.DEBUG,
@@ -166,3 +163,48 @@ class LoginView(APIView):
                 {"error": str(exc)},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+
+class RefreshTokenView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if refresh_token is None:
+            return Response(
+                {"error": "Refresh token not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        serializer = TokenRefreshSerializer(
+            data={
+                "refresh": refresh_token,
+            }
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        response = Response(
+            {
+                "access": serializer.validated_data["access"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        if "refresh" in serializer.validated_data:
+            response.set_cookie(
+                key="refresh_token",
+                value=serializer.validated_data["refresh"],
+                max_age=int(
+                    settings.SIMPLE_JWT[
+                        "REFRESH_TOKEN_LIFETIME"
+                    ].total_seconds()
+                ),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="Lax",
+                path="/api/v1/auth/",
+            )
+
+        return response
