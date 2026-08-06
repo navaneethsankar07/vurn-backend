@@ -30,3 +30,24 @@ class EmailService:
             ),
             recipient_list=[recipient_email],
         )
+
+    @staticmethod
+    def send_password_reset_email(
+        recipient_email: str,
+        reset_link: str,
+    ) -> None:
+
+        subject = "Reset Your Vurn Password"
+
+        message = (
+            "We received a request to reset your password.\n\n"
+            f"Reset your password:\n{reset_link}\n\n"
+            "This link expires in 10 minutes.\n\n"
+            "If you didn't request this, you can safely ignore this email."
+        )
+
+        EmailService.send_email(
+            subject=subject,
+            message=message,
+            recipient_list=[recipient_email],
+        )

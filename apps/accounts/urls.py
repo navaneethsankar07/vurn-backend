@@ -1,11 +1,12 @@
 from django.urls import path
 from .views import (
     CurrentUserView,
-    GoogleAuthTestView,
+    ForgotPasswordView,
     GoogleAuthView,
     LoginView,
     LogoutView,
     RefreshTokenView,
+    ResetPasswordView,
     SendOTPView,
     RegisterView,
 )
@@ -45,5 +46,15 @@ urlpatterns = [
         "google/",
         GoogleAuthView.as_view(),
         name="google-auth",
+    ),
+    path(
+        "forgot-password/",
+        ForgotPasswordView.as_view(),
+        name="forgot-password",
+    ),
+    path(
+        "reset-password/",
+        ResetPasswordView.as_view(),
+        name="reset-password",
     ),
 ]

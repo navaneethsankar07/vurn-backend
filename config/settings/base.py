@@ -2,7 +2,6 @@ from pathlib import Path
 import environ
 from datetime import timedelta
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = environ.Env()
@@ -14,51 +13,49 @@ env.read_env(BASE_DIR / ".env.development")
 
 INSTALLED_APPS = [
     # Django Apps
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third-Party Apps
-    'rest_framework',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-
+    "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
     # Local Apps
-    'apps.accounts.apps.AccountsConfig',
+    "apps.accounts.apps.AccountsConfig",
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = "config.wsgi.application"
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -79,6 +76,7 @@ def get_database_config():
         }
     }
 
+
 # -----------------------------------------------------------------------------
 # Authentication
 # -----------------------------------------------------------------------------
@@ -86,16 +84,16 @@ def get_database_config():
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -103,9 +101,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # -----------------------------------------------------------------------------
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -115,7 +113,7 @@ USE_TZ = True
 # Static Files
 # -----------------------------------------------------------------------------
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 # -----------------------------------------------------------------------------
 # Django REST Framework
@@ -154,7 +152,7 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 # OTP Configuration
 # -----------------------------------------------------------------------------
 OTP_LENGTH = 6
-OTP_EXPIRATION_SECONDS = 300 
+OTP_EXPIRATION_SECONDS = 300
 
 #  -----------------------------------------------------------------------------
 # Google Client Configuration
@@ -162,4 +160,12 @@ OTP_EXPIRATION_SECONDS = 300
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET")
 
+#  -----------------------------------------------------------------------------
+# Password Reset Configuration
+# -----------------------------------------------------------------------------GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+PASSWORD_RESET_EXPIRATION_SECONDS = env.int(
+    "PASSWORD_RESET_EXPIRATION_SECONDS",
+    default=600,
+)
 
+FRONTEND_URL = env("FRONTEND_URL")

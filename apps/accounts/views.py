@@ -13,14 +13,17 @@ from .exceptions import (
     InactiveAccountException,
     InvalidCredentialsException,
     InvalidGoogleTokenException,
+    InvalidPasswordResetTokenException,
     UsernameAlreadyExistsException,
     InvalidOTPException,
     RegistrationDataExpiredException,
 )
 from .serializers import (
     CurrentUserSerializer,
+    ForgotPasswordSerializer,
     GoogleAuthSerializer,
     LoginSerializer,
+    ResetPasswordSerializer,
     SendOTPSerializer,
     RegisterSerializer,
 )
@@ -29,6 +32,7 @@ from .services.logout_service import LogoutService
 from .services.profile_service import ProfileService
 from .services.registration_service import RegistrationService
 from .services.oauth.google_auth_service import GoogleAuthService
+from .services.password_reset_service import PasswordResetService
 
 
 class SendOTPView(APIView):
@@ -312,4 +316,51 @@ class GoogleAuthView(APIView):
                     "error": str(exc),
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+class ForgotPasswordView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        PasswordResetService.send_reset_link(serializer.validated_data["email"])
+
+        return Response(
+            {
+                "message": (
+                    "If an account with that email exists, "
+                    "a password reset link has been sent."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ResetPasswordView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = ResetPasswordSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+
+            PasswordResetService.reset_password(
+                token=serializer.validated_data["token"],
+                password=serializer.validated_data["password"],
+            )
+
+            return Response({"message": "Password reset successfully."})
+
+        except InvalidPasswordResetTokenException as exc:
+
+            return Response(
+                {"token": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
             )
