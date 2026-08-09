@@ -50,14 +50,9 @@ class CurrentUserSerializer(serializers.ModelSerializer):
 
         fields = [
             "id",
-            "email",
             "username",
-            "first_name",
-            "last_name",
+            "full_name",
             "avatar",
-            "is_email_verified",
-            "is_super_admin",
-            "created_at",
         ]
 
         read_only_fields = fields

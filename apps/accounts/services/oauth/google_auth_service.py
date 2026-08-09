@@ -23,11 +23,9 @@ class GoogleAuthService:
         google_user = cls._verify_id_token(
             google_id_token,
         )
-
         user = cls._get_or_create_user(
             google_user,
         )
-
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
 
@@ -84,12 +82,13 @@ class GoogleAuthService:
         ).first()
 
         if user is None:
-
+            first_name, last_name = cls._get_name(google_user)
             user = User.objects.create_user(
                 email=email,
                 username=cls._generate_username(email),
-                first_name=google_user.get("given_name", ""),
-                last_name=google_user.get("family_name", ""),
+                first_name=first_name,
+                last_name=last_name,
+                avatar=google_user.get('picture',""),
                 password=None,
                 is_email_verified=True,
             )
@@ -126,3 +125,19 @@ class GoogleAuthService:
             counter += 1
 
         return username
+
+    @staticmethod
+    def _get_name(google_user: dict) -> tuple[str, str]:
+        given_name = google_user.get("given_name", "").strip()
+        family_name = google_user.get("family_name", "").strip()
+
+        given_name_parts = given_name.split()
+
+        if len(given_name_parts) > 1:
+            first_name = given_name_parts[0]
+            last_name = " ".join(given_name_parts[1:])
+        else:
+            first_name = given_name
+            last_name = family_name
+
+        return first_name, last_name
