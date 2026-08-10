@@ -2,6 +2,13 @@ from rest_framework import serializers
 
 from apps.accounts.models import User
 
+from apps.profiles.validators import (
+    validate_first_name,
+    validate_last_name,
+    validate_username,
+)
+from .constants import AVATAR_ALLOWED_TYPES, AVATAR_MAX_SIZE
+
 
 class ProfileUserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(
@@ -44,3 +51,63 @@ class ProfileSerializer(serializers.Serializer):
     recent_activity = RecentActivitySerializer(
         many=True,
     )
+
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(
+        validators=[validate_first_name],
+    )
+
+    last_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        validators=[validate_last_name],
+    )
+
+    username = serializers.CharField(
+        validators=[validate_username],
+    )
+
+    avatar = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "first_name",
+            "last_name",
+            "username",
+            "avatar",
+        ]
+
+    def validate_username(self, value):
+        if (
+            User.objects.filter(
+                username=value,
+            )
+            .exclude(
+                id=self.instance.id,
+            )
+            .exists()
+        ):
+            raise serializers.ValidationError("Username is already taken.")
+
+        return value
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+
+        if value.size > AVATAR_MAX_SIZE:
+            raise serializers.ValidationError("Avatar image must not exceed 5 MB.")
+
+        allowed_types = AVATAR_ALLOWED_TYPES
+
+        if value.content_type not in allowed_types:
+            raise serializers.ValidationError(
+                "Avatar must be a JPEG, PNG, or WebP image."
+            )
+
+        return value

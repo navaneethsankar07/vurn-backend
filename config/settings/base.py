@@ -23,9 +23,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "cloudinary",
     # Local Apps
     "apps.accounts.apps.AccountsConfig",
-    "apps.profiles.apps.ProfilesConfig"
+    "apps.profiles.apps.ProfilesConfig",
 ]
 
 MIDDLEWARE = [
@@ -157,16 +158,24 @@ OTP_EXPIRATION_SECONDS = 300
 
 #  -----------------------------------------------------------------------------
 # Google Client Configuration
-# -----------------------------------------------------------------------------GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+# -----------------------------------------------------------------------------
 GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET")
 
 #  -----------------------------------------------------------------------------
 # Password Reset Configuration
-# -----------------------------------------------------------------------------GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID")
+# -----------------------------------------------------------------------------
 PASSWORD_RESET_EXPIRATION_SECONDS = env.int(
     "PASSWORD_RESET_EXPIRATION_SECONDS",
     default=600,
 )
 
 FRONTEND_URL = env("FRONTEND_URL")
+
+#  -----------------------------------------------------------------------------
+# Password Reset Configuration
+# -----------------------------------------------------------------------------
+CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
+CLOUDINARY_AVATAR_FOLDER = env("CLOUDINARY_AVATAR_FOLDER")

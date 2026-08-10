@@ -3,6 +3,8 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.accounts.models import User
+from django.conf import settings
+from shared.services.cloudinary_service import CloudinaryService
 
 
 class ProfileService:
@@ -60,3 +62,34 @@ class ProfileService:
                 },
             ],
         }
+
+    @staticmethod
+    def update_profile(
+        user: User,
+        validated_data: dict,
+    ) -> User:
+
+        avatar = validated_data.pop("avatar", None)
+
+        for field, value in validated_data.items():
+            setattr(user, field, value)
+
+        update_fields = list(validated_data.keys())
+
+        if avatar is not None:
+            avatar_url = CloudinaryService.upload(
+                avatar,
+                folder=settings.CLOUDINARY_AVATAR_FOLDER,
+            )
+
+            user.avatar = avatar_url
+            update_fields.append("avatar")
+
+        if update_fields:
+            update_fields.append("updated_at")
+
+            user.save(
+                update_fields=update_fields,
+            )
+
+        return user
