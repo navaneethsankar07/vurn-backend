@@ -44,3 +44,12 @@ class InvalidGoogleTokenException(OAuthAuthenticationException):
 # Password reset exceptions
 class InvalidPasswordResetTokenException(AccountsException):
     pass
+
+
+# Delete account exceptions
+class InvalidAccountDeletionConfirmationException(AccountsException):
+    pass
+
+
+class InvalidAccountDeletionOTPException(AccountsException):
+    pass

@@ -11,6 +11,7 @@ from .exceptions import (
     EmailAlreadyExistsException,
     EmailNotVerifiedException,
     InactiveAccountException,
+    InvalidAccountDeletionOTPException,
     InvalidCredentialsException,
     InvalidGoogleTokenException,
     InvalidPasswordResetTokenException,
@@ -19,10 +20,12 @@ from .exceptions import (
     RegistrationDataExpiredException,
 )
 from .serializers import (
+    ConfirmAccountDeletionSerializer,
     CurrentUserSerializer,
     ForgotPasswordSerializer,
     GoogleAuthSerializer,
     LoginSerializer,
+    RequestAccountDeletionSerializer,
     ResetPasswordSerializer,
     SendOTPSerializer,
     RegisterSerializer,
@@ -33,6 +36,7 @@ from .services.profile_service import ProfileService
 from .services.registration_service import RegistrationService
 from .services.oauth.google_auth_service import GoogleAuthService
 from .services.password_reset_service import PasswordResetService
+from .services.account_deletion_service import AccountDeletionService
 
 
 class SendOTPView(APIView):
@@ -361,3 +365,61 @@ class ResetPasswordView(APIView):
                 {"token": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+class RequestAccountDeletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = RequestAccountDeletionSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        AccountDeletionService.send_deletion_otp(
+            request.user,
+        )
+
+        return Response(
+            {
+                "message": ("A verification code has been sent " "to your email."),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ConfirmAccountDeletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ConfirmAccountDeletionSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+            AccountDeletionService.delete_account(
+                user=request.user,
+                otp=serializer.validated_data["otp"],
+            )
+
+        except InvalidAccountDeletionOTPException as exc:
+            return Response(
+                {
+                    "otp": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": "Account deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )

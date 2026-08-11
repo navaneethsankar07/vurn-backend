@@ -6,6 +6,7 @@ from .validators import (
     validate_username,
     validate_user_password,
 )
+from .constants import ACCOUNT_DELETION_CONFIRMATION
 
 
 class SendOTPSerializer(serializers.Serializer):
@@ -81,10 +82,27 @@ class ResetPasswordSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["password"] != attrs["confirm_password"]:
             raise serializers.ValidationError(
-                {
-                    "confirm_password":
-                    "Passwords do not match."
-                }
+                {"confirm_password": "Passwords do not match."}
             )
 
         return attrs
+
+
+class RequestAccountDeletionSerializer(serializers.Serializer):
+    confirmation = serializers.CharField(
+        trim_whitespace=True,
+    )
+
+    def validate_confirmation(self, value):
+        if value != ACCOUNT_DELETION_CONFIRMATION:
+            raise serializers.ValidationError("Invalid account deletion confirmation.")
+
+        return value
+
+
+class ConfirmAccountDeletionSerializer(serializers.Serializer):
+    otp = serializers.CharField(
+        min_length=6,
+        max_length=6,
+        trim_whitespace=True,
+    )

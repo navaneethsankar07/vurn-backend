@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from django.conf import settings
-from shared.services.cloudinary_service import CloudinaryService
+from apps.shared.services.cloudinary_service import CloudinaryService
 
 
 class ProfileService:

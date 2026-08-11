@@ -51,3 +51,21 @@ class EmailService:
             message=message,
             recipient_list=[recipient_email],
         )
+
+    @staticmethod
+    def send_account_deletion_otp_email(
+        *,
+        recipient_email: str,
+        otp: str,
+    ) -> None:
+        EmailService.send_email(
+            subject="Confirm Vurn Account Deletion",
+            message=(
+                "We received a request to delete your Vurn account.\n\n"
+                f"Your verification code is {otp}.\n\n"
+                "This code will expire in 5 minutes.\n\n"
+                "If you did not request this, you can safely ignore "
+                "this email."
+            ),
+            recipient_list=[recipient_email],
+        )
