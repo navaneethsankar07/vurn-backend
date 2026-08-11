@@ -1,0 +1,33 @@
+ORGANIZATION_ICONS = {
+    "building-2",
+    "briefcase-business",
+    "blocks",
+    "box",
+    "code-2",
+    "command",
+    "hexagon",
+    "database",
+    "globe-2",
+    "layers-2",
+    "layout-dashboard",
+    "network",
+    "panels-top-left",
+    "rocket",
+    "server",
+    "shield-check",
+    "workflow",
+    "zap",
+}
+
+ORGANIZATION_ACCENT_COLORS = {
+    "slate": "#64748B",
+    "blue": "#3B82F6",
+    "indigo": "#6366F1",
+    "violet": "#8B5CF6",
+    "cyan": "#06B6D4",
+    "teal": "#14B8A6",
+    "emerald": "#10B981",
+    "amber": "#F59E0B",
+    "rose": "#F43F5E",
+    "orange": "#F97316",
+}
