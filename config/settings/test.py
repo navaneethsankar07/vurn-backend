@@ -1,4 +1,4 @@
-from .base import BASE_DIR, DATABASES, env, get_database_config
+from .base import BASE_DIR, env, get_database_config
 from .base import *
 
 env.read_env(BASE_DIR / ".env.test")
