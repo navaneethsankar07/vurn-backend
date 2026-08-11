@@ -14,5 +14,5 @@ def validate_organization_icon(value: str) -> None:
 def validate_organization_accent_color(
     value: str,
 ) -> None:
-    if value not in ORGANIZATION_ACCENT_COLORS:
+    if value not in ORGANIZATION_ACCENT_COLORS.values():
         raise ValidationError("Invalid organization accent color.")

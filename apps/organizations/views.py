@@ -3,12 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.organizations.serializers import (
+from .serializers import (
     CreateOrganizationSerializer,
 )
-from apps.organizations.services.organization_service import (
-    OrganizationService,
-)
+
+from .services.organization_service import OrganizationService
+from .services.organization_options_service import OrganizationOptionsService
 
 
 class CreateOrganizationView(APIView):
@@ -41,4 +41,16 @@ class CreateOrganizationView(APIView):
                 },
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class OrganizationOptionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        options = OrganizationOptionsService.get_options()
+
+        return Response(
+            options,
+            status=status.HTTP_200_OK,
         )
