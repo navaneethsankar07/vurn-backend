@@ -36,3 +36,9 @@ CACHES = {
         },
     }
 }
+
+BASE_DOMAIN = env("BASE_DOMAIN")
+FRONTEND_PORT = env.int(
+    "FRONTEND_PORT",
+    default=5173,
+)
