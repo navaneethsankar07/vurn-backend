@@ -4,8 +4,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 
-from .serializers import ProfileSerializer, UpdateProfileSerializer
+from .serializers import (
+    ChangePasswordSerializer,
+    ProfileSerializer,
+    UpdateProfileSerializer,
+)
 from .services.profile_service import ProfileService
+from .services.password_service import PasswordService
+
+from .exceptions import InvalidCurrentPasswordException
 
 
 class ProfileView(APIView):
@@ -52,6 +59,41 @@ class ProfileView(APIView):
                     "email": user.email,
                     "avatar": user.avatar,
                 },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+            PasswordService.change_password(
+                user=request.user,
+                current_password=serializer.validated_data["current_password"],
+                new_password=serializer.validated_data["new_password"],
+            )
+
+        except InvalidCurrentPasswordException as exc:
+            return Response(
+                {
+                    "current_password": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": "Password changed successfully.",
             },
             status=status.HTTP_200_OK,
         )

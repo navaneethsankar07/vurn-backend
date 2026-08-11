@@ -1,8 +1,8 @@
 from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
+from accounts.models import User
 
-from apps.accounts.models import User
-
-from apps.profiles.validators import (
+from .validators import (
     validate_first_name,
     validate_last_name,
     validate_username,
@@ -111,3 +111,38 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    new_password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password],
+        trim_whitespace=False,
+    )
+
+    confirm_password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
+
+        if attrs["current_password"] == attrs["new_password"]:
+            raise serializers.ValidationError(
+                {
+                    "new_password": (
+                        "New password must be different from " "the current password."
+                    )
+                }
+            )
+
+        return attrs
