@@ -33,6 +33,7 @@ from .serializers import (
 from .services.login_service import LoginService
 from .services.logout_service import LogoutService
 from .services.profile_service import ProfileService
+from .services.login_method_service import LoginMethodService
 from .services.registration_service import RegistrationService
 from .services.oauth.google_auth_service import GoogleAuthService
 from .services.password_reset_service import PasswordResetService
@@ -420,6 +421,22 @@ class ConfirmAccountDeletionView(APIView):
         return Response(
             {
                 "message": "Account deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LoginMethodView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        is_email_login = LoginMethodService.is_email_login(
+            request.user,
+        )
+
+        return Response(
+            {
+                "is_email_login": is_email_login,
             },
             status=status.HTTP_200_OK,
         )

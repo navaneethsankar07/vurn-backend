@@ -4,6 +4,7 @@ from .views import (
     CurrentUserView,
     ForgotPasswordView,
     GoogleAuthView,
+    LoginMethodView,
     LoginView,
     LogoutView,
     RefreshTokenView,
@@ -68,5 +69,10 @@ urlpatterns = [
         "delete-account/confirm/",
         ConfirmAccountDeletionView.as_view(),
         name="confirm-account-deletion",
+    ),
+    path(
+        "login-method/",
+        LoginMethodView.as_view(),
+        name="login-method",
     ),
 ]
