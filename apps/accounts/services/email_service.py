@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 
 class EmailService:
+
     @staticmethod
     def send_email(
         *,
@@ -21,35 +23,66 @@ class EmailService:
         )
 
     @staticmethod
-    def send_otp_email(*, recipient_email: str, otp: str) -> None:
+    def send_otp_email(
+        *,
+        recipient_email: str,
+        otp: str,
+    ) -> None:
+
+        otp_expiration_minutes = settings.OTP_EXPIRATION_SECONDS // 60
+
+        html_message = render_to_string(
+            "emails/otp_verification.html",
+            {
+                "otp": otp,
+                "otp_expiration_minutes": otp_expiration_minutes,
+            },
+        )
+
         EmailService.send_email(
-            subject="Verify your Vurtual Account",
+            subject="Verify your Vurn account",
             message=(
                 f"Your verification code is {otp}.\n\n"
-                "This code will expire in 5 minutes."
+                f"This code will expire in "
+                f"{otp_expiration_minutes} minutes."
             ),
             recipient_list=[recipient_email],
+            html_message=html_message,
         )
 
     @staticmethod
     def send_password_reset_email(
+        *,
         recipient_email: str,
         reset_link: str,
     ) -> None:
 
-        subject = "Reset Your Vurn Password"
+        password_reset_expiration_minutes = (
+            settings.PASSWORD_RESET_EXPIRATION_SECONDS // 60
+        )
 
-        message = (
-            "We received a request to reset your password.\n\n"
-            f"Reset your password:\n{reset_link}\n\n"
-            "This link expires in 10 minutes.\n\n"
-            "If you didn't request this, you can safely ignore this email."
+        html_message = render_to_string(
+            "emails/password_reset.html",
+            {
+                "reset_link": reset_link,
+                "password_reset_expiration_minutes": (
+                    password_reset_expiration_minutes
+                ),
+            },
         )
 
         EmailService.send_email(
-            subject=subject,
-            message=message,
+            subject="Reset your Vurn password",
+            message=(
+                "We received a request to reset your password.\n\n"
+                f"Reset your password:\n{reset_link}\n\n"
+                "This link expires in "
+                f"{password_reset_expiration_minutes} minutes.\n\n"
+                "If you didn't request this, you can safely ignore "
+                "this email."
+            ),
             recipient_list=[recipient_email],
+            html_message=html_message,
         )
 
     @staticmethod
@@ -58,14 +91,27 @@ class EmailService:
         recipient_email: str,
         otp: str,
     ) -> None:
+
+        otp_expiration_minutes = settings.OTP_EXPIRATION_SECONDS // 60
+
+        html_message = render_to_string(
+            "emails/account_deletion.html",
+            {
+                "otp": otp,
+                "otp_expiration_minutes": otp_expiration_minutes,
+            },
+        )
+
         EmailService.send_email(
-            subject="Confirm Vurn Account Deletion",
+            subject="Confirm your Vurn account deletion",
             message=(
                 "We received a request to delete your Vurn account.\n\n"
                 f"Your verification code is {otp}.\n\n"
-                "This code will expire in 5 minutes.\n\n"
+                "This code will expire in "
+                f"{otp_expiration_minutes} minutes.\n\n"
                 "If you did not request this, you can safely ignore "
                 "this email."
             ),
             recipient_list=[recipient_email],
+            html_message=html_message,
         )
