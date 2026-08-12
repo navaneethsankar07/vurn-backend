@@ -47,3 +47,15 @@ MOCK_ORGANIZATION_STATS = {
         "project_count": 4,
     },
 }
+
+ORGANIZATION_SORT_FIELDS = {
+    "name",
+    "member",
+    "project",
+    "recent",
+}
+
+ORGANIZATION_SORT_ORDERS = {
+    "asc",
+    "desc",
+}

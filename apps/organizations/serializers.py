@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.organizations.constants import MOCK_ORGANIZATION_STATS
+
 from .models import Organization
 from .validators import (
     validate_organization_accent_color,
@@ -67,26 +69,15 @@ class CreateOrganizationSerializer(
 class OrganizationListSerializer(
     serializers.ModelSerializer,
 ):
-    member_count = serializers.IntegerField(
-        read_only=True,
-    )
+    role = serializers.SerializerMethodField()
 
-    project_count = serializers.IntegerField(
-        read_only=True,
-    )
+    member_count = serializers.SerializerMethodField()
 
-    role = serializers.CharField(
-        read_only=True,
-    )
+    project_count = serializers.SerializerMethodField()
 
-    last_opened_at = serializers.DateTimeField(
-        read_only=True,
-        allow_null=True,
-    )
+    last_opened_at = serializers.SerializerMethodField()
 
-    is_pinned = serializers.BooleanField(
-        read_only=True,
-    )
+    is_pinned = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
@@ -105,3 +96,49 @@ class OrganizationListSerializer(
             "last_opened_at",
             "is_pinned",
         ]
+
+    def get_role(
+        self,
+        obj,
+    ):
+        return "owner"
+
+    def get_member_count(
+        self,
+        obj,
+    ):
+        stats = MOCK_ORGANIZATION_STATS.get(
+            obj.id,
+            {
+                "member_count": 1,
+                "project_count": 0,
+            },
+        )
+
+        return stats["member_count"]
+
+    def get_project_count(
+        self,
+        obj,
+    ):
+        stats = MOCK_ORGANIZATION_STATS.get(
+            obj.id,
+            {
+                "member_count": 1,
+                "project_count": 0,
+            },
+        )
+
+        return stats["project_count"]
+
+    def get_last_opened_at(
+        self,
+        obj,
+    ):
+        return None
+
+    def get_is_pinned(
+        self,
+        obj,
+    ):
+        return False

@@ -3,7 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import CreateOrganizationSerializer
+from apps.shared.utils.pagination import StandardPagination
+from apps.organizations.constants import (
+    ORGANIZATION_SORT_FIELDS,
+    ORGANIZATION_SORT_ORDERS,
+)
+
+from .serializers import CreateOrganizationSerializer, OrganizationListSerializer
 from .services.organization_service import OrganizationService
 from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_query_service import OrganizationQueryService
@@ -13,13 +19,68 @@ class OrganizationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        result = OrganizationQueryService.get_user_organizations(
-            request.user,
+        search = request.query_params.get(
+            "search",
+            "",
+        ).strip()
+
+        sort_by = request.query_params.get(
+            "sort_by",
+            "name",
+        ).lower()
+
+        order = request.query_params.get(
+            "order",
+            "asc",
+        ).lower()
+
+        if sort_by not in ORGANIZATION_SORT_FIELDS:
+            return Response(
+                {
+                    "error": (
+                        "Invalid sort_by. "
+                        "Allowed values: name, member, "
+                        "project, recent."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if order not in ORGANIZATION_SORT_ORDERS:
+            return Response(
+                {
+                    "error": ("Invalid order. " "Allowed values: asc, desc."),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        organizations = OrganizationQueryService.get_user_organizations(
+            user=request.user,
+            search=search,
+            sort_by=sort_by,
+            order=order,
         )
 
-        return Response(
-            result,
-            status=status.HTTP_200_OK,
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(
+            organizations,
+            request,
+            view=self,
+        )
+
+        serializer = OrganizationListSerializer(
+            page,
+            many=True,
+        )
+
+        response_data = {
+            "recent": [],
+            "pinned": [],
+            "organizations": serializer.data,
+        }
+
+        return paginator.get_paginated_response(
+            response_data,
         )
 
     def post(self, request):
