@@ -31,3 +31,19 @@ ORGANIZATION_ACCENT_COLORS = {
     "indigo": "#4F46E5",
     "sky": "#5EE4FF",
 }
+
+# Temporary data until organization members and projects are implemented.
+MOCK_ORGANIZATION_STATS = {
+    1: {
+        "member_count": 42,
+        "project_count": 18,
+    },
+    2: {
+        "member_count": 15,
+        "project_count": 6,
+    },
+    3: {
+        "member_count": 9,
+        "project_count": 4,
+    },
+}

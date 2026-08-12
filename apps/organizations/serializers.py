@@ -62,3 +62,46 @@ class CreateOrganizationSerializer(
             raise serializers.ValidationError("Organization slug is already taken.")
 
         return value
+
+
+class OrganizationListSerializer(
+    serializers.ModelSerializer,
+):
+    member_count = serializers.IntegerField(
+        read_only=True,
+    )
+
+    project_count = serializers.IntegerField(
+        read_only=True,
+    )
+
+    role = serializers.CharField(
+        read_only=True,
+    )
+
+    last_opened_at = serializers.DateTimeField(
+        read_only=True,
+        allow_null=True,
+    )
+
+    is_pinned = serializers.BooleanField(
+        read_only=True,
+    )
+
+    class Meta:
+        model = Organization
+
+        fields = [
+            "id",
+            "name",
+            "description",
+            "slug",
+            "icon",
+            "accent_color",
+            "logo_url",
+            "role",
+            "member_count",
+            "project_count",
+            "last_opened_at",
+            "is_pinned",
+        ]

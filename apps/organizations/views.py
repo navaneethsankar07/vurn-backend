@@ -3,16 +3,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import (
-    CreateOrganizationSerializer,
-)
-
+from .serializers import CreateOrganizationSerializer
 from .services.organization_service import OrganizationService
 from .services.organization_options_service import OrganizationOptionsService
+from .services.organization_query_service import OrganizationQueryService
 
 
-class CreateOrganizationView(APIView):
+class OrganizationView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        result = OrganizationQueryService.get_user_organizations(
+            request.user,
+        )
+
+        return Response(
+            result,
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request):
         serializer = CreateOrganizationSerializer(

@@ -1,15 +1,15 @@
 from django.urls import path
 
 from apps.organizations.views import (
-    CreateOrganizationView,
     OrganizationOptionsView,
+    OrganizationView,
 )
 
 urlpatterns = [
     path(
         "",
-        CreateOrganizationView.as_view(),
-        name="create-organization",
+        OrganizationView.as_view(),
+        name="organization",
     ),
     path(
         "options/",
