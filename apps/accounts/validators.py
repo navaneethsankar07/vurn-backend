@@ -18,11 +18,6 @@ _last_name_regex = RegexValidator(
     message="Last name can only contain letters.",
 )
 
-password_complexity_validator = RegexValidator(
-    regex=r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])",
-    message="Must include uppercase, lowercase, number, and special character.",
-)
-
 
 def optional_last_name_validator(value: str):
     if value and value.strip():
@@ -35,6 +30,5 @@ def validate_username(username: str) -> str:
 
 
 def validate_user_password(password: str) -> str:
-    password_complexity_validator(password)
     validate_password(password)
     return password
