@@ -4,8 +4,8 @@ from django.core.validators import RegexValidator
 from django.contrib.auth.password_validation import validate_password
 
 username_regex_validator = RegexValidator(
-    regex=r"^[a-z0-9_.]{3,15}$",
-    message="Username must be 3-15 characters long and contain only lowercase letters, numbers, underscores, and periods.",
+    regex=r"^[a-z0-9_.]+$",
+    message="Only lowercase letters, numbers, underscores, and periods are allowed.",
 )
 
 first_name_regex_validator = RegexValidator(

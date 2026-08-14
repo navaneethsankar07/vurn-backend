@@ -17,7 +17,15 @@ class SendOTPSerializer(serializers.Serializer):
     email = serializers.EmailField(
         error_messages={"invalid": "Enter a valid email address."}
     )
-    username = serializers.CharField(max_length=15, validators=[validate_username])
+    username = serializers.CharField(
+        min_length=3,
+        max_length=15,
+        validators=[validate_username],
+        error_messages={
+            "min_length": "Username must be at least 3 characters.",
+            "max_length": "Username cannot exceed 15 characters.",
+        },
+    )
     first_name = serializers.CharField(
         max_length=30,
         validators=[first_name_regex_validator],
