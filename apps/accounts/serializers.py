@@ -5,19 +5,41 @@ from apps.organizations.models import Organization
 
 from .models import User
 from .validators import (
+    optional_last_name_validator,
     validate_username,
     validate_user_password,
+    first_name_regex_validator,
 )
 from .constants import ACCOUNT_DELETION_CONFIRMATION
 
 
 class SendOTPSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(
+        error_messages={"invalid": "Enter a valid email address."}
+    )
     username = serializers.CharField(max_length=15, validators=[validate_username])
-    first_name = serializers.CharField(max_length=30)
-    last_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    first_name = serializers.CharField(
+        max_length=30,
+        validators=[first_name_regex_validator],
+        error_messages={
+            "min_length": "First name must be at least 2 characters.",
+            "blank": "First name is required.",
+        },
+    )
+    last_name = serializers.CharField(
+        max_length=30,
+        required=False,
+        allow_blank=True,
+        validators=[optional_last_name_validator],
+    )
+
     password = serializers.CharField(
-        write_only=True, validators=[validate_user_password]
+        write_only=True,
+        min_length=8,
+        validators=[validate_user_password],
+        error_messages={
+            "min_length": "Password must be at least 8 characters.",
+        },
     )
     confirm_password = serializers.CharField(write_only=True)
 

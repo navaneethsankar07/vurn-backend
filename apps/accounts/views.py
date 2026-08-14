@@ -59,13 +59,13 @@ class SendOTPView(APIView):
 
         except EmailAlreadyExistsException as exc:
             return Response(
-                {"email": str(exc)},
+                {"email": [str(exc)]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         except UsernameAlreadyExistsException as exc:
             return Response(
-                {"username": str(exc)},
+                {"username": [str(exc)]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -102,7 +102,7 @@ class RegisterView(APIView):
 
         except InvalidOTPException as exc:
             return Response(
-                {"otp": str(exc)},
+                {"otp": [str(exc)]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -320,7 +320,7 @@ class ResetPasswordView(APIView):
         except InvalidPasswordResetTokenException as exc:
 
             return Response(
-                {"token": str(exc)},
+                {"token": [str(exc)]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -370,7 +370,7 @@ class ConfirmAccountDeletionView(APIView):
         except InvalidAccountDeletionOTPException as exc:
             return Response(
                 {
-                    "otp": str(exc),
+                    "otp": [str(exc)],
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
