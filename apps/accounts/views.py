@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
+from .utils import delete_auth_cookie, set_auth_cookie
+
 from .exceptions import (
     EmailAlreadyExistsException,
     EmailNotVerifiedException,
@@ -94,17 +96,7 @@ class RegisterView(APIView):
                 status=status.HTTP_201_CREATED,
             )
 
-            response.set_cookie(
-                key="refresh_token",
-                value=result["refresh"],
-                max_age=int(
-                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
-                ),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                path="/api/v1/auth/",
-            )
+            set_auth_cookie(response, result["refresh"])
 
             return response
 
@@ -148,18 +140,7 @@ class LoginView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-            response.set_cookie(
-                key="refresh_token",
-                value=result["refresh"],
-                max_age=int(
-                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
-                ),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                path="/api/v1/auth/",
-            )
-
+            set_auth_cookie(response, result["refresh"])
             return response
 
         except InvalidCredentialsException as exc:
@@ -209,17 +190,7 @@ class RefreshTokenView(APIView):
         )
 
         if "refresh" in serializer.validated_data:
-            response.set_cookie(
-                key="refresh_token",
-                value=serializer.validated_data["refresh"],
-                max_age=int(
-                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
-                ),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                path="/api/v1/auth/",
-            )
+            set_auth_cookie(response, serializer.validated_data["refresh"])
 
         return response
 
@@ -244,11 +215,7 @@ class LogoutView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-            response.delete_cookie(
-                key="refresh_token",
-                path="/api/v1/auth/",
-                samesite="Lax",
-            )
+            delete_auth_cookie(response)
 
             return response
 
@@ -298,17 +265,7 @@ class GoogleAuthView(APIView):
                 status=status.HTTP_200_OK,
             )
 
-            response.set_cookie(
-                key="refresh_token",
-                value=result["refresh"],
-                max_age=int(
-                    settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"].total_seconds()
-                ),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="Lax",
-                path="/api/v1/auth/",
-            )
+            set_auth_cookie(response, result["refresh"])
 
             return response
 

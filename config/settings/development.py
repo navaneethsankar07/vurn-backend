@@ -45,3 +45,5 @@ FRONTEND_PORT = env.int(
     "FRONTEND_PORT",
     default=5173,
 )
+
+SESSION_COOKIE_DOMAIN = f".{BASE_DOMAIN}" if BASE_DOMAIN else None

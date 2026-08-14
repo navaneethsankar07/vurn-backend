@@ -59,3 +59,11 @@ ORGANIZATION_SORT_ORDERS = {
     "asc",
     "desc",
 }
+
+MOCK_ORGANIZATION_DASHBOARD_STATS = {
+    "total_projects": 8,
+    "total_members": 12,
+    "active_sprints": 2,
+    "open_issues": 24,
+    "completed_issues": 67,
+}

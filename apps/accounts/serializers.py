@@ -1,6 +1,8 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from apps.organizations.models import Organization
+
 from .models import User
 from .validators import (
     validate_username,
@@ -44,7 +46,24 @@ class LoginSerializer(serializers.Serializer):
     )
 
 
+class UserOrganizationSerializer(serializers.ModelSerializer):
+    """Minimal organization serializer for the user payload."""
+
+    class Meta:
+        model = Organization
+        fields = [
+            "name",
+            "slug",
+        ]
+        read_only_fields = fields
+
+
 class CurrentUserSerializer(serializers.ModelSerializer):
+    organizations = UserOrganizationSerializer(
+        source="owned_organizations",
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = User
@@ -54,6 +73,7 @@ class CurrentUserSerializer(serializers.ModelSerializer):
             "username",
             "full_name",
             "avatar",
+            "organizations",
         ]
 
         read_only_fields = fields

@@ -8,11 +8,18 @@ from apps.organizations.constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
+from .exceptions import OrganizationNotFoundException
 
-from .serializers import CreateOrganizationSerializer, OrganizationListSerializer
+from .serializers import (
+    CreateOrganizationSerializer,
+    OrganizationDashboardSerializer,
+    OrganizationListSerializer,
+)
+
 from .services.organization_service import OrganizationService
-from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_query_service import OrganizationQueryService
+from .services.organization_options_service import OrganizationOptionsService
+from .services.organization_dashboard_service import OrganizationDashboardService
 
 
 class OrganizationView(APIView):
@@ -123,3 +130,29 @@ class OrganizationOptionsView(APIView):
             options,
             status=status.HTTP_200_OK,
         )
+
+
+class OrganizationDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        try:
+            dashboard = OrganizationDashboardService.get_dashboard(
+                user=request.user,
+                slug=slug,
+            )
+
+            serializer = OrganizationDashboardSerializer(
+                dashboard,
+            )
+
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK,
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )

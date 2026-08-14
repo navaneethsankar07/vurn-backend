@@ -142,3 +142,23 @@ class OrganizationListSerializer(
         obj,
     ):
         return False
+
+
+class OrganizationDashboardSerializer(
+    serializers.Serializer,
+):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    description = serializers.CharField()
+    slug = serializers.CharField()
+    icon = serializers.CharField()
+    logo_url = serializers.URLField(
+        allow_null=True,
+    )
+    accent_color = serializers.CharField()
+
+    total_projects = serializers.IntegerField()
+    total_members = serializers.IntegerField()
+    active_sprints = serializers.IntegerField()
+    open_issues = serializers.IntegerField()
+    completed_issues = serializers.IntegerField()
