@@ -9,6 +9,7 @@ from .views import (
     LogoutView,
     RefreshTokenView,
     RequestAccountDeletionView,
+    ResendOTPView,
     ResetPasswordView,
     SendOTPView,
     RegisterView,
@@ -19,6 +20,11 @@ urlpatterns = [
         "send-otp/",
         SendOTPView.as_view(),
         name="send-otp",
+    ),
+    path(
+        "resend-otp/",
+        ResendOTPView.as_view(),
+        name="resend-otp",
     ),
     path(
         "register/",

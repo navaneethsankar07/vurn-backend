@@ -19,6 +19,14 @@ class InvalidOTPException(AccountsException):
     pass
 
 
+class ResendOTPCooldownException(AccountsException):
+    def __init__(self, remaining_seconds: int):
+        self.remaining_seconds = remaining_seconds
+        super().__init__(
+            f"Please wait {remaining_seconds} seconds before requesting a new OTP."
+        )
+
+
 # Authentication exceptions
 class InvalidCredentialsException(AccountsException):
     pass

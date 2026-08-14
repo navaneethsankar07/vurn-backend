@@ -59,6 +59,16 @@ class SendOTPSerializer(serializers.Serializer):
         return data
 
 
+class ResendOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        error_messages={
+            "required": "Email address is required.",
+            "invalid": "Invalid email address format.",
+            "blank": "Email address cannot be empty.",
+        }
+    )
+
+
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
 

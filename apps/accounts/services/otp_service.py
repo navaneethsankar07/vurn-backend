@@ -68,6 +68,20 @@ class OTPService:
         return True
 
     @classmethod
+    def get_ttl(
+        cls,
+        prefix:str,
+        identifier:str,
+    ) -> int:
+        key = cls._key(prefix, identifier)
+
+        if hasattr(cache, "ttl"):
+            ttl = cache.ttl(key)
+            return ttl if ttl is not None and ttl > 0 else 0
+
+        return 0
+
+    @classmethod
     def delete(
         cls,
         prefix: str,

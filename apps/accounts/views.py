@@ -17,6 +17,7 @@ from .exceptions import (
     InvalidCredentialsException,
     InvalidGoogleTokenException,
     InvalidPasswordResetTokenException,
+    ResendOTPCooldownException,
     UsernameAlreadyExistsException,
     InvalidOTPException,
     RegistrationDataExpiredException,
@@ -28,6 +29,7 @@ from .serializers import (
     GoogleAuthSerializer,
     LoginSerializer,
     RequestAccountDeletionSerializer,
+    ResendOTPSerializer,
     ResetPasswordSerializer,
     SendOTPSerializer,
     RegisterSerializer,
@@ -104,6 +106,39 @@ class RegisterView(APIView):
             return Response(
                 {"otp": [str(exc)]},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except RegistrationDataExpiredException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class ResendOTPView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ResendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            RegistrationService.resend_registration_otp(
+                serializer.validated_data["email"]
+            )
+
+            return Response(
+                {"message": "A new OTP has been sent successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        except ResendOTPCooldownException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                    "retry_after_seconds": exc.remaining_seconds,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
         except RegistrationDataExpiredException as exc:
