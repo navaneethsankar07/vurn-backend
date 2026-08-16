@@ -14,12 +14,14 @@ from .serializers import (
     CreateOrganizationSerializer,
     OrganizationDashboardSerializer,
     OrganizationListSerializer,
+    UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
 )
 
 from .services.organization_service import OrganizationService
 from .services.organization_query_service import OrganizationQueryService
 from .services.organization_options_service import OrganizationOptionsService
+from .services.organization_branding_service import OrganizationBrandingService
 from .services.organization_dashboard_service import OrganizationDashboardService
 
 
@@ -163,10 +165,16 @@ class OrganizationSettingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, slug):
-        organization = OrganizationService.get_owned_organization(
-            user=request.user,
-            slug=slug,
-        )
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = UpdateOrganizationSettingsSerializer(
             instance=organization,
@@ -191,6 +199,49 @@ class OrganizationSettingsView(APIView):
                     "name": organization.name,
                     "description": organization.description,
                     "slug": organization.slug,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationBrandingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = UpdateOrganizationBrandingSerializer(
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        organization = OrganizationBrandingService.update_branding(
+            organization=organization,
+            validated_data=serializer.validated_data,
+        )
+
+        return Response(
+            {
+                "message": "Organization branding updated successfully.",
+                "organization": {
+                    "id": organization.id,
+                    "icon": organization.icon,
+                    "accent_color": organization.accent_color,
+                    "logo_url": organization.logo_url,
                 },
             },
             status=status.HTTP_200_OK,

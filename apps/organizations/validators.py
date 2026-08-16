@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError
+from rest_framework import serializers
 
 from .constants import (
     ORGANIZATION_ACCENT_COLORS,
@@ -8,11 +8,11 @@ from .constants import (
 
 def validate_organization_icon(value: str) -> None:
     if value not in ORGANIZATION_ICONS:
-        raise ValidationError("Invalid organization icon.")
+        raise serializers.ValidationError("Invalid organization icon.")
 
 
 def validate_organization_accent_color(
     value: str,
 ) -> None:
     if value not in ORGANIZATION_ACCENT_COLORS.values():
-        raise ValidationError("Invalid organization accent color.")
+        raise serializers.ValidationError("Invalid organization accent color.")

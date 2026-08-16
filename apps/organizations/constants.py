@@ -32,6 +32,12 @@ ORGANIZATION_ACCENT_COLORS = {
     "sky": "#5EE4FF",
 }
 
+LOGO_ALLOWED_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+LOGO_MAX_SIZE = 5 * 1024 * 1024
 # Temporary data until organization members and projects are implemented.
 MOCK_ORGANIZATION_STATS = {
     1: {

@@ -1,6 +1,10 @@
 from rest_framework import serializers
 
-from apps.organizations.constants import MOCK_ORGANIZATION_STATS
+from apps.organizations.constants import (
+    LOGO_ALLOWED_TYPES,
+    LOGO_MAX_SIZE,
+    MOCK_ORGANIZATION_STATS,
+)
 
 from .models import Organization
 from .validators import (
@@ -206,3 +210,40 @@ class UpdateOrganizationSettingsSerializer(
 
     def validate_description(self, value):
         return value.strip()
+
+
+class UpdateOrganizationBrandingSerializer(
+    serializers.Serializer,
+):
+    icon = serializers.CharField(
+        required=False,
+        validators=[
+            validate_organization_icon,
+        ],
+    )
+
+    accent_color = serializers.CharField(
+        required=False,
+        validators=[
+            validate_organization_accent_color,
+        ],
+    )
+
+    logo = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
+    def validate_logo(self, value):
+        if value is None:
+            return value
+
+        if value.size > LOGO_MAX_SIZE:
+            raise serializers.ValidationError("Organization logo must not exceed 5 MB.")
+
+        if value.content_type not in LOGO_ALLOWED_TYPES:
+            raise serializers.ValidationError(
+                "Organization logo must be a JPEG, PNG, or WebP image."
+            )
+
+        return value
