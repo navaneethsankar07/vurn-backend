@@ -162,3 +162,47 @@ class OrganizationDashboardSerializer(
     active_sprints = serializers.IntegerField()
     open_issues = serializers.IntegerField()
     completed_issues = serializers.IntegerField()
+
+
+class UpdateOrganizationSettingsSerializer(
+    serializers.ModelSerializer,
+):
+    class Meta:
+        model = Organization
+        fields = [
+            "name",
+            "slug",
+            "description",
+        ]
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Organization name cannot be empty.")
+
+        return value
+
+    def validate_slug(self, value):
+        value = value.strip().lower()
+
+        if not value:
+            raise serializers.ValidationError("Organization slug cannot be empty.")
+
+        organization = self.instance
+
+        if (
+            Organization.objects.filter(
+                slug=value,
+            )
+            .exclude(
+                id=organization.id,
+            )
+            .exists()
+        ):
+            raise serializers.ValidationError("Organization slug is already taken.")
+
+        return value
+
+    def validate_description(self, value):
+        return value.strip()

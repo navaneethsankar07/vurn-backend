@@ -14,6 +14,7 @@ from .serializers import (
     CreateOrganizationSerializer,
     OrganizationDashboardSerializer,
     OrganizationListSerializer,
+    UpdateOrganizationSettingsSerializer,
 )
 
 from .services.organization_service import OrganizationService
@@ -156,3 +157,41 @@ class OrganizationDashboardView(APIView):
                 {"error": str(exc)},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+
+class OrganizationSettingsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, slug):
+        organization = OrganizationService.get_owned_organization(
+            user=request.user,
+            slug=slug,
+        )
+
+        serializer = UpdateOrganizationSettingsSerializer(
+            instance=organization,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        organization = OrganizationService.update_settings(
+            organization=organization,
+            validated_data=serializer.validated_data,
+        )
+
+        return Response(
+            {
+                "message": "Organization settings updated successfully.",
+                "organization": {
+                    "id": organization.id,
+                    "name": organization.name,
+                    "description": organization.description,
+                    "slug": organization.slug,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )

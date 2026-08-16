@@ -378,7 +378,7 @@ class RequestAccountDeletionView(APIView):
 
         return Response(
             {
-                "message": ("A verification code has been sent " "to your email."),
+                "message": ("A verification code has been sent to your email."),
             },
             status=status.HTTP_200_OK,
         )

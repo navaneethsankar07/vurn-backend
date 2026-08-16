@@ -87,13 +87,14 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserOrganizationSerializer(serializers.ModelSerializer):
-    """Minimal organization serializer for the user payload."""
 
     class Meta:
         model = Organization
         fields = [
             "name",
             "slug",
+            "icon",
+            "logo_url"
         ]
         read_only_fields = fields
 

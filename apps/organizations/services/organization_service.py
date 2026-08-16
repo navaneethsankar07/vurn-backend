@@ -28,3 +28,26 @@ class OrganizationService:
         )
 
         return organization
+
+    @staticmethod
+    def update_settings(
+        *,
+        organization: Organization,
+        validated_data: dict,
+    ) -> Organization:
+
+        for field, value in validated_data.items():
+            setattr(
+                organization,
+                field,
+                value,
+            )
+
+        organization.save(
+            update_fields=[
+                *validated_data.keys(),
+                "updated_at",
+            ],
+        )
+
+        return organization
