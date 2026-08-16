@@ -246,3 +246,30 @@ class OrganizationBrandingView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class OrganizationArchiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        organization = OrganizationService.archive(
+            organization=organization,
+        )
+
+        return Response(
+            {
+                "message": "Organization archived successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )

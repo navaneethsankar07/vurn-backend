@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    OrganizationArchiveView,
     OrganizationBrandingView,
     OrganizationDashboardView,
     OrganizationOptionsView,
@@ -33,5 +34,10 @@ urlpatterns = [
         "<slug:slug>/branding/",
         OrganizationBrandingView.as_view(),
         name="organization-branding",
+    ),
+    path(
+        "<slug:slug>/archive/",
+        OrganizationArchiveView.as_view(),
+        name="organization-archive",
     ),
 ]

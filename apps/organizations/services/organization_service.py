@@ -53,8 +53,6 @@ class OrganizationService:
 
         return organization
 
-
-
     @staticmethod
     def get_owned_organization(
         *,
@@ -62,19 +60,30 @@ class OrganizationService:
         slug: str,
     ) -> Organization:
 
-        organization = (
-            Organization.objects
-            .filter(
-                owner=user,
-                slug=slug,
-                deleted_at__isnull=True,
-            )
-            .first()
-        )
+        organization = Organization.objects.filter(
+            owner=user,
+            slug=slug,
+            deleted_at__isnull=True,
+        ).first()
 
         if organization is None:
-            raise OrganizationNotFoundException(
-                "Organization not found."
-            )
+            raise OrganizationNotFoundException("Organization not found.")
+
+        return organization
+
+    @staticmethod
+    def archive(
+        *,
+        organization: Organization,
+    ) -> Organization:
+
+        organization.is_archived = True
+
+        organization.save(
+            update_fields=[
+                "is_archived",
+                "updated_at",
+            ],
+        )
 
         return organization
