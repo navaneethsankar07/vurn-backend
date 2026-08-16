@@ -247,3 +247,19 @@ class UpdateOrganizationBrandingSerializer(
             )
 
         return value
+
+
+class OrganizationDeleteRequestSerializer(
+    serializers.Serializer,
+):
+    name = serializers.CharField(
+        required=True,
+    )
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Organization name is required.")
+
+        return value

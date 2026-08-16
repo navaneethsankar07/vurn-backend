@@ -8,11 +8,15 @@ from apps.organizations.constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
+from backend.apps.organizations.services.organization_deletion_service import (
+    OrganizationDeletionService,
+)
 from .exceptions import OrganizationNotFoundException
 
 from .serializers import (
     CreateOrganizationSerializer,
     OrganizationDashboardSerializer,
+    OrganizationDeleteRequestSerializer,
     OrganizationListSerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
@@ -270,6 +274,43 @@ class OrganizationArchiveView(APIView):
         return Response(
             {
                 "message": "Organization archived successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationDeleteRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationDeleteRequestSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        OrganizationDeletionService.request_deletion(
+            user=request.user,
+            organization=organization,
+            name=serializer.validated_data["name"],
+        )
+
+        return Response(
+            {
+                "message": ("A verification code has been sent to your email."),
             },
             status=status.HTTP_200_OK,
         )

@@ -115,3 +115,35 @@ class EmailService:
             recipient_list=[recipient_email],
             html_message=html_message,
         )
+
+    @staticmethod
+    def send_organization_deletion_otp_email(
+        *,
+        recipient_email: str,
+        otp: str,
+        organization_name: str,
+    ) -> None:
+
+        otp_expiration_minutes = settings.OTP_EXPIRATION_SECONDS // 60
+
+        html_message = render_to_string(
+            "emails/organization_deletion.html",
+            {
+                "otp": otp,
+                "organization_name": organization_name,
+                "otp_expiration_minutes": otp_expiration_minutes,
+            },
+        )
+
+        EmailService.send_email(
+            subject="Confirm organization deletion",
+            message=(
+                f"We received a request to delete "
+                f"the organization {organization_name}.\n\n"
+                f"Your verification code is {otp}.\n\n"
+                f"This code will expire in "
+                f"{otp_expiration_minutes} minutes."
+            ),
+            recipient_list=[recipient_email],
+            html_message=html_message,
+        )

@@ -4,3 +4,33 @@ class OrganizationException(Exception):
 
 class OrganizationNotFoundException(OrganizationException):
     pass
+
+
+class OrganizationNameMismatchException(
+    OrganizationException,
+):
+    pass
+
+
+class InvalidOrganizationDeleteOTPException(
+    OrganizationException,
+):
+    pass
+
+
+class OrganizationDeleteRequestExpiredException(
+    OrganizationException,
+):
+    pass
+
+
+class OrganizationAlreadyArchivedException(
+    OrganizationException,
+):
+    pass
+
+
+class OrganizationAlreadyDeletedException(
+    OrganizationException,
+):
+    pass

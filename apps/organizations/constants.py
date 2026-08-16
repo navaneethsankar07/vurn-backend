@@ -38,6 +38,9 @@ LOGO_ALLOWED_TYPES = {
     "image/webp",
 }
 LOGO_MAX_SIZE = 5 * 1024 * 1024
+
+ORGANIZATION_DELETE_OTP_PREFIX = "organization_delete_otp"
+
 # Temporary data until organization members and projects are implemented.
 MOCK_ORGANIZATION_STATS = {
     1: {

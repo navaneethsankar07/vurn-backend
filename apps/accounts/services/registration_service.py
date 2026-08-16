@@ -20,7 +20,7 @@ from apps.accounts.exceptions import (
 )
 from apps.accounts.models import User
 
-from .email_service import EmailService
+from ...shared.services.email_service import EmailService
 from .otp_service import OTPService
 from .token_service import TokenService
 

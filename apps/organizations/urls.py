@@ -4,6 +4,7 @@ from .views import (
     OrganizationArchiveView,
     OrganizationBrandingView,
     OrganizationDashboardView,
+    OrganizationDeleteRequestView,
     OrganizationOptionsView,
     OrganizationSettingsView,
     OrganizationView,
@@ -39,5 +40,10 @@ urlpatterns = [
         "<slug:slug>/archive/",
         OrganizationArchiveView.as_view(),
         name="organization-archive",
+    ),
+    path(
+        "<slug:slug>/delete/request/",
+        OrganizationDeleteRequestView.as_view(),
+        name="organization-delete-request",
     ),
 ]
