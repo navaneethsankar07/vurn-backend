@@ -11,7 +11,7 @@ from apps.organizations.constants import (
 from backend.apps.organizations.services.organization_deletion_service import (
     OrganizationDeletionService,
 )
-from .exceptions import OrganizationNotFoundException
+from .exceptions import OrganizationAlreadyArchivedException, OrganizationNotFoundException
 
 from .serializers import (
     CreateOrganizationSerializer,
@@ -261,15 +261,22 @@ class OrganizationArchiveView(APIView):
                 user=request.user,
                 slug=slug,
             )
+
+            organization = OrganizationService.archive(
+                organization=organization,
+            )
+
         except OrganizationNotFoundException as exc:
             return Response(
                 {"error": str(exc)},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        organization = OrganizationService.archive(
-            organization=organization,
-        )
+        except OrganizationAlreadyArchivedException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
             {

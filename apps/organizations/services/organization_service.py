@@ -2,7 +2,10 @@ from django.db import transaction
 
 from apps.accounts.models import User
 from apps.organizations.models import Organization
-from apps.organizations.exceptions import OrganizationNotFoundException
+from apps.organizations.exceptions import (
+    OrganizationAlreadyArchivedException,
+    OrganizationNotFoundException,
+)
 
 
 class OrganizationService:
@@ -77,6 +80,11 @@ class OrganizationService:
         organization: Organization,
     ) -> Organization:
 
+        if organization.is_archived:
+            raise OrganizationAlreadyArchivedException(
+                "Organization is already archived."
+            )
+        
         organization.is_archived = True
 
         organization.save(
