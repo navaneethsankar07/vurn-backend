@@ -11,11 +11,17 @@ from apps.organizations.constants import (
 from backend.apps.organizations.services.organization_deletion_service import (
     OrganizationDeletionService,
 )
-from .exceptions import OrganizationAlreadyArchivedException, OrganizationNotFoundException
+from .exceptions import (
+    InvalidOrganizationDeleteOTPException,
+    OrganizationAlreadyArchivedException,
+    OrganizationAlreadyDeletedException,
+    OrganizationNotFoundException,
+)
 
 from .serializers import (
     CreateOrganizationSerializer,
     OrganizationDashboardSerializer,
+    OrganizationDeleteConfirmSerializer,
     OrganizationDeleteRequestSerializer,
     OrganizationListSerializer,
     UpdateOrganizationBrandingSerializer,
@@ -318,6 +324,54 @@ class OrganizationDeleteRequestView(APIView):
         return Response(
             {
                 "message": ("A verification code has been sent to your email."),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationDeleteConfirmView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationDeleteConfirmSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+            OrganizationDeletionService.confirm_deletion(
+                user=request.user,
+                organization=organization,
+                otp=serializer.validated_data["otp"],
+            )
+        except OrganizationAlreadyDeletedException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except InvalidOrganizationDeleteOTPException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": "Organization deleted successfully.",
             },
             status=status.HTTP_200_OK,
         )

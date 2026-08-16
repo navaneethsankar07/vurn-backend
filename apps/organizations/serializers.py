@@ -263,3 +263,14 @@ class OrganizationDeleteRequestSerializer(
             raise serializers.ValidationError("Organization name is required.")
 
         return value
+
+
+class OrganizationDeleteConfirmSerializer(
+    serializers.Serializer,
+):
+    otp = serializers.RegexField(
+        regex=r"^\d{6}$",
+        error_messages={
+            "invalid": "OTP must be exactly 6 digits.",
+        },
+    )
