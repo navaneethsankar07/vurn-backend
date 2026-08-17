@@ -160,7 +160,7 @@ class OrganizationDashboardSerializer(
         allow_null=True,
     )
     accent_color = serializers.CharField()
-
+    updated_at = serializers.DateTimeField()
     total_projects = serializers.IntegerField()
     total_members = serializers.IntegerField()
     active_sprints = serializers.IntegerField()

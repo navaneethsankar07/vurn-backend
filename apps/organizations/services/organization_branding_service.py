@@ -27,8 +27,9 @@ class OrganizationBrandingService:
                 logo,
                 folder=OrganizationBrandingService.FOLDER,
             )
-
             data["logo_url"] = logo_url
+        elif "icon" in data:
+            data["logo_url"] = None
 
         for field, value in data.items():
             setattr(

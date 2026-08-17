@@ -37,6 +37,7 @@ class OrganizationDashboardService:
             "icon": organization.icon,
             "logo_url": organization.logo_url,
             "accent_color": organization.accent_color,
+            "updated_at": organization.updated_at,
             "role": "owner",
             "total_projects": stats["total_projects"],
             "total_members": stats["total_members"],

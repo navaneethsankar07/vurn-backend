@@ -7,7 +7,7 @@ from django.core.cache import cache
 
 from apps.accounts.models import User
 from apps.accounts.constants import PASSWORD_RESET_PREFIX
-from backend.apps.shared.services.email_service import EmailService
+from apps.shared.services.email_service import EmailService
 from apps.accounts.exceptions import (
     InvalidPasswordResetTokenException,
 )

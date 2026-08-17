@@ -1,6 +1,6 @@
 from django.utils import timezone
 
-from backend.apps.shared.services.email_service import EmailService
+from apps.shared.services.email_service import EmailService
 from apps.accounts.services.otp_service import OTPService
 from apps.organizations.constants import (
     ORGANIZATION_DELETE_OTP_PREFIX,
@@ -55,9 +55,10 @@ class OrganizationDeletionService:
             identifier,
         )
 
-        EmailService.send_account_deletion_otp_email(
+        EmailService.send_organization_deletion_otp_email(
             recipient_email=user.email,
             otp=otp,
+            organization_name=organization.name,
         )
 
     @classmethod

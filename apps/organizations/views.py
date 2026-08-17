@@ -8,7 +8,7 @@ from apps.organizations.constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
-from backend.apps.organizations.services.organization_deletion_service import (
+from .services.organization_deletion_service import (
     OrganizationDeletionService,
 )
 from .exceptions import (
