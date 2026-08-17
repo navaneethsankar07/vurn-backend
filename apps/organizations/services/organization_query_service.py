@@ -22,6 +22,7 @@ class OrganizationQueryService:
     ):
         organizations = Organization.objects.filter(
             owner=user,
+            is_archived=False,
             deleted_at__isnull=True,
         ).select_related("owner")
 
