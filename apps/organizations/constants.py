@@ -76,3 +76,16 @@ MOCK_ORGANIZATION_DASHBOARD_STATS = {
     "open_issues": 24,
     "completed_issues": 67,
 }
+
+ORGANIZATION_PREFERENCE_DEFAULTS = {
+    "allow_admin_invitations": True,
+    "allow_member_invitations": False,
+    "allow_member_project_creation": False,
+}
+
+
+ORGANIZATION_PREFERENCE_FIELDS = (
+    "allow_admin_invitations",
+    "allow_member_invitations",
+    "allow_member_project_creation",
+)

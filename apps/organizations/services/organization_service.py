@@ -1,11 +1,12 @@
 from django.db import transaction
 
 from apps.accounts.models import User
-from apps.organizations.models import Organization
-from apps.organizations.exceptions import (
+from ..models import Organization, OrganizationPreference
+from ..exceptions import (
     OrganizationAlreadyArchivedException,
     OrganizationNotFoundException,
 )
+from ..constants import ORGANIZATION_PREFERENCE_DEFAULTS
 
 
 class OrganizationService:
@@ -29,6 +30,11 @@ class OrganizationService:
             owner=owner,
             icon=icon,
             accent_color=accent_color,
+        )
+
+        OrganizationPreference.objects.create(
+            organization=organization,
+            **ORGANIZATION_PREFERENCE_DEFAULTS,
         )
 
         return organization
@@ -84,7 +90,7 @@ class OrganizationService:
             raise OrganizationAlreadyArchivedException(
                 "Organization is already archived."
             )
-        
+
         organization.is_archived = True
 
         organization.save(

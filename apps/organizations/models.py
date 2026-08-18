@@ -80,3 +80,30 @@ class Organization(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class OrganizationPreference(models.Model):
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="preferences",
+    )
+
+    allow_admin_invitations = models.BooleanField(
+        default=True,
+    )
+
+    allow_member_invitations = models.BooleanField(
+        default=False,
+    )
+
+    allow_member_project_creation = models.BooleanField(
+        default=False,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    def __str__(self):
+        return f"Preferences for {self.organization.name}"

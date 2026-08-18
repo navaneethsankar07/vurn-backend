@@ -6,7 +6,7 @@ from apps.organizations.constants import (
     MOCK_ORGANIZATION_STATS,
 )
 
-from .models import Organization
+from .models import Organization, OrganizationPreference
 from .validators import (
     validate_organization_accent_color,
     validate_organization_icon,
@@ -274,3 +274,15 @@ class OrganizationDeleteConfirmSerializer(
             "invalid": "OTP must be exactly 6 digits.",
         },
     )
+
+
+class OrganizationPreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrganizationPreference
+        fields = (
+            "allow_admin_invitations",
+            "allow_member_invitations",
+            "allow_member_project_creation",
+            "updated_at",
+        )
+        read_only_fields = ("updated_at",)

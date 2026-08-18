@@ -8,9 +8,7 @@ from apps.organizations.constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
-from .services.organization_deletion_service import (
-    OrganizationDeletionService,
-)
+
 from .exceptions import (
     InvalidOrganizationDeleteOTPException,
     OrganizationAlreadyArchivedException,
@@ -24,6 +22,7 @@ from .serializers import (
     OrganizationDeleteConfirmSerializer,
     OrganizationDeleteRequestSerializer,
     OrganizationListSerializer,
+    OrganizationPreferenceSerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
 )
@@ -32,7 +31,9 @@ from .services.organization_service import OrganizationService
 from .services.organization_query_service import OrganizationQueryService
 from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_branding_service import OrganizationBrandingService
+from .services.organization_deletion_service import OrganizationDeletionService
 from .services.organization_dashboard_service import OrganizationDashboardService
+from .services.organization_preference_service import OrganizationPreferenceService
 
 
 class OrganizationView(APIView):
@@ -373,5 +374,46 @@ class OrganizationDeleteConfirmView(APIView):
             {
                 "message": "Organization deleted successfully.",
             },
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationPreferenceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        organization = OrganizationService.get_owned_organization(
+            user=request.user,
+            slug=slug,
+        )
+
+        preferences = OrganizationPreferenceService.get_preferences(
+            organization=organization,
+        )
+
+        serializer = OrganizationPreferenceSerializer(preferences)
+
+        return Response(serializer.data)
+
+    def patch(self, request, slug):
+        organization = OrganizationService.get_owned_organization(
+            user=request.user,
+            slug=slug,
+        )
+
+        serializer = OrganizationPreferenceSerializer(
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        preferences = OrganizationPreferenceService.update_preferences(
+            organization=organization,
+            validated_data=serializer.validated_data,
+        )
+
+        return Response(
+            OrganizationPreferenceSerializer(preferences).data,
             status=status.HTTP_200_OK,
         )
