@@ -8,6 +8,8 @@ from .views import (
     OrganizationDeleteRequestView,
     OrganizationOptionsView,
     OrganizationPreferenceView,
+    OrganizationRoleUpdateView,
+    OrganizationRoleView,
     OrganizationSettingsView,
     OrganizationView,
 )
@@ -57,5 +59,15 @@ urlpatterns = [
         "<slug:slug>/preferences/",
         OrganizationPreferenceView.as_view(),
         name="organization-preferences",
+    ),
+    path(
+        "<slug:slug>/roles/",
+        OrganizationRoleView.as_view(),
+        name="organization-roles",
+    ),
+    path(
+        "<slug:slug>/roles/<int:role_id>/",
+        OrganizationRoleUpdateView.as_view(),
+        name="organization-role-update",
     ),
 ]

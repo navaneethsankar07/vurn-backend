@@ -1,3 +1,4 @@
+from django.template import context
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -11,9 +12,11 @@ from apps.organizations.constants import (
 
 from .exceptions import (
     InvalidOrganizationDeleteOTPException,
+    InvalidOrganizationRolePermissionsException,
     OrganizationAlreadyArchivedException,
     OrganizationAlreadyDeletedException,
     OrganizationNotFoundException,
+    OrganizationRoleException,
 )
 
 from .serializers import (
@@ -23,11 +26,14 @@ from .serializers import (
     OrganizationDeleteRequestSerializer,
     OrganizationListSerializer,
     OrganizationPreferenceSerializer,
+    OrganizationRoleListSerializer,
+    OrganizationRoleSerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
 )
 
 from .services.organization_service import OrganizationService
+from .services.organization_role_service import OrganizationRoleService
 from .services.organization_query_service import OrganizationQueryService
 from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_branding_service import OrganizationBrandingService
@@ -382,10 +388,16 @@ class OrganizationPreferenceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, slug):
-        organization = OrganizationService.get_owned_organization(
-            user=request.user,
-            slug=slug,
-        )
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         preferences = OrganizationPreferenceService.get_preferences(
             organization=organization,
@@ -396,10 +408,16 @@ class OrganizationPreferenceView(APIView):
         return Response(serializer.data)
 
     def patch(self, request, slug):
-        organization = OrganizationService.get_owned_organization(
-            user=request.user,
-            slug=slug,
-        )
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         serializer = OrganizationPreferenceSerializer(
             data=request.data,
@@ -415,5 +433,123 @@ class OrganizationPreferenceView(APIView):
 
         return Response(
             OrganizationPreferenceSerializer(preferences).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationRoleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        search = request.query_params.get("search")
+        sort = request.query_params.get("sort", "name")
+        order = request.query_params.get("order", "asc")
+
+        roles = OrganizationRoleService.list_roles(
+            organization=organization,
+            search=search,
+            sort=sort,
+            order=order,
+        )
+
+        paginator = StandardPagination()
+
+        paginated_roles = paginator.paginate_queryset(
+            roles,
+            request,
+        )
+
+        serializer = OrganizationRoleListSerializer(
+            paginated_roles,
+            many=True,
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data,
+        )
+
+    def post(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationRoleSerializer(
+            data=request.data,
+            context={"organization": organization},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            role = OrganizationRoleService.create_role(
+                organization=organization,
+                name=serializer.validated_data["name"],
+                description=serializer.validated_data.get("description", ""),
+                color=serializer.validated_data.get("color", ""),
+                permission_codes=serializer.validated_data.get("permissions", []),
+            )
+        except InvalidOrganizationRolePermissionsException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            OrganizationRoleListSerializer(role).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class OrganizationRoleUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, slug, role_id):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationRoleSerializer(
+            data=request.data,
+            partial=True,
+            context={
+                "organization": organization,
+                "role_id": role_id,
+            },
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        role = OrganizationRoleService.update_role(
+            organization=organization,
+            role_id=role_id,
+            validated_data=serializer.validated_data,
+        )
+
+        return Response(
+            OrganizationRoleListSerializer(role).data,
             status=status.HTTP_200_OK,
         )

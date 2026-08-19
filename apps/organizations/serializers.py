@@ -6,10 +6,11 @@ from apps.organizations.constants import (
     MOCK_ORGANIZATION_STATS,
 )
 
-from .models import Organization, OrganizationPreference
+from .models import Organization, OrganizationPreference, OrganizationRole
 from .validators import (
     validate_organization_accent_color,
     validate_organization_icon,
+    validate_organization_role_name,
 )
 
 
@@ -286,3 +287,90 @@ class OrganizationPreferenceSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("updated_at",)
+
+
+class OrganizationRoleSerializer(serializers.ModelSerializer):
+    permissions = serializers.ListField(
+        child=serializers.CharField(
+            max_length=100,
+            trim_whitespace=True,
+        ),
+        required=False,
+        allow_empty=True,
+        write_only=True,
+    )
+
+    class Meta:
+        model = OrganizationRole
+        fields = (
+            "id",
+            "name",
+            "description",
+            "color",
+            "permissions",
+        )
+        read_only_fields = (
+            "id",
+            "created_at",
+            "updated_at",
+        )
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Role name cannot be empty.")
+
+        validate_organization_role_name(
+            organization=self.context["organization"],
+            name=value,
+            role_id=self.context.get("role_id"),
+        )
+
+        return value
+
+    def validate_permissions(self, value):
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError("Duplicate permissions are not allowed.")
+
+        return value
+
+    def validate_color(self, value):
+        if value is None:
+            return value
+
+        value = value.strip()
+
+        if not value.startswith("#") or len(value) != 7:
+            raise serializers.ValidationError(
+                "Color must be a valid 7-character hex color."
+            )
+
+        try:
+            int(value[1:], 16)
+        except ValueError:
+            raise serializers.ValidationError("Color must be a valid hex color.")
+
+        return value
+
+
+class OrganizationRoleListSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrganizationRole
+        fields = (
+            "id",
+            "name",
+            "description",
+            "color",
+            "permissions",
+        )
+
+    def get_permissions(self, obj):
+        return [
+            role_permission.permission.code
+            for role_permission in obj.role_permissions.select_related(
+                "permission"
+            ).all()
+        ]

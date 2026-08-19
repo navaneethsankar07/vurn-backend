@@ -89,3 +89,147 @@ ORGANIZATION_PREFERENCE_FIELDS = (
     "allow_member_invitations",
     "allow_member_project_creation",
 )
+
+
+ORGANIZATION_PERMISSIONS = {
+    "organization": [
+        {
+            "code": "organization.view",
+            "name": "View Organization",
+            "description": "View organization information.",
+        },
+        {
+            "code": "organization.settings.update",
+            "name": "Edit Settings",
+            "description": "Update organization settings.",
+        },
+        {
+            "code": "organization.billing.manage",
+            "name": "Manage Billing",
+            "description": "Manage organization billing.",
+        },
+    ],
+    "projects": [
+        {
+            "code": "project.view",
+            "name": "View Projects",
+            "description": "View organization projects.",
+        },
+        {
+            "code": "project.create",
+            "name": "Create Projects",
+            "description": "Create new projects.",
+        },
+        {
+            "code": "project.update",
+            "name": "Edit Projects",
+            "description": "Update existing projects.",
+        },
+        {
+            "code": "project.delete",
+            "name": "Delete Projects",
+            "description": "Delete projects.",
+        },
+    ],
+    "members": [
+        {
+            "code": "member.view",
+            "name": "View Members",
+            "description": "View organization members.",
+        },
+        {
+            "code": "member.invite",
+            "name": "Invite Members",
+            "description": "Invite users to the organization.",
+        },
+        {
+            "code": "member.manage",
+            "name": "Manage Members",
+            "description": "Manage organization member details and roles.",
+        },
+        {
+            "code": "member.remove",
+            "name": "Remove Members",
+            "description": "Remove members from the organization.",
+        },
+    ],
+    "issues": [
+        {
+            "code": "issue.view",
+            "name": "View Issues",
+            "description": "View project issues.",
+        },
+        {
+            "code": "issue.create",
+            "name": "Create Issues",
+            "description": "Create new issues.",
+        },
+        {
+            "code": "issue.update",
+            "name": "Edit Issues",
+            "description": "Update existing issues.",
+        },
+        {
+            "code": "issue.delete",
+            "name": "Delete Issues",
+            "description": "Delete issues.",
+        },
+    ],
+    "sprints": [
+        {
+            "code": "sprint.view",
+            "name": "View Sprints",
+            "description": "View project sprints.",
+        },
+        {
+            "code": "sprint.create",
+            "name": "Create Sprints",
+            "description": "Create new sprints.",
+        },
+        {
+            "code": "sprint.manage",
+            "name": "Manage Sprints",
+            "description": "Manage sprint configuration and lifecycle.",
+        },
+    ],
+    "workflow": [
+        {
+            "code": "workflow.view",
+            "name": "View Workflow",
+            "description": "View project workflow configuration.",
+        },
+        {
+            "code": "workflow.manage",
+            "name": "Manage Workflow",
+            "description": "Manage project workflow configuration.",
+        },
+    ],
+    "knowledge_base": [
+        {
+            "code": "knowledge_base.view",
+            "name": "View Docs",
+            "description": "View knowledge base documents.",
+        },
+        {
+            "code": "knowledge_base.edit",
+            "name": "Edit Docs",
+            "description": "Create and edit knowledge base documents.",
+        },
+    ],
+}
+
+
+ORGANIZATION_ROLE_NAME_MAX_LENGTH = 50
+ORGANIZATION_ROLE_COLOR_MAX_LENGTH = 7
+
+
+ORGANIZATION_ROLE_SORT_FIELDS = {
+    "name": "name",
+    "created": "created_at",
+    "updated": "updated_at",
+}
+
+ORGANIZATION_ROLE_SORT_ORDERS = {
+    "asc": "",
+    "desc": "-",
+}

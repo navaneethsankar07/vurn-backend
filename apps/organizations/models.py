@@ -107,3 +107,86 @@ class OrganizationPreference(models.Model):
 
     def __str__(self):
         return f"Preferences for {self.organization.name}"
+
+
+class Permission(models.Model):
+    code = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    name = models.CharField(
+        max_length=100,
+    )
+
+    permission_group = models.CharField(
+        max_length=50,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class OrganizationRole(models.Model):
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="roles",
+    )
+
+    name = models.CharField(
+        max_length=100,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    color = models.CharField(
+        max_length=7,
+        blank=True,
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "name"],
+                name="uq_organization_role_name",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+class OrganizationRolePermission(models.Model):
+    role = models.ForeignKey(
+        OrganizationRole,
+        on_delete=models.CASCADE,
+        related_name="role_permissions",
+    )
+
+    permission = models.ForeignKey(
+        Permission,
+        on_delete=models.CASCADE,
+        related_name="role_permissions",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["role", "permission"],
+                name="uq_organization_role_permission",
+            ),
+        ]
