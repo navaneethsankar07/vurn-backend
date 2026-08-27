@@ -5,6 +5,7 @@ from django.utils import timezone
 from apps.accounts.models import User
 from django.conf import settings
 from apps.shared.services.cloudinary_service import CloudinaryService
+from ..constants import CLOUDINARY_AVATAR_FOLDER
 
 
 class ProfileService:
@@ -79,7 +80,7 @@ class ProfileService:
         if avatar is not None:
             avatar_url = CloudinaryService.upload(
                 avatar,
-                folder=settings.CLOUDINARY_AVATAR_FOLDER,
+                folder=CLOUDINARY_AVATAR_FOLDER,
             )
 
             user.avatar = avatar_url

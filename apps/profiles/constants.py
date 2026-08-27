@@ -4,3 +4,4 @@ AVATAR_ALLOWED_TYPES = {
     "image/png",
     "image/webp",
 }
+CLOUDINARY_AVATAR_FOLDER = "vurn/avatars"

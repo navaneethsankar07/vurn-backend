@@ -233,3 +233,5 @@ ORGANIZATION_ROLE_SORT_ORDERS = {
     "asc": "",
     "desc": "-",
 }
+
+CLOUDINARY_ORGANIZATIONS_FOLDER = "vurn/organizations"

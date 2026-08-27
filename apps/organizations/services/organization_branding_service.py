@@ -2,11 +2,10 @@ from apps.organizations.models import Organization
 from apps.shared.services.cloudinary_service import (
     CloudinaryService,
 )
+from ..constants import CLOUDINARY_ORGANIZATIONS_FOLDER
 
 
 class OrganizationBrandingService:
-
-    FOLDER = "vurn/organizations"
 
     @staticmethod
     def update_branding(
@@ -25,7 +24,7 @@ class OrganizationBrandingService:
         if logo is not None:
             logo_url = CloudinaryService.upload(
                 logo,
-                folder=OrganizationBrandingService.FOLDER,
+                folder=CLOUDINARY_ORGANIZATIONS_FOLDER,
             )
             data["logo_url"] = logo_url
         elif "icon" in data:

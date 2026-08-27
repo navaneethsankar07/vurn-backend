@@ -46,9 +46,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            BASE_DIR / "apps" / "shared" / "templates"
-        ],
+        "DIRS": [BASE_DIR / "apps" / "shared" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -128,12 +126,10 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
-    "DEFAULT_PAGINATION_CLASS": (
-        "apps.shared.utils.pagination.StandardPagination"
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PAGINATION_CLASS": ("apps.shared.utils.pagination.StandardPagination"),
+    "PAGE_SIZE": env.int("DEFAULT_PAGE_SIZE", default=5),
+    "MAX_PAGE_SIZE": env.int("MAX_PAGE_SIZE", default=50),
 }
 
 SIMPLE_JWT = {
@@ -184,4 +180,3 @@ FRONTEND_URL = env("FRONTEND_URL")
 CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
 CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
-CLOUDINARY_AVATAR_FOLDER = env("CLOUDINARY_AVATAR_FOLDER")
