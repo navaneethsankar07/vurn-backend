@@ -394,6 +394,9 @@ class OrganizationRoleSerializer(serializers.ModelSerializer):
 
 class OrganizationRoleListSerializer(serializers.ModelSerializer):
     permissions = serializers.SerializerMethodField()
+    members_count = serializers.IntegerField(
+        read_only=True,
+    )
 
     class Meta:
         model = OrganizationRole
@@ -403,6 +406,7 @@ class OrganizationRoleListSerializer(serializers.ModelSerializer):
             "description",
             "color",
             "permissions",
+            "members_count",
         )
 
     def get_permissions(self, obj):

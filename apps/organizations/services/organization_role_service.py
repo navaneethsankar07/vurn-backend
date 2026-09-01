@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 
 from ..constants import ORGANIZATION_ROLE_SORT_FIELDS, ORGANIZATION_ROLE_SORT_ORDERS
 from ..exceptions import InvalidOrganizationRolePermissionsException
@@ -20,10 +20,16 @@ class OrganizationRoleService:
         sort="name",
         order="asc",
     ):
-        queryset = OrganizationRole.objects.filter(
-            organization=organization
-        ).prefetch_related(
-            "role_permissions__permission",
+        queryset = (
+            OrganizationRole.objects.filter(
+                organization=organization,
+            )
+            .annotate(
+                members_count=Count("members"),
+            )
+            .prefetch_related(
+                "role_permissions__permission",
+            )
         )
 
         if search:

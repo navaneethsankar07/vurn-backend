@@ -403,7 +403,7 @@ class OrganizationPreferenceView(APIView):
 
     def get(self, request, slug):
         try:
-            organization = OrganizationService.get_owned_organization(
+            organization = OrganizationService.get_user_organization(
                 user=request.user,
                 slug=slug,
             )
