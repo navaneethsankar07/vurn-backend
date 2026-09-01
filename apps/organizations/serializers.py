@@ -494,8 +494,9 @@ class OrganizationMemberListSerializer(
     )
     name = serializers.CharField()
     email = serializers.EmailField()
-    avatar = serializers.ImageField(
+    avatar = serializers.URLField(
         allow_null=True,
+        required=False,
     )
     role = serializers.CharField()
     job_role = serializers.DictField(
