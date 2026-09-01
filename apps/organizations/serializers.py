@@ -166,16 +166,14 @@ class OrganizationAccessSerializer(
     serializers.Serializer,
 ):
     role = serializers.CharField()
-
     job_role = OrganizationAccessJobRoleSerializer(
         allow_null=True,
     )
-
     permissions = serializers.ListField(
         child=serializers.CharField(),
     )
-
     has_full_access = serializers.BooleanField()
+    can_invite_members = serializers.BooleanField()
 
 
 class OrganizationDashboardSerializer(

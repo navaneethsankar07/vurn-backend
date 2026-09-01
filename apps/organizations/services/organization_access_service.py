@@ -1,5 +1,8 @@
 from ..constants import ORGANIZATION_PERMISSION_CODES
-from ..exceptions import OrganizationNotFoundException
+from ..exceptions import (
+    OrganizationInvitationPermissionDeniedException,
+    OrganizationNotFoundException,
+)
 from ..models import OrganizationMember
 
 
@@ -17,11 +20,14 @@ class OrganizationAccessService:
                 "job_role": None,
                 "permissions": ["*"],
                 "has_full_access": True,
+                "can_invite_members": True,
             }
 
         try:
             member = (
-                OrganizationMember.objects.select_related("job_role")
+                OrganizationMember.objects.select_related(
+                    "job_role",
+                )
                 .prefetch_related(
                     "job_role__role_permissions__permission",
                 )
@@ -30,7 +36,6 @@ class OrganizationAccessService:
                     user=user,
                 )
             )
-
         except OrganizationMember.DoesNotExist:
             raise OrganizationNotFoundException("Organization not found.")
 
@@ -48,6 +53,9 @@ class OrganizationAccessService:
                 "job_role": job_role,
                 "permissions": ["*"],
                 "has_full_access": True,
+                "can_invite_members": (
+                    organization.preferences.allow_admin_invitations
+                ),
             }
 
         permissions = []
@@ -63,6 +71,7 @@ class OrganizationAccessService:
             "job_role": job_role,
             "permissions": permissions,
             "has_full_access": False,
+            "can_invite_members": (organization.preferences.allow_member_invitations),
         }
 
     @staticmethod
@@ -72,7 +81,6 @@ class OrganizationAccessService:
         user,
         permission_code,
     ) -> bool:
-
         if permission_code not in ORGANIZATION_PERMISSION_CODES:
             return False
 
@@ -82,3 +90,30 @@ class OrganizationAccessService:
         )
 
         return access["has_full_access"] or permission_code in access["permissions"]
+
+    @staticmethod
+    def can_invite_members(
+        *,
+        organization,
+        user,
+    ) -> bool:
+        access = OrganizationAccessService.get_user_access(
+            organization=organization,
+            user=user,
+        )
+
+        return access["can_invite_members"]
+
+    @staticmethod
+    def validate_member_invitation_access(
+        *,
+        organization,
+        user,
+    ) -> None:
+        if not OrganizationAccessService.can_invite_members(
+            organization=organization,
+            user=user,
+        ):
+            raise OrganizationInvitationPermissionDeniedException(
+                "You do not have permission to invite members."
+            )

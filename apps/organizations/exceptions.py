@@ -68,6 +68,12 @@ class OrganizationInvitationEmailMismatchException(
     pass
 
 
+class OrganizationInvitationPermissionDeniedException(
+    OrganizationInvitationException,
+):
+    pass
+
+
 class OrganizationMemberAlreadyExistsException(
     OrganizationInvitationException,
 ):

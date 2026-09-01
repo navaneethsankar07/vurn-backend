@@ -14,6 +14,7 @@ from apps.organizations.constants import (
 )
 
 from .exceptions import (
+    OrganizationInvitationPermissionDeniedException,
     OrganizationNotFoundException,
     OrganizationAlreadyDeletedException,
     OrganizationAlreadyArchivedException,
@@ -599,18 +600,33 @@ class OrganizationRoleUpdateView(APIView):
 
 
 class OrganizationInvitationView(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, slug):
         try:
-            organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+            organization = (
+                OrganizationService.get_user_organization(
+                    user=request.user,
+                    slug=slug,
+                )
             )
+
+            OrganizationAccessService.validate_member_invitation_access(
+                organization=organization,
+                user=request.user,
+            )
+
         except OrganizationNotFoundException as exc:
             return Response(
                 {"error": str(exc)},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except OrganizationInvitationPermissionDeniedException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         serializer = OrganizationInvitationCreateSerializer(
@@ -620,30 +636,41 @@ class OrganizationInvitationView(APIView):
             },
         )
 
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_exception=True,
+        )
 
         try:
-            invitation = OrganizationInvitationService.create_invitation(
-                organization=organization,
-                invited_by=request.user,
-                email=serializer.validated_data["email"],
-                personal_message=serializer.validated_data.get(
-                    "personal_message",
-                    "",
-                ),
-                permission_role=serializer.validated_data.get(
-                    "permission_role",
-                    "member",
-                ),
-                job_role_id=serializer.validated_data.get(
-                    "job_role_id",
-                ),
+            invitation = (
+                OrganizationInvitationService.create_invitation(
+                    organization=organization,
+                    invited_by=request.user,
+                    email=serializer.validated_data["email"],
+                    personal_message=(
+                        serializer.validated_data.get(
+                            "personal_message",
+                            "",
+                        )
+                    ),
+                    permission_role=(
+                        serializer.validated_data[
+                            "permission_role"
+                        ]
+                    ),
+                    job_role_id=(
+                        serializer.validated_data[
+                            "job_role_id"
+                        ]
+                    ),
+                )
             )
+
         except OrganizationInvitationAlreadyExistsException as exc:
             return Response(
                 {"error": str(exc)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         except OrganizationInvitationRecipientAlreadyMemberException as exc:
             return Response(
                 {"error": str(exc)},
@@ -656,7 +683,10 @@ class OrganizationInvitationView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        invitation_url = f"{settings.FRONTEND_URL}" f"/invitations/{invitation.token}"
+        invitation_url = (
+            f"{settings.FRONTEND_URL}"
+            f"/invitations/{invitation.token}"
+        )
 
         send_email = serializer.validated_data.get(
             "send_email",
