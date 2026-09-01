@@ -15,64 +15,83 @@ class OrganizationAccessService:
         user,
     ):
         if organization.owner_id == user.id:
-            return {
+            access = {
                 "role": "owner",
                 "job_role": None,
                 "permissions": ["*"],
                 "has_full_access": True,
-                "can_invite_members": True,
             }
-
-        try:
-            member = (
-                OrganizationMember.objects.select_related(
-                    "job_role",
+        else:
+            try:
+                member = (
+                    OrganizationMember.objects.select_related(
+                        "job_role",
+                    )
+                    .prefetch_related(
+                        "job_role__role_permissions__permission",
+                    )
+                    .get(
+                        organization=organization,
+                        user=user,
+                    )
                 )
-                .prefetch_related(
-                    "job_role__role_permissions__permission",
-                )
-                .get(
-                    organization=organization,
-                    user=user,
-                )
-            )
-        except OrganizationMember.DoesNotExist:
-            raise OrganizationNotFoundException("Organization not found.")
+            except OrganizationMember.DoesNotExist:
+                raise OrganizationNotFoundException("Organization not found.")
 
-        job_role = None
+            job_role = None
 
-        if member.job_role:
-            job_role = {
-                "id": member.job_role.id,
-                "name": member.job_role.name,
-            }
+            if member.job_role:
+                job_role = {
+                    "id": member.job_role.id,
+                    "name": member.job_role.name,
+                }
 
-        if member.role == "admin":
-            return {
-                "role": "admin",
-                "job_role": job_role,
-                "permissions": ["*"],
-                "has_full_access": True,
-                "can_invite_members": (
-                    organization.preferences.allow_admin_invitations
-                ),
-            }
+            if member.role == "admin":
+                access = {
+                    "role": "admin",
+                    "job_role": job_role,
+                    "permissions": ["*"],
+                    "has_full_access": True,
+                }
+            else:
+                permissions = []
 
-        permissions = []
+                if member.job_role:
+                    permissions = [
+                        role_permission.permission.code
+                        for role_permission in member.job_role.role_permissions.all()
+                    ]
 
-        if member.job_role:
-            permissions = [
-                role_permission.permission.code
-                for role_permission in member.job_role.role_permissions.all()
-            ]
+                access = {
+                    "role": "member",
+                    "job_role": job_role,
+                    "permissions": permissions,
+                    "has_full_access": False,
+                }
 
-        return {
-            "role": "member",
-            "job_role": job_role,
-            "permissions": permissions,
-            "has_full_access": False,
-            "can_invite_members": (organization.preferences.allow_member_invitations),
-        }
+        access["can_invite_members"] = OrganizationAccessService._can_invite_members(
+            organization=organization,
+            access=access,
+        )
+
+        return access
+
+    @staticmethod
+    def _can_invite_members(
+        *,
+        organization,
+        access,
+    ) -> bool:
+        if access["role"] == "owner":
+            return True
+
+        if access["role"] == "admin":
+            return organization.preferences.allow_admin_invitations
+
+        if organization.preferences.allow_member_invitations:
+            return True
+
+        return "member.invite" in access["permissions"]
 
     @staticmethod
     def has_permission(
