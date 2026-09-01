@@ -1,5 +1,3 @@
-from math import remainder
-
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.core.cache import cache
@@ -132,35 +130,7 @@ class RegistrationService:
                 "Registration session expired. Please fill out the registration form again."
             )
 
-        cache.touch(key, timeout=settings.OTP_EXPIRATION_SECONDS)
-
-        OTPService.delete(
-            OTP_REGISTER_PREFIX,
-            email,
-        )
-
-        otp = OTPService.generate(
-            OTP_REGISTER_PREFIX,
-            email,
-        )
-
-        EmailService.send_otp_email(
-            recipient_email=email,
-            otp=otp,
-        )
-
-    @classmethod
-    def resend_registration_otp(cls, email: str) -> None:
-        email = email.strip().lower()
-        key = cls._registration_key(email)
-
-        registration_data = cache.get(key)
-        if not registration_data:
-            raise RegistrationDataExpiredException(
-                "Registration session expired. Please fill out the registration form again."
-            )
-
-        remaining_ttl = OTPService.get_ttl(OTP_REGISTER_PREFIX,email)
+        remaining_ttl = OTPService.get_ttl(OTP_REGISTER_PREFIX, email)
 
         if remaining_ttl > 0:
             elapsed_seconds = settings.OTP_EXPIRATION_SECONDS - remaining_ttl
@@ -169,13 +139,9 @@ class RegistrationService:
                 wait_time = RESEND_COOLDOWN_SECONDS - elapsed_seconds
                 raise ResendOTPCooldownException(remaining_seconds=wait_time)
 
-
         cache.touch(key, timeout=settings.OTP_EXPIRATION_SECONDS)
 
         OTPService.delete(OTP_REGISTER_PREFIX, email)
         otp = OTPService.generate(OTP_REGISTER_PREFIX, email)
 
-        EmailService.send_otp_email(
-            recipient_email=email,
-            otp=otp
-        )
+        EmailService.send_otp_email(recipient_email=email, otp=otp)
