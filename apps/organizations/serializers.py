@@ -10,6 +10,7 @@ from .constants import (
 from .models import (
     Organization,
     OrganizationInvitation,
+    OrganizationMember,
     OrganizationPreference,
     OrganizationRole,
 )
@@ -482,3 +483,26 @@ class ReceivedOrganizationInvitationSerializer(serializers.ModelSerializer):
             "expires_at",
             "created_at",
         )
+
+
+class OrganizationMemberListSerializer(
+    serializers.Serializer,
+):
+    id = serializers.IntegerField()
+    membership_id = serializers.IntegerField(
+        allow_null=True,
+    )
+    name = serializers.CharField()
+    email = serializers.EmailField()
+    avatar = serializers.ImageField(
+        allow_null=True,
+    )
+    role = serializers.CharField()
+    job_role = serializers.DictField(
+        allow_null=True,
+    )
+    invited_by = serializers.DictField(
+        allow_null=True,
+    )
+    joined_at = serializers.DateTimeField()
+    project_count = serializers.IntegerField()

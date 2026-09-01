@@ -10,6 +10,7 @@ from .views import (
     OrganizationDeleteRequestView,
     OrganizationInvitationDetailView,
     OrganizationInvitationView,
+    OrganizationMemberView,
     OrganizationOptionsView,
     OrganizationPreferenceView,
     OrganizationRoleUpdateView,
@@ -99,5 +100,10 @@ urlpatterns = [
         "invitations/<uuid:token>/accept/",
         AcceptOrganizationInvitationView.as_view(),
         name="accept-organization-invitation",
+    ),
+    path(
+        "<slug:slug>/members/",
+        OrganizationMemberView.as_view(),
+        name="organization-members",
     ),
 ]

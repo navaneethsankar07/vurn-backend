@@ -2,6 +2,7 @@ from ..constants import ORGANIZATION_PERMISSION_CODES
 from ..exceptions import (
     OrganizationInvitationPermissionDeniedException,
     OrganizationNotFoundException,
+    OrganizationPermissionDeniedException,
 )
 from ..models import OrganizationMember
 
@@ -135,4 +136,20 @@ class OrganizationAccessService:
         ):
             raise OrganizationInvitationPermissionDeniedException(
                 "You do not have permission to invite members."
+            )
+
+    @staticmethod
+    def validate_permission(
+        *,
+        organization,
+        user,
+        permission_code,
+    ) -> None:
+        if not OrganizationAccessService.has_permission(
+            organization=organization,
+            user=user,
+            permission_code=permission_code,
+        ):
+            raise OrganizationPermissionDeniedException(
+                "You do not have permission to perform this action."
             )

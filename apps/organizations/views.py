@@ -8,16 +8,16 @@ from django.conf import settings
 from apps.shared.utils.pagination import StandardPagination
 from apps.shared.services.email_service import EmailService
 
-from apps.organizations.constants import (
+from .constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
 
 from .exceptions import (
-    OrganizationInvitationPermissionDeniedException,
     OrganizationNotFoundException,
     OrganizationAlreadyDeletedException,
     OrganizationAlreadyArchivedException,
+    OrganizationPermissionDeniedException,
     InvalidOrganizationDeleteOTPException,
     OrganizationInvitationExpiredException,
     OrganizationInvitationNotFoundException,
@@ -26,6 +26,7 @@ from .exceptions import (
     OrganizationInvitationAlreadyExistsException,
     OrganizationInvitationEmailMismatchException,
     OrganizationInvitationRecipientIsOwnerException,
+    OrganizationInvitationPermissionDeniedException,
     OrganizationInvitationRecipientAlreadyMemberException,
 )
 
@@ -37,6 +38,7 @@ from .serializers import (
     OrganizationDeleteRequestSerializer,
     OrganizationInvitationCreateSerializer,
     OrganizationListSerializer,
+    OrganizationMemberListSerializer,
     OrganizationPreferenceSerializer,
     OrganizationRoleListSerializer,
     OrganizationRoleSerializer,
@@ -49,6 +51,7 @@ from .services.organization_service import OrganizationService
 from .services.organization_role_service import OrganizationRoleService
 from .services.organization_query_service import OrganizationQueryService
 from .services.organization_access_service import OrganizationAccessService
+from .services.organization_member_service import OrganizationMemberService
 from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_branding_service import OrganizationBrandingService
 from .services.organization_deletion_service import OrganizationDeletionService
@@ -605,11 +608,9 @@ class OrganizationInvitationView(APIView):
 
     def post(self, request, slug):
         try:
-            organization = (
-                OrganizationService.get_user_organization(
-                    user=request.user,
-                    slug=slug,
-                )
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
             )
 
             OrganizationAccessService.validate_member_invitation_access(
@@ -641,28 +642,18 @@ class OrganizationInvitationView(APIView):
         )
 
         try:
-            invitation = (
-                OrganizationInvitationService.create_invitation(
-                    organization=organization,
-                    invited_by=request.user,
-                    email=serializer.validated_data["email"],
-                    personal_message=(
-                        serializer.validated_data.get(
-                            "personal_message",
-                            "",
-                        )
-                    ),
-                    permission_role=(
-                        serializer.validated_data[
-                            "permission_role"
-                        ]
-                    ),
-                    job_role_id=(
-                        serializer.validated_data[
-                            "job_role_id"
-                        ]
-                    ),
-                )
+            invitation = OrganizationInvitationService.create_invitation(
+                organization=organization,
+                invited_by=request.user,
+                email=serializer.validated_data["email"],
+                personal_message=(
+                    serializer.validated_data.get(
+                        "personal_message",
+                        "",
+                    )
+                ),
+                permission_role=(serializer.validated_data["permission_role"]),
+                job_role_id=(serializer.validated_data["job_role_id"]),
             )
 
         except OrganizationInvitationAlreadyExistsException as exc:
@@ -683,10 +674,7 @@ class OrganizationInvitationView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        invitation_url = (
-            f"{settings.FRONTEND_URL}"
-            f"/invitations/{invitation.token}"
-        )
+        invitation_url = f"{settings.FRONTEND_URL}" f"/invitations/{invitation.token}"
 
         send_email = serializer.validated_data.get(
             "send_email",
@@ -803,4 +791,85 @@ class AcceptOrganizationInvitationView(APIView):
                 "organization_slug": member.organization.slug,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationMemberView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(
+        self,
+        request,
+        slug,
+    ):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
+            )
+
+            OrganizationAccessService.validate_permission(
+                organization=organization,
+                user=request.user,
+                permission_code="member.view",
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except OrganizationPermissionDeniedException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not OrganizationAccessService.has_permission(
+            organization=organization,
+            user=request.user,
+            permission_code="member.view",
+        ):
+            return Response(
+                {
+                    "error": (
+                        "You do not have permission " "to view organization members."
+                    ),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        search = request.query_params.get(
+            "search",
+        )
+
+        role = request.query_params.get(
+            "role",
+            "all",
+        )
+
+        members = OrganizationMemberService.list_members(
+            organization=organization,
+            search=search,
+            role=role,
+        )
+
+        paginator = StandardPagination()
+
+        paginated_members = paginator.paginate_queryset(
+            members,
+            request,
+        )
+
+        serializer = OrganizationMemberListSerializer(
+            paginated_members,
+            many=True,
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data,
         )

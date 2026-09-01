@@ -36,6 +36,12 @@ class OrganizationAlreadyDeletedException(
     pass
 
 
+class OrganizationPermissionDeniedException(
+    OrganizationException,
+):
+    pass
+
+
 class OrganizationRoleException(OrganizationException):
     """Base exception for organization role business exceptions."""
 
