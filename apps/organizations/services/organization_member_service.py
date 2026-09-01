@@ -62,7 +62,10 @@ class OrganizationMemberService:
         if search:
             queryset = queryset.filter(
                 Q(
-                    user__full_name__icontains=search,
+                    user__first_name__icontains=search,
+                )
+                | Q(
+                    user__last_name__icontains=search,
                 )
                 | Q(
                     user__email__icontains=search,
