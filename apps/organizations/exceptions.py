@@ -44,3 +44,49 @@ class InvalidOrganizationRolePermissionsException(
     OrganizationRoleException,
 ):
     pass
+
+
+class OrganizationInvitationException(OrganizationException):
+    """Base exception for organization invitation business exceptions."""
+
+
+class OrganizationInvitationExpiredException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationInvitationNotFoundException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationInvitationEmailMismatchException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationMemberAlreadyExistsException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationInvitationAlreadyExistsException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationInvitationRecipientAlreadyMemberException(
+    OrganizationInvitationException,
+):
+    pass
+
+
+class OrganizationInvitationRecipientIsOwnerException(
+    OrganizationInvitationException,
+):
+    pass

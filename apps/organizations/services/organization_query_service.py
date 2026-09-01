@@ -1,14 +1,21 @@
-from django.db.models import Q, Case, When, Value, IntegerField
+from django.db.models import (
+    Case,
+    Count,
+    IntegerField,
+    Q,
+    Value,
+    When,
+)
 
-from apps.organizations.models import Organization
-from apps.organizations.constants import MOCK_ORGANIZATION_STATS
+from ..constants import MOCK_ORGANIZATION_STATS
+from ..models import Organization
 
 
 class OrganizationQueryService:
 
     SORT_FIELDS = {
         "name": "name",
-        "member": "mock_member_count",
+        "member": "member_count",
         "project": "mock_project_count",
         "recent": "created_at",
     }
@@ -20,11 +27,15 @@ class OrganizationQueryService:
         sort_by: str = "name",
         order: str = "asc",
     ):
-        organizations = Organization.objects.filter(
-            owner=user,
-            is_archived=False,
-            deleted_at__isnull=True,
-        ).select_related("owner")
+        organizations = (
+            Organization.objects.filter(
+                Q(owner=user) | Q(members__user=user),
+                is_archived=False,
+                deleted_at__isnull=True,
+            )
+            .select_related("owner")
+            .distinct()
+        )
 
         if search:
             search = search.strip()
@@ -36,17 +47,6 @@ class OrganizationQueryService:
                     | Q(slug__icontains=search)
                 )
 
-        member_cases = [
-            When(
-                id=organization_id,
-                then=Value(
-                    stats["member_count"],
-                ),
-            )
-            for organization_id, stats
-            in MOCK_ORGANIZATION_STATS.items()
-        ]
-
         project_cases = [
             When(
                 id=organization_id,
@@ -54,15 +54,13 @@ class OrganizationQueryService:
                     stats["project_count"],
                 ),
             )
-            for organization_id, stats
-            in MOCK_ORGANIZATION_STATS.items()
+            for organization_id, stats in MOCK_ORGANIZATION_STATS.items()
         ]
 
         organizations = organizations.annotate(
-            mock_member_count=Case(
-                *member_cases,
-                default=Value(1),
-                output_field=IntegerField(),
+            member_count=Count(
+                "members",
+                distinct=True,
             ),
             mock_project_count=Case(
                 *project_cases,
@@ -79,9 +77,7 @@ class OrganizationQueryService:
         if order == "desc":
             sort_field = f"-{sort_field}"
 
-        organizations = organizations.order_by(
+        return organizations.order_by(
             sort_field,
             "id",
         )
-
-        return organizations

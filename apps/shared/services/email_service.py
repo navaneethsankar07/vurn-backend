@@ -147,3 +147,40 @@ class EmailService:
             recipient_list=[recipient_email],
             html_message=html_message,
         )
+
+    @staticmethod
+    def send_organization_invitation_email(
+        *,
+        recipient_email: str,
+        organization_name: str,
+        invitation_link: str,
+        personal_message: str = "",
+        expires_at,
+    ) -> None:
+        html_message = render_to_string(
+            "emails/organization_invitation.html",
+            {
+                "organization_name": organization_name,
+                "invitation_link": invitation_link,
+                "personal_message": personal_message,
+                "expires_at": expires_at,
+            },
+        )
+
+        message = f"You have been invited to join " f"{organization_name} on Vurn.\n\n"
+
+        if personal_message:
+            message += f"Personal message:\n" f"{personal_message}\n\n"
+
+        message += (
+            f"Join the organization:\n"
+            f"{invitation_link}\n\n"
+            f"This invitation expires at {expires_at}."
+        )
+
+        EmailService.send_email(
+            subject=f"You're invited to join {organization_name} on Vurn",
+            message=message,
+            recipient_list=[recipient_email],
+            html_message=html_message,
+        )

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 ORGANIZATION_ICONS = (
     "hexagon",
     "building-2",
@@ -218,6 +220,11 @@ ORGANIZATION_PERMISSIONS = {
     ],
 }
 
+ORGANIZATION_PERMISSION_CODES = {
+    permission["code"]
+    for permissions in ORGANIZATION_PERMISSIONS.values()
+    for permission in permissions
+}
 
 ORGANIZATION_ROLE_NAME_MAX_LENGTH = 50
 ORGANIZATION_ROLE_COLOR_MAX_LENGTH = 7
@@ -235,3 +242,14 @@ ORGANIZATION_ROLE_SORT_ORDERS = {
 }
 
 CLOUDINARY_ORGANIZATIONS_FOLDER = "vurn/organizations"
+
+ORGANIZATION_INVITATION_EXPIRY_DAYS = 7
+
+ORGANIZATION_INVITATION_EXPIRY_DELTA = timedelta(
+    days=ORGANIZATION_INVITATION_EXPIRY_DAYS,
+)
+
+ORGANIZATION_ROLE_CHOICES = (
+    ("admin", "Admin"),
+    ("member", "Member"),
+)

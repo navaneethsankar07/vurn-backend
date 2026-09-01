@@ -1,6 +1,10 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
+from .constants import ORGANIZATION_ROLE_CHOICES
 
 
 class Organization(models.Model):
@@ -189,4 +193,108 @@ class OrganizationRolePermission(models.Model):
                 fields=["role", "permission"],
                 name="uq_organization_role_permission",
             ),
+        ]
+
+
+class OrganizationMember(models.Model):
+    organization = models.ForeignKey(
+        "Organization",
+        on_delete=models.CASCADE,
+        related_name="members",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="organization_memberships",
+    )
+
+    role = models.CharField(
+        max_length=20,
+        choices=ORGANIZATION_ROLE_CHOICES,
+        default="member",
+    )
+
+    job_role = models.ForeignKey(
+        "OrganizationRole",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="members",
+    )
+
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="invited_organization_members",
+    )
+
+    joined_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        db_table = "organization_members"
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=("organization", "user"),
+                name="uq_org_member",
+            ),
+        ]
+
+
+class OrganizationInvitation(models.Model):
+    organization = models.ForeignKey(
+        "Organization",
+        on_delete=models.CASCADE,
+        related_name="invitations",
+    )
+
+    email = models.EmailField()
+
+    personal_message = models.TextField(
+        blank=True,
+    )
+
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
+
+    permission_role = models.CharField(
+        max_length=20,
+        choices=ORGANIZATION_ROLE_CHOICES,
+        default="member",
+    )
+
+    job_role = models.ForeignKey(
+        "OrganizationRole",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invitations",
+    )
+
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="organization_invitations_sent",
+    )
+
+    expires_at = models.DateTimeField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        db_table = "organization_invitations"
+
+        indexes = [
+            models.Index(fields=("organization",)),
+            models.Index(fields=("email",)),
+            models.Index(fields=("expires_at",)),
         ]

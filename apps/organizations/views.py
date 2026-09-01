@@ -1,33 +1,45 @@
-from django.template import context
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.conf import settings
+
 from apps.shared.utils.pagination import StandardPagination
+from apps.shared.services.email_service import EmailService
+
 from apps.organizations.constants import (
     ORGANIZATION_SORT_FIELDS,
     ORGANIZATION_SORT_ORDERS,
 )
 
 from .exceptions import (
-    InvalidOrganizationDeleteOTPException,
-    InvalidOrganizationRolePermissionsException,
-    OrganizationAlreadyArchivedException,
-    OrganizationAlreadyDeletedException,
     OrganizationNotFoundException,
-    OrganizationRoleException,
+    OrganizationAlreadyDeletedException,
+    OrganizationAlreadyArchivedException,
+    InvalidOrganizationDeleteOTPException,
+    OrganizationInvitationExpiredException,
+    OrganizationInvitationNotFoundException,
+    OrganizationMemberAlreadyExistsException,
+    InvalidOrganizationRolePermissionsException,
+    OrganizationInvitationAlreadyExistsException,
+    OrganizationInvitationEmailMismatchException,
+    OrganizationInvitationRecipientIsOwnerException,
+    OrganizationInvitationRecipientAlreadyMemberException,
 )
 
 from .serializers import (
     CreateOrganizationSerializer,
+    OrganizationAccessSerializer,
     OrganizationDashboardSerializer,
     OrganizationDeleteConfirmSerializer,
     OrganizationDeleteRequestSerializer,
+    OrganizationInvitationCreateSerializer,
     OrganizationListSerializer,
     OrganizationPreferenceSerializer,
     OrganizationRoleListSerializer,
     OrganizationRoleSerializer,
+    ReceivedOrganizationInvitationSerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
 )
@@ -35,11 +47,13 @@ from .serializers import (
 from .services.organization_service import OrganizationService
 from .services.organization_role_service import OrganizationRoleService
 from .services.organization_query_service import OrganizationQueryService
+from .services.organization_access_service import OrganizationAccessService
 from .services.organization_options_service import OrganizationOptionsService
 from .services.organization_branding_service import OrganizationBrandingService
 from .services.organization_deletion_service import OrganizationDeletionService
 from .services.organization_dashboard_service import OrganizationDashboardService
 from .services.organization_preference_service import OrganizationPreferenceService
+from .services.organization_invitation_service import OrganizationInvitationService
 
 
 class OrganizationView(APIView):
@@ -437,12 +451,41 @@ class OrganizationPreferenceView(APIView):
         )
 
 
+class OrganizationAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
+            )
+
+            access = OrganizationAccessService.get_user_access(
+                organization=organization,
+                user=request.user,
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationAccessSerializer(access)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+
 class OrganizationRoleView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, slug):
         try:
-            organization = OrganizationService.get_owned_organization(
+            organization = OrganizationService.get_user_organization(
                 user=request.user,
                 slug=slug,
             )
@@ -551,5 +594,183 @@ class OrganizationRoleUpdateView(APIView):
 
         return Response(
             OrganizationRoleListSerializer(role).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class OrganizationInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            organization = OrganizationService.get_owned_organization(
+                user=request.user,
+                slug=slug,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = OrganizationInvitationCreateSerializer(
+            data=request.data,
+            context={
+                "organization": organization,
+            },
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            invitation = OrganizationInvitationService.create_invitation(
+                organization=organization,
+                invited_by=request.user,
+                email=serializer.validated_data["email"],
+                personal_message=serializer.validated_data.get(
+                    "personal_message",
+                    "",
+                ),
+                permission_role=serializer.validated_data.get(
+                    "permission_role",
+                    "member",
+                ),
+                job_role_id=serializer.validated_data.get(
+                    "job_role_id",
+                ),
+            )
+        except OrganizationInvitationAlreadyExistsException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except OrganizationInvitationRecipientAlreadyMemberException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except OrganizationInvitationRecipientIsOwnerException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        invitation_url = f"{settings.FRONTEND_URL}" f"/invitations/{invitation.token}"
+
+        send_email = serializer.validated_data.get(
+            "send_email",
+            False,
+        )
+
+        if send_email:
+            EmailService.send_organization_invitation_email(
+                recipient_email=invitation.email,
+                organization_name=organization.name,
+                invitation_link=invitation_url,
+                personal_message=invitation.personal_message,
+                expires_at=invitation.expires_at,
+            )
+
+        return Response(
+            {
+                "id": invitation.id,
+                "email": invitation.email,
+                "expires_at": invitation.expires_at,
+                "invitation_url": invitation_url,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ReceivedOrganizationInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        invitations = OrganizationInvitationService.list_received_invitations(
+            user=request.user,
+        )
+
+        serializer = ReceivedOrganizationInvitationSerializer(
+            invitations,
+            many=True,
+        )
+
+        return Response(serializer.data)
+
+
+class OrganizationInvitationDetailView(APIView):
+
+    def get(self, request, token):
+        try:
+            invitation = OrganizationInvitationService.get_invitation_by_token(
+                token=token,
+            )
+        except OrganizationInvitationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except OrganizationInvitationExpiredException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_410_GONE,
+            )
+
+        return Response(
+            {
+                "organization": {
+                    "name": invitation.organization.name,
+                    "slug": invitation.organization.slug,
+                    "icon": invitation.organization.icon,
+                },
+                "job_role": (
+                    {
+                        "id": invitation.job_role.id,
+                        "name": invitation.job_role.name,
+                    }
+                    if invitation.job_role
+                    else None
+                ),
+                "expires_at": invitation.expires_at,
+            }
+        )
+
+
+class AcceptOrganizationInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        try:
+            member = OrganizationInvitationService.accept_invitation(
+                token=token,
+                user=request.user,
+            )
+        except OrganizationInvitationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except OrganizationInvitationExpiredException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_410_GONE,
+            )
+        except OrganizationInvitationEmailMismatchException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        except OrganizationMemberAlreadyExistsException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": ("You have successfully joined the organization."),
+                "organization_slug": member.organization.slug,
+            },
             status=status.HTTP_200_OK,
         )

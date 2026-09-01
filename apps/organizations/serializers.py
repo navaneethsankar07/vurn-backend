@@ -1,12 +1,18 @@
 from rest_framework import serializers
 
-from apps.organizations.constants import (
+from .constants import (
     LOGO_ALLOWED_TYPES,
     LOGO_MAX_SIZE,
     MOCK_ORGANIZATION_STATS,
+    ORGANIZATION_ROLE_CHOICES,
 )
 
-from .models import Organization, OrganizationPreference, OrganizationRole
+from .models import (
+    Organization,
+    OrganizationInvitation,
+    OrganizationPreference,
+    OrganizationRole,
+)
 from .validators import (
     validate_organization_accent_color,
     validate_organization_icon,
@@ -149,6 +155,29 @@ class OrganizationListSerializer(
         return False
 
 
+class OrganizationAccessJobRoleSerializer(
+    serializers.Serializer,
+):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class OrganizationAccessSerializer(
+    serializers.Serializer,
+):
+    role = serializers.CharField()
+
+    job_role = OrganizationAccessJobRoleSerializer(
+        allow_null=True,
+    )
+
+    permissions = serializers.ListField(
+        child=serializers.CharField(),
+    )
+
+    has_full_access = serializers.BooleanField()
+
+
 class OrganizationDashboardSerializer(
     serializers.Serializer,
 ):
@@ -157,11 +186,20 @@ class OrganizationDashboardSerializer(
     description = serializers.CharField()
     slug = serializers.CharField()
     icon = serializers.CharField()
+
     logo_url = serializers.URLField(
         allow_null=True,
     )
+
     accent_color = serializers.CharField()
     updated_at = serializers.DateTimeField()
+
+    role = serializers.CharField()
+
+    permissions = serializers.ListField(
+        child=serializers.CharField(),
+    )
+
     total_projects = serializers.IntegerField()
     total_members = serializers.IntegerField()
     active_sprints = serializers.IntegerField()
@@ -374,3 +412,71 @@ class OrganizationRoleListSerializer(serializers.ModelSerializer):
                 "permission"
             ).all()
         ]
+
+
+class OrganizationInvitationCreateSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    personal_message = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    permission_role = serializers.ChoiceField(
+        choices=ORGANIZATION_ROLE_CHOICES,
+    )
+
+    job_role_id = serializers.IntegerField(
+        allow_null=False,
+    )
+
+    send_email = serializers.BooleanField(
+        required=False,
+        default=False,
+    )
+
+    def validate_job_role_id(self, value):
+        if value is None:
+            return value
+
+        organization = self.context["organization"]
+
+        if not OrganizationRole.objects.filter(
+            id=value,
+            organization=organization,
+        ).exists():
+            raise serializers.ValidationError("Invalid job role.")
+
+        return value
+
+
+class ReceivedOrganizationInvitationSerializer(serializers.ModelSerializer):
+    organization_name = serializers.CharField(
+        source="organization.name",
+        read_only=True,
+    )
+
+    organization_slug = serializers.CharField(
+        source="organization.slug",
+        read_only=True,
+    )
+
+    job_role_name = serializers.CharField(
+        source="job_role.name",
+        read_only=True,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = OrganizationInvitation
+        fields = (
+            "id",
+            "organization_name",
+            "organization_slug",
+            "personal_message",
+            "permission_role",
+            "token",
+            "job_role_name",
+            "expires_at",
+            "created_at",
+        )

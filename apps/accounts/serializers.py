@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Q
 from rest_framework import serializers
 
 from apps.organizations.models import Organization
@@ -90,21 +91,13 @@ class UserOrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organization
-        fields = [
-            "name",
-            "slug",
-            "icon",
-            "logo_url"
-        ]
+        fields = ["name", "slug", "icon", "logo_url"]
         read_only_fields = fields
 
 
 class CurrentUserSerializer(serializers.ModelSerializer):
-    organizations = UserOrganizationSerializer(
-        source="owned_organizations",
-        many=True,
-        read_only=True,
-    )
+
+    organizations = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -118,6 +111,18 @@ class CurrentUserSerializer(serializers.ModelSerializer):
         ]
 
         read_only_fields = fields
+
+    def get_organizations(self, obj):
+        organizations = Organization.objects.filter(
+            Q(owner=obj) | Q(members__user=obj),
+            is_archived=False,
+            deleted_at__isnull=True,
+        ).distinct()
+
+        return UserOrganizationSerializer(
+            organizations,
+            many=True,
+        ).data
 
 
 class GoogleAuthSerializer(serializers.Serializer):

@@ -1,8 +1,12 @@
-from apps.organizations.constants import (
+from ..constants import (
     MOCK_ORGANIZATION_DASHBOARD_STATS,
 )
-from apps.organizations.models import Organization
-from ..exceptions import OrganizationNotFoundException
+from .organization_access_service import (
+    OrganizationAccessService,
+)
+from .organization_service import (
+    OrganizationService,
+)
 
 
 class OrganizationDashboardService:
@@ -14,18 +18,15 @@ class OrganizationDashboardService:
         slug: str,
     ) -> dict:
 
-        organization = Organization.objects.filter(
-            owner=user,
+        organization = OrganizationService.get_user_organization(
+            user=user,
             slug=slug,
-            deleted_at__isnull=True,
-            is_archived=False,
-        ).first()
+        )
 
-        if organization is None:
-            raise OrganizationNotFoundException("Organization not found.")
-
-        if organization.owner_id != user.id:
-            raise OrganizationNotFoundException("Organization not found.")
+        access = OrganizationAccessService.get_user_access(
+            organization=organization,
+            user=user,
+        )
 
         stats = MOCK_ORGANIZATION_DASHBOARD_STATS
 
@@ -38,7 +39,8 @@ class OrganizationDashboardService:
             "logo_url": organization.logo_url,
             "accent_color": organization.accent_color,
             "updated_at": organization.updated_at,
-            "role": "owner",
+            "role": access["role"],
+            "permissions": access["permissions"],
             "total_projects": stats["total_projects"],
             "total_members": stats["total_members"],
             "active_sprints": stats["active_sprints"],

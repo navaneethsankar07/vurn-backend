@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 
 from apps.accounts.models import User
 from ..models import Organization, OrganizationPreference
@@ -74,6 +75,28 @@ class OrganizationService:
             slug=slug,
             deleted_at__isnull=True,
         ).first()
+
+        if organization is None:
+            raise OrganizationNotFoundException("Organization not found.")
+
+        return organization
+
+    @staticmethod
+    def get_user_organization(
+        *,
+        user,
+        slug,
+    ):
+        organization = (
+            Organization.objects.filter(
+                Q(owner=user) | Q(members__user=user),
+                slug=slug,
+                deleted_at__isnull=True,
+                is_archived=False,
+            )
+            .distinct()
+            .first()
+        )
 
         if organization is None:
             raise OrganizationNotFoundException("Organization not found.")

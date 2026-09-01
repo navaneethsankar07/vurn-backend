@@ -1,17 +1,22 @@
 from django.urls import path
 
 from .views import (
+    AcceptOrganizationInvitationView,
+    OrganizationAccessView,
     OrganizationArchiveView,
     OrganizationBrandingView,
     OrganizationDashboardView,
     OrganizationDeleteConfirmView,
     OrganizationDeleteRequestView,
+    OrganizationInvitationDetailView,
+    OrganizationInvitationView,
     OrganizationOptionsView,
     OrganizationPreferenceView,
     OrganizationRoleUpdateView,
     OrganizationRoleView,
     OrganizationSettingsView,
     OrganizationView,
+    ReceivedOrganizationInvitationView,
 )
 
 urlpatterns = [
@@ -24,6 +29,11 @@ urlpatterns = [
         "options/",
         OrganizationOptionsView.as_view(),
         name="organization-options",
+    ),
+    path(
+        "<slug:slug>/access/",
+        OrganizationAccessView.as_view(),
+        name="organization-dashboard",
     ),
     path(
         "<slug:slug>/dashboard/",
@@ -69,5 +79,25 @@ urlpatterns = [
         "<slug:slug>/roles/<int:role_id>/",
         OrganizationRoleUpdateView.as_view(),
         name="organization-role-update",
+    ),
+    path(
+        "<slug:slug>/invitations/",
+        OrganizationInvitationView.as_view(),
+        name="organization-invitations",
+    ),
+    path(
+        "invitations/received/",
+        ReceivedOrganizationInvitationView.as_view(),
+        name="received-organization-invitations",
+    ),
+    path(
+        "invitations/<uuid:token>/",
+        OrganizationInvitationDetailView.as_view(),
+        name="organization-invitation-detail",
+    ),
+    path(
+        "invitations/<uuid:token>/accept/",
+        AcceptOrganizationInvitationView.as_view(),
+        name="accept-organization-invitation",
     ),
 ]
