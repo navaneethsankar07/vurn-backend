@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
     "apps.organizations.apps.OrganizationsConfig",
+    "apps.projects.apps.ProjectsConfig",
 ]
 
 MIDDLEWARE = [
@@ -175,7 +176,7 @@ PASSWORD_RESET_EXPIRATION_SECONDS = env.int(
 FRONTEND_URL = env("FRONTEND_URL")
 
 #  -----------------------------------------------------------------------------
-# Password Reset Configuration
+# Cloudinary Configuration
 # -----------------------------------------------------------------------------
 CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
