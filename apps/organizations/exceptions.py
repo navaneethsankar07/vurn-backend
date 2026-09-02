@@ -42,6 +42,12 @@ class OrganizationPermissionDeniedException(
     pass
 
 
+class OrganizationProjectCreationPermissionDeniedException(
+    OrganizationException,
+):
+    pass
+
+
 class OrganizationRoleException(OrganizationException):
     """Base exception for organization role business exceptions."""
 

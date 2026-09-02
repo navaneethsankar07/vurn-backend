@@ -3,6 +3,7 @@ from ..exceptions import (
     OrganizationInvitationPermissionDeniedException,
     OrganizationNotFoundException,
     OrganizationPermissionDeniedException,
+    OrganizationProjectCreationPermissionDeniedException,
 )
 from ..models import OrganizationMember
 
@@ -22,6 +23,7 @@ class OrganizationAccessService:
                 "permissions": ["*"],
                 "has_full_access": True,
             }
+
         else:
             try:
                 member = (
@@ -36,6 +38,7 @@ class OrganizationAccessService:
                         user=user,
                     )
                 )
+
             except OrganizationMember.DoesNotExist:
                 raise OrganizationNotFoundException("Organization not found.")
 
@@ -54,6 +57,7 @@ class OrganizationAccessService:
                     "permissions": ["*"],
                     "has_full_access": True,
                 }
+
             else:
                 permissions = []
 
@@ -71,6 +75,11 @@ class OrganizationAccessService:
                 }
 
         access["can_invite_members"] = OrganizationAccessService._can_invite_members(
+            organization=organization,
+            access=access,
+        )
+
+        access["can_create_projects"] = OrganizationAccessService._can_create_projects(
             organization=organization,
             access=access,
         )
@@ -93,6 +102,20 @@ class OrganizationAccessService:
             return True
 
         return "member.invite" in access["permissions"]
+
+    @staticmethod
+    def _can_create_projects(
+        *,
+        organization,
+        access,
+    ) -> bool:
+        if access["role"] in ("owner", "admin"):
+            return True
+
+        if not organization.preferences.allow_member_project_creation:
+            return False
+
+        return "project.create" in access["permissions"]
 
     @staticmethod
     def has_permission(
@@ -125,6 +148,19 @@ class OrganizationAccessService:
         return access["can_invite_members"]
 
     @staticmethod
+    def can_create_projects(
+        *,
+        organization,
+        user,
+    ) -> bool:
+        access = OrganizationAccessService.get_user_access(
+            organization=organization,
+            user=user,
+        )
+
+        return access["can_create_projects"]
+
+    @staticmethod
     def validate_member_invitation_access(
         *,
         organization,
@@ -152,4 +188,18 @@ class OrganizationAccessService:
         ):
             raise OrganizationPermissionDeniedException(
                 "You do not have permission to perform this action."
+            )
+
+    @staticmethod
+    def validate_project_creation_access(
+        *,
+        organization,
+        user,
+    ) -> None:
+        if not OrganizationAccessService.can_create_projects(
+            organization=organization,
+            user=user,
+        ):
+            raise OrganizationProjectCreationPermissionDeniedException(
+                "You do not have permission to create projects."
             )

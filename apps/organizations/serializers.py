@@ -175,6 +175,7 @@ class OrganizationAccessSerializer(
     )
     has_full_access = serializers.BooleanField()
     can_invite_members = serializers.BooleanField()
+    can_create_projects = serializers.BooleanField()
 
 
 class OrganizationDashboardSerializer(

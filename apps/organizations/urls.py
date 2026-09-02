@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.projects.views import ProjectView
+
 from .views import (
     AcceptOrganizationInvitationView,
     OrganizationAccessView,
@@ -105,5 +107,10 @@ urlpatterns = [
         "<slug:slug>/members/",
         OrganizationMemberView.as_view(),
         name="organization-members",
+    ),
+    path(
+        "<slug:slug>/projects/",
+        ProjectView.as_view(),
+        name="organization-projects",
     ),
 ]
