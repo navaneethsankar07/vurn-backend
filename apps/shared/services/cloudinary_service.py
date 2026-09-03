@@ -1,8 +1,5 @@
 import cloudinary.uploader
 
-from django.conf import settings
-
-
 class CloudinaryService:
 
     @staticmethod

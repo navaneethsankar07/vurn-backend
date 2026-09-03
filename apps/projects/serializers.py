@@ -2,6 +2,8 @@ import re
 
 from rest_framework import serializers
 
+from .models import Project
+
 from .constants import PROJECT_ICONS
 
 
@@ -135,3 +137,52 @@ class ProjectCreateResponseSerializer(
     project_lead_id = serializers.IntegerField()
     created_by_id = serializers.IntegerField()
     created_at = serializers.DateTimeField()
+
+
+class ProjectListSerializer(
+    serializers.ModelSerializer,
+):
+    owner = serializers.SerializerMethodField()
+    project_lead = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Project
+
+        fields = [
+            "id",
+            "name",
+            "key",
+            "slug",
+            "description",
+            "icon",
+            "accent_color",
+            "logo_url",
+            "status",
+            "start_date",
+            "target_date",
+            "owner",
+            "project_lead",
+            "created_at",
+        ]
+
+    def get_owner(
+        self,
+        obj,
+    ):
+        return {
+            "id": obj.owner.id,
+            "name": obj.owner.full_name,
+            "email": obj.owner.email,
+            "avatar": obj.owner.avatar,
+        }
+
+    def get_project_lead(
+        self,
+        obj,
+    ):
+        return {
+            "id": obj.project_lead.id,
+            "name": obj.project_lead.full_name,
+            "email": obj.project_lead.email,
+            "avatar": obj.project_lead.avatar,
+        }

@@ -69,6 +69,10 @@ class Project(models.Model):
         default="active",
     )
 
+    is_archived = models.BooleanField(
+        default=False,
+    )
+
     start_date = models.DateField(
         blank=True,
         null=True,
@@ -126,9 +130,10 @@ class Project(models.Model):
             models.Index(
                 fields=[
                     "organization",
+                    "is_archived",
                     "deleted_at",
                 ],
-                name="idx_projects_org_status",
+                name="idx_projects_org_archived",
             ),
         ]
 

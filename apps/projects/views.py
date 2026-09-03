@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 
 from apps.organizations.exceptions import (
     OrganizationNotFoundException,
+    OrganizationPermissionDeniedException,
+    OrganizationProjectCreationPermissionDeniedException,
 )
 from apps.organizations.services.organization_access_service import (
     OrganizationAccessService,
@@ -12,15 +14,14 @@ from apps.organizations.services.organization_access_service import (
 from apps.organizations.services.organization_service import (
     OrganizationService,
 )
+from apps.shared.utils.pagination import StandardPagination
 
 from .constants import PROJECT_ICONS
-from .exceptions import (
-    ProjectAlreadyExistsException,
-    ProjectCreationPermissionDeniedException,
-)
+from .exceptions import ProjectAlreadyExistsException
 from .serializers import (
     ProjectCreateResponseSerializer,
     ProjectCreateSerializer,
+    ProjectListSerializer,
 )
 from .services.project_service import ProjectService
 
@@ -29,6 +30,82 @@ class ProjectView(APIView):
     permission_classes = [
         IsAuthenticated,
     ]
+
+    def get(
+        self,
+        request,
+        slug,
+    ):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
+            )
+
+            OrganizationAccessService.validate_permission(
+                organization=organization,
+                user=request.user,
+                permission_code="project.view",
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except OrganizationPermissionDeniedException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        search = request.query_params.get(
+            "search",
+        )
+
+        project_status = request.query_params.get(
+            "status",
+            "all",
+        )
+
+        archive = request.query_params.get(
+            "archive",
+            "active",
+        )
+
+        sort = request.query_params.get(
+            "sort",
+            "recently_created",
+        )
+
+        projects = ProjectService.list_projects(
+            organization=organization,
+            search=search,
+            status=project_status,
+            archive=archive,
+            sort=sort,
+        )
+
+        paginator = StandardPagination()
+
+        paginated_projects = paginator.paginate_queryset(
+            projects,
+            request,
+        )
+
+        serializer = ProjectListSerializer(
+            paginated_projects,
+            many=True,
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data,
+        )
 
     def post(
         self,
@@ -54,7 +131,7 @@ class ProjectView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        except ProjectCreationPermissionDeniedException as exc:
+        except OrganizationProjectCreationPermissionDeniedException as exc:
             return Response(
                 {
                     "error": str(exc),

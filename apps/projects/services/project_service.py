@@ -1,7 +1,9 @@
 from django.db import IntegrityError
 from django.db import transaction
+from django.db.models import Q
 from django.utils.text import slugify
 
+from ..constants import PROJECT_ARCHIVE_FILTERS, PROJECT_LIST_SORT_OPTIONS
 from ..exceptions import ProjectAlreadyExistsException
 from ..models import Project
 
@@ -28,6 +30,70 @@ class ProjectService:
             counter += 1
 
         return slug
+
+
+    @staticmethod
+    def list_projects(
+        *,
+        organization,
+        search=None,
+        status="all",
+        archive="active",
+        sort="recently_created",
+    ):
+        queryset = (
+            Project.objects.filter(
+                organization=organization,
+                deleted_at__isnull=True,
+            )
+            .select_related(
+                "owner",
+                "project_lead",
+                "created_by",
+            )
+        )
+
+        if archive not in PROJECT_ARCHIVE_FILTERS:
+            archive = "active"
+
+        if archive == "active":
+            queryset = queryset.filter(
+                is_archived=False,
+            )
+
+        elif archive == "archived":
+            queryset = queryset.filter(
+                is_archived=True,
+            )
+
+        if status and status != "all":
+            queryset = queryset.filter(
+                status=status,
+            )
+
+        if search:
+            queryset = queryset.filter(
+                Q(
+                    name__icontains=search,
+                )
+                | Q(
+                    key__icontains=search,
+                )
+            )
+
+        if sort not in PROJECT_LIST_SORT_OPTIONS:
+            sort = "recently_created"
+
+        sort_options = {
+            "recently_created": "-created_at",
+            "recently_updated": "-updated_at",
+            "name_asc": "name",
+            "name_desc": "-name",
+        }
+
+        return queryset.order_by(
+            sort_options[sort],
+        )
 
     @staticmethod
     @transaction.atomic

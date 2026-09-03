@@ -28,3 +28,16 @@ PROJECT_STATUS_CHOICES = (
 
 
 PROJECT_CREATE_PERMISSION = "project.create"
+
+PROJECT_LIST_SORT_OPTIONS = (
+    "recently_created",
+    "recently_updated",
+    "name_asc",
+    "name_desc",
+)
+
+PROJECT_ARCHIVE_FILTERS = (
+    "all",
+    "active",
+    "archived",
+)
