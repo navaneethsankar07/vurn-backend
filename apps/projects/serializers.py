@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from .models import Project
 
-from .constants import PROJECT_ICONS
+from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES
 
 
 class ProjectCreateSerializer(
@@ -113,7 +113,7 @@ class ProjectCreateSerializer(
         return attrs
 
 
-class ProjectCreateResponseSerializer(
+class ProjectResponseSerializer(
     serializers.Serializer,
 ):
     id = serializers.IntegerField()
@@ -186,3 +186,100 @@ class ProjectListSerializer(
             "email": obj.project_lead.email,
             "avatar": obj.project_lead.avatar,
         }
+
+
+class ProjectUpdateSerializer(
+    serializers.Serializer,
+):
+    name = serializers.CharField(
+        max_length=150,
+        required=False,
+    )
+
+    key = serializers.CharField(
+        max_length=10,
+        required=False,
+    )
+
+    description = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
+    status = serializers.ChoiceField(
+        choices=PROJECT_STATUS_CHOICES,
+        required=False,
+    )
+
+    icon = serializers.ChoiceField(
+        choices=PROJECT_ICONS,
+        required=False,
+    )
+
+    accent_color = serializers.CharField(
+        max_length=7,
+        required=False,
+    )
+
+    logo = serializers.ImageField(
+        required=False,
+        write_only=True,
+    )
+
+    def validate_name(
+        self,
+        value,
+    ):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Project name cannot be empty.")
+
+        return value
+
+    def validate_key(
+        self,
+        value,
+    ):
+        value = value.strip().upper()
+
+        if not value:
+            raise serializers.ValidationError("Project key cannot be empty.")
+
+        if not re.fullmatch(
+            r"[A-Z][A-Z0-9]*",
+            value,
+        ):
+            raise serializers.ValidationError(
+                "Project key must start with a letter and contain "
+                "only uppercase letters and numbers."
+            )
+
+        return value
+
+    def validate_accent_color(
+        self,
+        value,
+    ):
+        value = value.strip().upper()
+
+        if not re.fullmatch(
+            r"#[0-9A-F]{6}",
+            value,
+        ):
+            raise serializers.ValidationError("Enter a valid hex color.")
+
+        return value
+
+    def validate(
+        self,
+        attrs,
+    ):
+        if "logo" in attrs and "icon" in attrs:
+            raise serializers.ValidationError(
+                {
+                    "logo": ("Logo and icon cannot be updated " "at the same time."),
+                }
+            )
+
+        return attrs

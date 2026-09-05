@@ -1,7 +1,7 @@
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from apps.organizations.exceptions import (
     OrganizationNotFoundException,
@@ -17,13 +17,15 @@ from apps.organizations.services.organization_service import (
 from apps.shared.utils.pagination import StandardPagination
 
 from .constants import PROJECT_ICONS
-from .exceptions import ProjectAlreadyExistsException
+from .exceptions import ProjectAlreadyExistsException, ProjectNotFoundException, ProjectPermissionDeniedException
 from .serializers import (
-    ProjectCreateResponseSerializer,
+    ProjectResponseSerializer,
     ProjectCreateSerializer,
     ProjectListSerializer,
+    ProjectUpdateSerializer,
 )
 from .services.project_service import ProjectService
+from .services.project_access_service import ProjectAccessService
 
 
 class ProjectView(APIView):
@@ -162,7 +164,7 @@ class ProjectView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        response_serializer = ProjectCreateResponseSerializer(
+        response_serializer = ProjectResponseSerializer(
             project,
         )
 
@@ -187,4 +189,88 @@ class ProjectOptionsView(APIView):
                 "default_icon": "hexagon",
                 "default_accent_color": "#F59E0B",
             }
+        )
+
+
+class ProjectSettingsView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def patch(
+        self,
+        request,
+        slug,
+        project_slug,
+    ):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
+            )
+
+            project = ProjectService.get_project(
+                organization=organization,
+                slug=project_slug,
+            )
+
+            ProjectAccessService.validate_project_edit_access(
+                project=project,
+                user=request.user,
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except ProjectNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        except ProjectPermissionDeniedException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ProjectUpdateSerializer(
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+            project = ProjectService.update_project(
+                project=project,
+                **serializer.validated_data,
+            )
+
+        except ProjectAlreadyExistsException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        response_serializer = ProjectResponseSerializer(
+            project,
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
         )

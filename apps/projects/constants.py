@@ -41,3 +41,5 @@ PROJECT_ARCHIVE_FILTERS = (
     "active",
     "archived",
 )
+
+CLOUDINARY_PROJECTS_FOLDER = "vurn/projects"

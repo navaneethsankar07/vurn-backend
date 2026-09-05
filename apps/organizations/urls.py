@@ -1,22 +1,20 @@
-from django.urls import path
-
-from apps.projects.views import ProjectView
+from django.urls import include, path
 
 from .views import (
-    AcceptOrganizationInvitationView,
+    OrganizationRoleView,
+    OrganizationMemberView,
     OrganizationAccessView,
     OrganizationArchiveView,
+    OrganizationOptionsView,
     OrganizationBrandingView,
     OrganizationDashboardView,
-    OrganizationDeleteConfirmView,
-    OrganizationDeleteRequestView,
-    OrganizationInvitationDetailView,
-    OrganizationInvitationView,
-    OrganizationMemberView,
-    OrganizationOptionsView,
     OrganizationPreferenceView,
     OrganizationRoleUpdateView,
-    OrganizationRoleView,
+    OrganizationInvitationView,
+    OrganizationDeleteConfirmView,
+    OrganizationDeleteRequestView,
+    AcceptOrganizationInvitationView,
+    OrganizationInvitationDetailView,
     OrganizationSettingsView,
     OrganizationView,
     ReceivedOrganizationInvitationView,
@@ -110,7 +108,6 @@ urlpatterns = [
     ),
     path(
         "<slug:slug>/projects/",
-        ProjectView.as_view(),
-        name="organization-projects",
+        include("apps.projects.urls"),
     ),
 ]
