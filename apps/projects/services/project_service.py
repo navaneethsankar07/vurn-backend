@@ -210,7 +210,7 @@ class ProjectService:
         expected_confirmation = (
             f"{PROJECT_DELETE_CONFIRMATION_PREFIX} " f"{project.name}"
         )
-
+        
         if confirmation != expected_confirmation:
             raise ProjectDeleteConfirmationException(
                 "The confirmation text does not match."

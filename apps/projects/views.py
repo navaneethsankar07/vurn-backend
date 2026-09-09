@@ -200,28 +200,18 @@ class ProjectOptionsView(APIView):
 
 
 class ProjectSettingsView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated]
 
-    def get(
-        self,
-        request,
-        slug,
-        project_slug,
-    ):
+    def get(self, request, slug, project_slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
             project = ProjectService.get_project(
-                organization=organization,
-                slug=project_slug,
+                organization=organization, slug=project_slug
             )
             ProjectAccessService.validate_project_edit_access(
-                project=project,
-                user=request.user,
+                project=project, user=request.user
             )
         except OrganizationNotFoundException as exc:
             return Response(
@@ -245,14 +235,9 @@ class ProjectSettingsView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        response_serializer = ProjectSettingsSerializer(
-            project,
-        )
+        response_serializer = ProjectSettingsSerializer(project)
 
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_200_OK,
-        )
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def patch(
         self,

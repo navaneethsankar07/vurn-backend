@@ -241,6 +241,9 @@ class ProjectSettingsSerializer(serializers.Serializer):
     icon = serializers.CharField()
     accent_color = serializers.CharField()
     logo_url = serializers.URLField(allow_null=True)
+    created_by = serializers.CharField(source="created_by.full_name")
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
 
 
 class ProjectDeleteSerializer(serializers.Serializer):
