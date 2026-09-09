@@ -7,44 +7,25 @@ from .models import Project
 from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES
 
 
-class ProjectCreateSerializer(
-    serializers.Serializer,
-):
+class ProjectCreateSerializer(serializers.Serializer):
 
-    name = serializers.CharField(
-        max_length=150,
-    )
+    name = serializers.CharField(max_length=150)
 
-    key = serializers.CharField(
-        max_length=10,
-    )
+    key = serializers.CharField(max_length=10)
 
-    description = serializers.CharField(
-        required=False,
-        allow_blank=True,
-    )
+    description = serializers.CharField(required=False, allow_blank=True)
 
     icon = serializers.ChoiceField(
-        choices=PROJECT_ICONS,
-        required=False,
-        default="hexagon",
+        choices=PROJECT_ICONS, required=False, default="hexagon"
     )
 
     accent_color = serializers.CharField(
-        max_length=7,
-        required=False,
-        default="#F59E0B",
+        max_length=7, required=False, default="#F59E0B"
     )
 
-    start_date = serializers.DateField(
-        required=False,
-        allow_null=True,
-    )
+    start_date = serializers.DateField(required=False, allow_null=True)
 
-    target_date = serializers.DateField(
-        required=False,
-        allow_null=True,
-    )
+    target_date = serializers.DateField(required=False, allow_null=True)
 
     def validate_name(
         self,
@@ -123,16 +104,10 @@ class ProjectResponseSerializer(
     description = serializers.CharField()
     icon = serializers.CharField()
     accent_color = serializers.CharField()
-    logo_url = serializers.URLField(
-        allow_null=True,
-    )
+    logo_url = serializers.URLField(allow_null=True)
     status = serializers.CharField()
-    start_date = serializers.DateField(
-        allow_null=True,
-    )
-    target_date = serializers.DateField(
-        allow_null=True,
-    )
+    start_date = serializers.DateField(allow_null=True)
+    target_date = serializers.DateField(allow_null=True)
     owner_id = serializers.IntegerField()
     project_lead_id = serializers.IntegerField()
     created_by_id = serializers.IntegerField()
@@ -191,40 +166,19 @@ class ProjectListSerializer(
 class ProjectUpdateSerializer(
     serializers.Serializer,
 ):
-    name = serializers.CharField(
-        max_length=150,
-        required=False,
-    )
+    name = serializers.CharField(max_length=150, required=False)
 
-    key = serializers.CharField(
-        max_length=10,
-        required=False,
-    )
+    key = serializers.CharField(max_length=10, required=False)
 
-    description = serializers.CharField(
-        required=False,
-        allow_blank=True,
-    )
+    description = serializers.CharField(required=False, allow_blank=True)
 
-    status = serializers.ChoiceField(
-        choices=PROJECT_STATUS_CHOICES,
-        required=False,
-    )
+    status = serializers.ChoiceField(choices=PROJECT_STATUS_CHOICES, required=False)
 
-    icon = serializers.ChoiceField(
-        choices=PROJECT_ICONS,
-        required=False,
-    )
+    icon = serializers.ChoiceField(choices=PROJECT_ICONS, required=False)
 
-    accent_color = serializers.CharField(
-        max_length=7,
-        required=False,
-    )
+    accent_color = serializers.CharField(max_length=7, required=False)
 
-    logo = serializers.ImageField(
-        required=False,
-        write_only=True,
-    )
+    logo = serializers.ImageField(required=False, write_only=True)
 
     def validate_name(
         self,
@@ -275,11 +229,19 @@ class ProjectUpdateSerializer(
         self,
         attrs,
     ):
-        if "logo" in attrs and "icon" in attrs:
-            raise serializers.ValidationError(
-                {
-                    "logo": ("Logo and icon cannot be updated " "at the same time."),
-                }
-            )
 
         return attrs
+
+
+class ProjectSettingsSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    key = serializers.CharField()
+    description = serializers.CharField()
+    serializers.ChoiceField(choices=PROJECT_STATUS_CHOICES)
+    icon = serializers.CharField()
+    accent_color = serializers.CharField()
+    logo_url = serializers.URLField(allow_null=True)
+
+
+class ProjectDeleteSerializer(serializers.Serializer):
+    confirmation = serializers.CharField(required=True, trim_whitespace=False)

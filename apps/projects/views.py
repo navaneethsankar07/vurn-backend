@@ -17,11 +17,18 @@ from apps.organizations.services.organization_service import (
 from apps.shared.utils.pagination import StandardPagination
 
 from .constants import PROJECT_ICONS
-from .exceptions import ProjectAlreadyExistsException, ProjectNotFoundException, ProjectPermissionDeniedException
+from .exceptions import (
+    ProjectAlreadyExistsException,
+    ProjectDeleteConfirmationException,
+    ProjectNotFoundException,
+    ProjectPermissionDeniedException,
+)
 from .serializers import (
+    ProjectDeleteSerializer,
     ProjectResponseSerializer,
     ProjectCreateSerializer,
     ProjectListSerializer,
+    ProjectSettingsSerializer,
     ProjectUpdateSerializer,
 )
 from .services.project_service import ProjectService
@@ -197,6 +204,56 @@ class ProjectSettingsView(APIView):
         IsAuthenticated,
     ]
 
+    def get(
+        self,
+        request,
+        slug,
+        project_slug,
+    ):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user,
+                slug=slug,
+            )
+            project = ProjectService.get_project(
+                organization=organization,
+                slug=project_slug,
+            )
+            ProjectAccessService.validate_project_edit_access(
+                project=project,
+                user=request.user,
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ProjectNotFoundException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ProjectPermissionDeniedException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        response_serializer = ProjectSettingsSerializer(
+            project,
+        )
+
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
     def patch(
         self,
         request,
@@ -274,3 +331,79 @@ class ProjectSettingsView(APIView):
             response_serializer.data,
             status=status.HTTP_200_OK,
         )
+
+
+class ProjectArchiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_project_archive_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        project = ProjectService.set_project_archive_status(
+            project=project, is_archived=True
+        )
+
+        response_serializer = ProjectResponseSerializer(project)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ProjectDeleteView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+    ]
+
+    def delete(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_project_delete_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProjectDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            ProjectService.validate_delete_confirmation(
+                project=project, confirmation=serializer.validated_data["confirmation"]
+            )
+        except ProjectDeleteConfirmationException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        ProjectService.delete_project(project=project)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

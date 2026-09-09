@@ -8,20 +8,11 @@ from .constants import ORGANIZATION_ROLE_CHOICES
 
 
 class Organization(models.Model):
-    name = models.CharField(
-        max_length=150,
-    )
+    name = models.CharField(max_length=150)
 
-    description = models.TextField(
-        max_length=500,
-        blank=True,
-    )
+    description = models.TextField(max_length=500, blank=True)
 
-    slug = models.SlugField(
-        max_length=63,
-        unique=True,
-        db_index=True,
-    )
+    slug = models.SlugField(max_length=63, unique=True, db_index=True)
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -29,39 +20,19 @@ class Organization(models.Model):
         related_name="owned_organizations",
     )
 
-    icon = models.CharField(
-        max_length=100,
-        default="hexagon",
-    )
+    icon = models.CharField(max_length=100, default="hexagon")
 
-    accent_color = models.CharField(
-        max_length=20,
-        default="amber",
-    )
+    accent_color = models.CharField(max_length=20, default="amber")
 
-    logo_url = models.URLField(
-        max_length=500,
-        blank=True,
-        null=True,
-    )
+    logo_url = models.URLField(max_length=500, blank=True, null=True)
 
-    is_archived = models.BooleanField(
-        default=False,
-    )
+    is_archived = models.BooleanField(default=False)
 
-    created_at = models.DateTimeField(
-        default=timezone.now,
-        editable=False,
-    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
-    deleted_at = models.DateTimeField(
-        blank=True,
-        null=True,
-    )
+    deleted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         db_table = "organizations"
@@ -88,48 +59,29 @@ class Organization(models.Model):
 
 class OrganizationPreference(models.Model):
     organization = models.OneToOneField(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="preferences",
+        Organization, on_delete=models.CASCADE, related_name="preferences"
     )
 
-    allow_admin_invitations = models.BooleanField(
-        default=True,
-    )
+    allow_admin_invitations = models.BooleanField(default=True)
 
-    allow_member_invitations = models.BooleanField(
-        default=False,
-    )
+    allow_member_invitations = models.BooleanField(default=False)
 
-    allow_member_project_creation = models.BooleanField(
-        default=False,
-    )
+    allow_member_project_creation = models.BooleanField(default=False)
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Preferences for {self.organization.name}"
 
 
 class Permission(models.Model):
-    code = models.CharField(
-        max_length=100,
-        unique=True,
-    )
+    code = models.CharField(max_length=100, unique=True)
 
-    name = models.CharField(
-        max_length=100,
-    )
+    name = models.CharField(max_length=100)
 
-    permission_group = models.CharField(
-        max_length=50,
-    )
+    permission_group = models.CharField(max_length=50)
 
-    description = models.TextField(
-        blank=True,
-    )
+    description = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
@@ -137,30 +89,17 @@ class Permission(models.Model):
 
 class OrganizationRole(models.Model):
     organization = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name="roles",
+        Organization, on_delete=models.CASCADE, related_name="roles"
     )
 
-    name = models.CharField(
-        max_length=100,
-    )
+    name = models.CharField(max_length=100)
 
-    description = models.TextField(
-        blank=True,
-    )
+    description = models.TextField(blank=True)
 
-    color = models.CharField(
-        max_length=7,
-        blank=True,
-    )
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-    )
+    color = models.CharField(max_length=7, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
@@ -176,15 +115,11 @@ class OrganizationRole(models.Model):
 
 class OrganizationRolePermission(models.Model):
     role = models.ForeignKey(
-        OrganizationRole,
-        on_delete=models.CASCADE,
-        related_name="role_permissions",
+        OrganizationRole, on_delete=models.CASCADE, related_name="role_permissions"
     )
 
     permission = models.ForeignKey(
-        Permission,
-        on_delete=models.CASCADE,
-        related_name="role_permissions",
+        Permission, on_delete=models.CASCADE, related_name="role_permissions"
     )
 
     class Meta:
@@ -198,9 +133,7 @@ class OrganizationRolePermission(models.Model):
 
 class OrganizationMember(models.Model):
     organization = models.ForeignKey(
-        "Organization",
-        on_delete=models.CASCADE,
-        related_name="members",
+        "Organization", on_delete=models.CASCADE, related_name="members"
     )
 
     user = models.ForeignKey(
@@ -210,9 +143,7 @@ class OrganizationMember(models.Model):
     )
 
     role = models.CharField(
-        max_length=20,
-        choices=ORGANIZATION_ROLE_CHOICES,
-        default="member",
+        max_length=20, choices=ORGANIZATION_ROLE_CHOICES, default="member"
     )
 
     job_role = models.ForeignKey(
@@ -230,9 +161,7 @@ class OrganizationMember(models.Model):
         related_name="invited_organization_members",
     )
 
-    joined_at = models.DateTimeField(
-        auto_now_add=True,
-    )
+    joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "organization_members"
@@ -247,27 +176,17 @@ class OrganizationMember(models.Model):
 
 class OrganizationInvitation(models.Model):
     organization = models.ForeignKey(
-        "Organization",
-        on_delete=models.CASCADE,
-        related_name="invitations",
+        "Organization", on_delete=models.CASCADE, related_name="invitations"
     )
 
     email = models.EmailField()
 
-    personal_message = models.TextField(
-        blank=True,
-    )
+    personal_message = models.TextField(blank=True)
 
-    token = models.UUIDField(
-        default=uuid.uuid4,
-        unique=True,
-        editable=False,
-    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     permission_role = models.CharField(
-        max_length=20,
-        choices=ORGANIZATION_ROLE_CHOICES,
-        default="member",
+        max_length=20, choices=ORGANIZATION_ROLE_CHOICES, default="member"
     )
 
     job_role = models.ForeignKey(

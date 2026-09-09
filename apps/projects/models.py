@@ -8,9 +8,7 @@ from .constants import PROJECT_STATUS_CHOICES
 class Project(models.Model):
 
     organization = models.ForeignKey(
-        "organizations.Organization",
-        on_delete=models.CASCADE,
-        related_name="projects",
+        "organizations.Organization", on_delete=models.CASCADE, related_name="projects"
     )
 
     owner = models.ForeignKey(
@@ -20,9 +18,7 @@ class Project(models.Model):
     )
 
     project_lead = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="led_projects",
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="led_projects"
     )
 
     created_by = models.ForeignKey(
@@ -31,71 +27,35 @@ class Project(models.Model):
         related_name="created_projects",
     )
 
-    name = models.CharField(
-        max_length=150,
-    )
+    name = models.CharField(max_length=150)
 
-    key = models.CharField(
-        max_length=10,
-    )
+    key = models.CharField(max_length=10)
 
-    slug = models.SlugField(
-        max_length=180,
-    )
+    slug = models.SlugField(max_length=180)
 
-    description = models.TextField(
-        blank=True,
-    )
+    description = models.TextField(blank=True)
 
-    icon = models.CharField(
-        max_length=100,
-        default="hexagon",
-    )
+    icon = models.CharField(max_length=100, default="hexagon")
 
-    accent_color = models.CharField(
-        max_length=7,
-        default="#F59E0B",
-    )
+    accent_color = models.CharField(max_length=7, default="#F59E0B")
 
-    logo_url = models.URLField(
-        max_length=500,
-        blank=True,
-        null=True,
-    )
+    logo_url = models.URLField(max_length=500, blank=True, null=True)
 
     status = models.CharField(
-        max_length=20,
-        choices=PROJECT_STATUS_CHOICES,
-        default="active",
+        max_length=20, choices=PROJECT_STATUS_CHOICES, default="active"
     )
 
-    is_archived = models.BooleanField(
-        default=False,
-    )
+    is_archived = models.BooleanField(default=False)
 
-    start_date = models.DateField(
-        blank=True,
-        null=True,
-    )
+    start_date = models.DateField(blank=True, null=True)
 
-    target_date = models.DateField(
-        blank=True,
-        null=True,
-    )
+    target_date = models.DateField(blank=True, null=True)
 
-    created_at = models.DateTimeField(
-        default=timezone.now,
-        editable=False,
-    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
 
-    updated_at = models.DateTimeField(
-        auto_now=True,
-    )
+    updated_at = models.DateTimeField(auto_now=True)
 
-    deleted_at = models.DateTimeField(
-        blank=True,
-        null=True,
-    )
+    deleted_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
 

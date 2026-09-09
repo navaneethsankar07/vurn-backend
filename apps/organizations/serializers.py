@@ -143,16 +143,10 @@ class OrganizationListSerializer(
 
         return stats["project_count"]
 
-    def get_last_opened_at(
-        self,
-        obj,
-    ):
+    def get_last_opened_at(self, obj):
         return None
 
-    def get_is_pinned(
-        self,
-        obj,
-    ):
+    def get_is_pinned(self, obj):
         return False
 
 
@@ -167,12 +161,8 @@ class OrganizationAccessSerializer(
     serializers.Serializer,
 ):
     role = serializers.CharField()
-    job_role = OrganizationAccessJobRoleSerializer(
-        allow_null=True,
-    )
-    permissions = serializers.ListField(
-        child=serializers.CharField(),
-    )
+    job_role = OrganizationAccessJobRoleSerializer(allow_null=True)
+    permissions = serializers.ListField(child=serializers.CharField())
     has_full_access = serializers.BooleanField()
     can_invite_members = serializers.BooleanField()
     can_create_projects = serializers.BooleanField()
