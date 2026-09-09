@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     ProjectArchiveView,
     ProjectDeleteView,
+    ProjectMemberView,
     ProjectOptionsView,
     ProjectSettingsView,
     ProjectView,
@@ -20,6 +21,11 @@ urlpatterns = [
         "<slug:project_slug>/archive/",
         ProjectArchiveView.as_view(),
         name="project-archive",
+    ),
+    path(
+        "<slug:project_slug>/members/",
+        ProjectMemberView.as_view(),
+        name="project-members",
     ),
     path("<slug:project_slug>/", ProjectDeleteView.as_view(), name="project-delete"),
 ]

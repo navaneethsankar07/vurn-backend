@@ -248,3 +248,13 @@ class ProjectSettingsSerializer(serializers.Serializer):
 
 class ProjectDeleteSerializer(serializers.Serializer):
     confirmation = serializers.CharField(required=True, trim_whitespace=False)
+
+
+class ProjectMemberCreateSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    project_role = serializers.CharField(
+        max_length=100, required=False, allow_blank=True
+    )
+
+    def validate_project_role(self, value):
+        return value.strip()

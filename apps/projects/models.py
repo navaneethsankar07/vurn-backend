@@ -44,23 +44,15 @@ class Project(models.Model):
 
         db_table = "projects"
 
-        ordering = [
-            "-created_at",
-        ]
+        ordering = ["-created_at"]
 
         constraints = [
             models.UniqueConstraint(
-                fields=(
-                    "organization",
-                    "key",
-                ),
+                fields=("organization", "key"),
                 name="uq_project_key_per_org",
             ),
             models.UniqueConstraint(
-                fields=(
-                    "organization",
-                    "slug",
-                ),
+                fields=("organization", "slug"),
                 name="uq_project_slug_per_org",
             ),
         ]
@@ -71,14 +63,38 @@ class Project(models.Model):
                 name="idx_projects_deleted_at",
             ),
             models.Index(
-                fields=[
-                    "organization",
-                    "is_archived",
-                    "deleted_at",
-                ],
+                fields=["organization", "is_archived", "deleted_at"],
                 name="idx_projects_org_archived",
             ),
         ]
 
     def __str__(self):
         return f"{self.key} - {self.name}"
+
+
+class ProjectMember(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="members"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="project_memberships",
+    )
+    project_role = models.CharField(max_length=100)
+    joined_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        db_table = "project_members"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "user"), name="uq_project_member"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("project",), name="idx_project_members_project"),
+            models.Index(fields=("user",), name="idx_project_members_user"),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} - " f"{self.project.name}"

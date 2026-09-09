@@ -56,6 +56,25 @@ class ProjectAccessService:
         return access["role"] == "admin"
 
     @staticmethod
+    def can_add_project_members(*, project, user) -> bool:
+        organization = project.organization
+
+        if organization.owner_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        if project.project_lead_id == user.id:
+            return True
+
+        access = OrganizationAccessService.get_user_access(
+            organization=organization, user=user
+        )
+
+        return access["role"] == "admin"
+
+    @staticmethod
     def validate_project_archive_access(*, project, user) -> None:
         if not ProjectAccessService.can_archive_project(project=project, user=user):
             raise ProjectPermissionDeniedException(
@@ -81,4 +100,11 @@ class ProjectAccessService:
         ):
             raise ProjectPermissionDeniedException(
                 "You do not have permission to edit this project."
+            )
+
+    @staticmethod
+    def validate_add_project_member_access(*, project, user) -> None:
+        if not ProjectAccessService.can_add_project_members(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to add members to this project."
             )

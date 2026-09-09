@@ -20,11 +20,14 @@ from .constants import PROJECT_ICONS
 from .exceptions import (
     ProjectAlreadyExistsException,
     ProjectDeleteConfirmationException,
+    ProjectMemberAlreadyExistsException,
+    ProjectMemberUserNotFoundException,
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
 )
 from .serializers import (
     ProjectDeleteSerializer,
+    ProjectMemberCreateSerializer,
     ProjectResponseSerializer,
     ProjectCreateSerializer,
     ProjectListSerializer,
@@ -33,22 +36,16 @@ from .serializers import (
 )
 from .services.project_service import ProjectService
 from .services.project_access_service import ProjectAccessService
+from .services.project_member_service import ProjectMemberService
 
 
 class ProjectView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated]
 
-    def get(
-        self,
-        request,
-        slug,
-    ):
+    def get(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             OrganizationAccessService.validate_permission(
@@ -58,39 +55,18 @@ class ProjectView(APIView):
             )
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except OrganizationPermissionDeniedException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-        search = request.query_params.get(
-            "search",
-        )
+        search = request.query_params.get("search")
 
-        project_status = request.query_params.get(
-            "status",
-            "all",
-        )
+        project_status = request.query_params.get("status", "all")
 
-        archive = request.query_params.get(
-            "archive",
-            "active",
-        )
+        archive = request.query_params.get("archive", "active")
 
-        sort = request.query_params.get(
-            "sort",
-            "recently_created",
-        )
+        sort = request.query_params.get("sort", "recently_created")
 
         projects = ProjectService.list_projects(
             organization=organization,
@@ -102,59 +78,31 @@ class ProjectView(APIView):
 
         paginator = StandardPagination()
 
-        paginated_projects = paginator.paginate_queryset(
-            projects,
-            request,
-        )
+        paginated_projects = paginator.paginate_queryset(projects, request)
 
-        serializer = ProjectListSerializer(
-            paginated_projects,
-            many=True,
-        )
+        serializer = ProjectListSerializer(paginated_projects, many=True)
 
-        return paginator.get_paginated_response(
-            serializer.data,
-        )
+        return paginator.get_paginated_response(serializer.data)
 
-    def post(
-        self,
-        request,
-        slug,
-    ):
+    def post(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             OrganizationAccessService.validate_project_creation_access(
-                organization=organization,
-                user=request.user,
+                organization=organization, user=request.user
             )
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except OrganizationProjectCreationPermissionDeniedException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = ProjectCreateSerializer(
-            data=request.data,
-        )
+        serializer = ProjectCreateSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         try:
             project = ProjectService.create_project(
@@ -164,32 +112,19 @@ class ProjectView(APIView):
             )
 
         except ProjectAlreadyExistsException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         response_serializer = ProjectResponseSerializer(
             project,
         )
 
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_201_CREATED,
-        )
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ProjectOptionsView(APIView):
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated]
 
-    def get(
-        self,
-        request,
-    ):
+    def get(self, request):
         return Response(
             {
                 "icons": PROJECT_ICONS,
@@ -214,108 +149,54 @@ class ProjectSettingsView(APIView):
                 project=project, user=request.user
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectPermissionDeniedException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         response_serializer = ProjectSettingsSerializer(project)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
-    def patch(
-        self,
-        request,
-        slug,
-        project_slug,
-    ):
+    def patch(self, request, slug, project_slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             project = ProjectService.get_project(
-                organization=organization,
-                slug=project_slug,
+                organization=organization, slug=project_slug
             )
 
             ProjectAccessService.validate_project_edit_access(
-                project=project,
-                user=request.user,
+                project=project, user=request.user
             )
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except ProjectNotFoundException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except ProjectPermissionDeniedException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = ProjectUpdateSerializer(
-            data=request.data,
-            partial=True,
-        )
+        serializer = ProjectUpdateSerializer(data=request.data, partial=True)
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         try:
             project = ProjectService.update_project(
-                project=project,
-                **serializer.validated_data,
+                project=project, **serializer.validated_data
             )
 
         except ProjectAlreadyExistsException as exc:
-            return Response(
-                {
-                    "error": str(exc),
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        response_serializer = ProjectResponseSerializer(
-            project,
-        )
+        response_serializer = ProjectResponseSerializer(project)
 
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_200_OK,
-        )
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class ProjectArchiveView(APIView):
@@ -392,3 +273,42 @@ class ProjectDeleteView(APIView):
         ProjectService.delete_project(project=project)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProjectMemberView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_add_project_member_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProjectMemberCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            ProjectMemberService.add_member(
+                project=project, **serializer.validated_data
+            )
+        except ProjectMemberUserNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectMemberAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Project member added successfully."},
+            status=status.HTTP_201_CREATED,
+        )

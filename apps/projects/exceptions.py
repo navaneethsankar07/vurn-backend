@@ -20,3 +20,19 @@ class ProjectPermissionDeniedException(ProjectException):
 
 class ProjectDeleteConfirmationException(ProjectException):
     pass
+
+
+class ProjectMemberException(ProjectException):
+    pass
+
+
+class ProjectMemberAlreadyExistsException(
+    ProjectMemberException,
+):
+    pass
+
+
+class ProjectMemberUserNotFoundException(
+    ProjectMemberException,
+):
+    pass
