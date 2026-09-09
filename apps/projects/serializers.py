@@ -258,3 +258,13 @@ class ProjectMemberCreateSerializer(serializers.Serializer):
 
     def validate_project_role(self, value):
         return value.strip()
+
+
+class ProjectMemberSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    full_name = serializers.CharField(source="user.full_name")
+    email = serializers.EmailField(source="user.email")
+    avatar = serializers.URLField(source="user.avatar", allow_null=True)
+    project_role = serializers.CharField()
+    joined_at = serializers.DateTimeField()

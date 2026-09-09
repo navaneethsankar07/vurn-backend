@@ -28,6 +28,7 @@ from .exceptions import (
 from .serializers import (
     ProjectDeleteSerializer,
     ProjectMemberCreateSerializer,
+    ProjectMemberSerializer,
     ProjectResponseSerializer,
     ProjectCreateSerializer,
     ProjectListSerializer,
@@ -277,6 +278,33 @@ class ProjectDeleteView(APIView):
 
 class ProjectMemberView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_project_view_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        members = ProjectMemberService.list_members(project=project)
+
+        paginator = StandardPagination()
+        paginated_members = paginator.paginate_queryset(members, request)
+
+        serializer = ProjectMemberSerializer(paginated_members, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, slug, project_slug):
         try:

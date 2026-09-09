@@ -7,6 +7,23 @@ from ..exceptions import ProjectPermissionDeniedException
 class ProjectAccessService:
 
     @staticmethod
+    def can_view_project(*, project, user) -> bool:
+        organization = project.organization
+
+        if organization.owner_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        if project.project_lead_id == user.id:
+            return True
+
+        return OrganizationAccessService.has_permission(
+            organization=organization, user=user, permission_code="project.view"
+        )
+
+    @staticmethod
     def can_edit_project(*, project, user) -> bool:
         if project.owner_id == user.id:
             return True
@@ -73,6 +90,13 @@ class ProjectAccessService:
         )
 
         return access["role"] == "admin"
+
+    @staticmethod
+    def validate_project_view_access(*, project, user) -> None:
+        if not ProjectAccessService.can_view_project(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to view this project."
+            )
 
     @staticmethod
     def validate_project_archive_access(*, project, user) -> None:

@@ -1,12 +1,13 @@
 from django.db import IntegrityError, transaction
 
-from backend.apps.accounts.models import User
-from backend.apps.organizations.models import OrganizationMember
-from backend.apps.projects.exceptions import (
+from apps.accounts.models import User
+from apps.organizations.models import OrganizationMember
+from apps.projects.models import ProjectMember
+
+from ..exceptions import (
     ProjectMemberAlreadyExistsException,
     ProjectMemberUserNotFoundException,
 )
-from backend.apps.projects.models import ProjectMember
 
 
 class ProjectMemberService:
@@ -67,3 +68,11 @@ class ProjectMemberService:
             raise ProjectMemberAlreadyExistsException(
                 "User is already a member of this project."
             ) from exc
+
+    @staticmethod
+    def list_members(*, project):
+        return (
+            ProjectMember.objects.filter(project=project)
+            .select_related("user")
+            .order_by("joined_at")
+        )
