@@ -21,6 +21,7 @@ from .exceptions import (
     ProjectAlreadyExistsException,
     ProjectDeleteConfirmationException,
     ProjectMemberAlreadyExistsException,
+    ProjectMemberNotFoundException,
     ProjectMemberUserNotFoundException,
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
@@ -345,4 +346,34 @@ class ProjectMemberView(APIView):
         return Response(
             {"message": "Project member added successfully."},
             status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, slug, project_slug, user_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_remove_project_member_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            ProjectMemberService.remove_member(project=project, user_id=user_id)
+        except ProjectMemberNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "message": "Project member removed successfully.",
+            },
+            status=status.HTTP_200_OK,
         )

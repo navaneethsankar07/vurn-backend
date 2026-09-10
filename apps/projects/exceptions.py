@@ -26,13 +26,13 @@ class ProjectMemberException(ProjectException):
     pass
 
 
-class ProjectMemberAlreadyExistsException(
-    ProjectMemberException,
-):
+class ProjectMemberAlreadyExistsException(ProjectMemberException):
     pass
 
 
-class ProjectMemberUserNotFoundException(
-    ProjectMemberException,
-):
+class ProjectMemberUserNotFoundException(ProjectMemberException):
+    pass
+
+
+class ProjectMemberNotFoundException(ProjectMemberException):
     pass

@@ -6,6 +6,7 @@ from apps.projects.models import ProjectMember
 
 from ..exceptions import (
     ProjectMemberAlreadyExistsException,
+    ProjectMemberNotFoundException,
     ProjectMemberUserNotFoundException,
 )
 
@@ -117,10 +118,22 @@ class ProjectMemberService:
 
         if sort == "name_asc":
             result.sort(key=lambda member: member["full_name"].lower())
-            print(result)
         elif sort == "name_desc":
             result.sort(key=lambda member: member["full_name"].lower(), reverse=True)
         elif sort == "recently_joined":
             result.sort(key=lambda member: member["joined_at"], reverse=True)
 
         return result
+
+    @staticmethod
+    @transaction.atomic
+    def remove_member(*, project, user_id) -> None:
+        if project.owner_id == user_id:
+            raise ProjectMemberNotFoundException("The project owner cannot be removed.")
+
+        try:
+            member = ProjectMember.objects.get(project=project, user_id=user_id)
+        except ProjectMember.DoesNotExist as exc:
+            raise ProjectMemberNotFoundException("Project member not found.") from exc
+
+        member.delete()

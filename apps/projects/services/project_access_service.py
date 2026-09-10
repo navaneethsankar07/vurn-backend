@@ -92,6 +92,18 @@ class ProjectAccessService:
         return access["role"] == "admin"
 
     @staticmethod
+    def can_remove_project_member(*, project, user) -> bool:
+        organization = project.organization
+
+        if organization.owner_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        return False
+
+    @staticmethod
     def validate_project_view_access(*, project, user) -> None:
         if not ProjectAccessService.can_view_project(project=project, user=user):
             raise ProjectPermissionDeniedException(
@@ -131,4 +143,13 @@ class ProjectAccessService:
         if not ProjectAccessService.can_add_project_members(project=project, user=user):
             raise ProjectPermissionDeniedException(
                 "You do not have permission to add members to this project."
+            )
+
+    @staticmethod
+    def validate_remove_project_member_access(*, project, user) -> None:
+        if not ProjectAccessService.can_remove_project_member(
+            project=project, user=user
+        ):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to remove " "members from this project."
             )

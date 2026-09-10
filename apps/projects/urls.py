@@ -27,5 +27,10 @@ urlpatterns = [
         ProjectMemberView.as_view(),
         name="project-members",
     ),
+    path(
+        "<slug:project_slug>/members/<int:user_id>/",
+        ProjectMemberView.as_view(),
+        name="project-member",
+    ),
     path("<slug:project_slug>/", ProjectDeleteView.as_view(), name="project-delete"),
 ]
