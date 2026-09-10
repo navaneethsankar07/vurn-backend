@@ -70,9 +70,57 @@ class ProjectMemberService:
             ) from exc
 
     @staticmethod
-    def list_members(*, project):
-        return (
+    def list_members(*, project, search=None, sort="recently_added"):
+        members = (
             ProjectMember.objects.filter(project=project)
             .select_related("user")
             .order_by("joined_at")
         )
+
+        owner = project.owner
+
+        result = [
+            {
+                "id": None,
+                "user_id": owner.id,
+                "full_name": owner.full_name or "",
+                "email": owner.email,
+                "avatar": owner.avatar,
+                "project_role": "Project Owner",
+                "joined_at": project.created_at,
+            }
+        ]
+
+        result.extend(
+            {
+                "id": member.id,
+                "user_id": member.user.id,
+                "full_name": member.user.full_name or "",
+                "email": member.user.email,
+                "avatar": member.user.avatar,
+                "project_role": member.project_role,
+                "joined_at": member.joined_at,
+            }
+            for member in members
+        )
+
+        if search:
+            search = search.strip().lower()
+
+            result = [
+                member
+                for member in result
+                if search in member["full_name"].lower()
+                or search in member["email"].lower()
+                or search in member["project_role"].lower()
+            ]
+
+        if sort == "name_asc":
+            result.sort(key=lambda member: member["full_name"].lower())
+            print(result)
+        elif sort == "name_desc":
+            result.sort(key=lambda member: member["full_name"].lower(), reverse=True)
+        elif sort == "recently_joined":
+            result.sort(key=lambda member: member["joined_at"], reverse=True)
+
+        return result

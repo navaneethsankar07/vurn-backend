@@ -297,9 +297,15 @@ class ProjectMemberView(APIView):
         except ProjectPermissionDeniedException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-        members = ProjectMemberService.list_members(project=project)
+        search = request.query_params.get("search")
+        sort = request.query_params.get("sort", "recently_added")
+
+        members = ProjectMemberService.list_members(
+            project=project, search=search, sort=sort
+        )
 
         paginator = StandardPagination()
+
         paginated_members = paginator.paginate_queryset(members, request)
 
         serializer = ProjectMemberSerializer(paginated_members, many=True)

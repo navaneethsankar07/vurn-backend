@@ -36,12 +36,10 @@ PROJECT_LIST_SORT_OPTIONS = (
     "name_desc",
 )
 
-PROJECT_ARCHIVE_FILTERS = (
-    "all",
-    "active",
-    "archived",
-)
+PROJECT_ARCHIVE_FILTERS = ("all", "active", "archived")
 
 CLOUDINARY_PROJECTS_FOLDER = "vurn/projects"
 
 PROJECT_DELETE_CONFIRMATION_PREFIX = "DELETE"
+
+PROJECT_MEMBER_SORT_OPTIONS = ("name_asc", "name_desc", "recently_added")
