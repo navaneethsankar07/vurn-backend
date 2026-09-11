@@ -328,3 +328,34 @@ class WorkflowStatusCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Enter a valid hex color.")
 
         return value
+
+
+class WorkflowStatusUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=60, required=False)
+    category = serializers.ChoiceField(choices=STATUS_CATEGORY_CHOICES, required=False)
+    color = serializers.CharField(max_length=7, required=False)
+    icon = serializers.CharField(
+        max_length=50, required=False, allow_blank=True, allow_null=True
+    )
+    position = serializers.IntegerField(min_value=0, required=False)
+    is_default = serializers.BooleanField(required=False)
+    is_archived = serializers.BooleanField(required=False)
+    allow_from_backlog = serializers.BooleanField(required=False)
+    allow_incoming = serializers.BooleanField(required=False)
+    allow_outgoing = serializers.BooleanField(required=False)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Status name cannot be empty.")
+
+        return value
+
+    def validate_color(self, value):
+        value = value.strip().upper()
+
+        if not re.fullmatch(r"#[0-9A-F]{6}", value):
+            raise serializers.ValidationError("Enter a valid hex color.")
+
+        return value

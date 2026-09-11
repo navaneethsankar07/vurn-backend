@@ -45,4 +45,9 @@ urlpatterns = [
         WorkflowStatusView.as_view(),
         name="workflow-statuses",
     ),
+    path(
+        "<slug:project_slug>/workflow/statuses/<int:status_id>/",
+        WorkflowStatusView.as_view(),
+        name="workflow-status-detail",
+    ),
 ]
