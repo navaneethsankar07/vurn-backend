@@ -1,7 +1,8 @@
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from ..exceptions import (
     WorkflowStatusAlreadyExistsException,
+    WorkflowStatusCannotBeDeletedException,
     WorkflowStatusNotFoundException,
 )
 
@@ -208,3 +209,24 @@ class WorkflowService:
             return WorkflowStatus.objects.get(id=status_id, project=project)
         except WorkflowStatus.DoesNotExist as exc:
             raise WorkflowStatusNotFoundException("Workflow status not found.") from exc
+
+    @staticmethod
+    @transaction.atomic
+    def delete_status(*, status):
+        if status.is_default:
+            raise WorkflowStatusCannotBeDeletedException(
+                "The default status cannot be deleted. "
+                "Set another status as default first."
+            )
+
+        WorkflowTransition.objects.filter(project=status.project).filter(
+            Q(from_status=status) | Q(to_status=status)
+        ).delete()
+
+        deleted_position = status.position
+
+        status.delete()
+
+        WorkflowStatus.objects.filter(
+            project=status.project, position__gt=deleted_position
+        ).update(position=F("position") - 1)

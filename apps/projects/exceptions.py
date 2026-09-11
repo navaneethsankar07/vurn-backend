@@ -45,5 +45,10 @@ class WorkflowException(ProjectException):
 class WorkflowStatusAlreadyExistsException(WorkflowException):
     pass
 
+
 class WorkflowStatusNotFoundException(WorkflowException):
+    pass
+
+
+class WorkflowStatusCannotBeDeletedException(WorkflowException):
     pass

@@ -26,6 +26,7 @@ from .exceptions import (
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
     WorkflowStatusAlreadyExistsException,
+    WorkflowStatusCannotBeDeletedException,
     WorkflowStatusNotFoundException,
 )
 from .serializers import (
@@ -484,3 +485,38 @@ class WorkflowStatusView(APIView):
         response_serializer = WorkflowStatusSerializer(workflow_status)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, slug, project_slug, status_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_workflow_management_access(
+                project=project, user=request.user
+            )
+
+            workflow_status = WorkflowService.get_status(
+                project=project, status_id=status_id
+            )
+
+            WorkflowService.delete_status(status=workflow_status)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except WorkflowStatusNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except WorkflowStatusCannotBeDeletedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Workflow status deleted successfully."},
+            status=status.HTTP_200_OK,
+        )
