@@ -43,3 +43,11 @@ CLOUDINARY_PROJECTS_FOLDER = "vurn/projects"
 PROJECT_DELETE_CONFIRMATION_PREFIX = "DELETE"
 
 PROJECT_MEMBER_SORT_OPTIONS = ("name_asc", "name_desc", "recently_added")
+
+
+STATUS_CATEGORY_CHOICES = (
+    ("backlog", "Backlog"),
+    ("todo", "To Do"),
+    ("in_progress", "In Progress"),
+    ("done", "Done"),
+)

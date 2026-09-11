@@ -6,6 +6,8 @@ from django.utils import timezone
 
 from apps.shared.services.cloudinary_service import CloudinaryService
 
+from .workflow_service import WorkflowService
+
 from ..constants import (
     CLOUDINARY_PROJECTS_FOLDER,
     PROJECT_ARCHIVE_FILTERS,
@@ -128,6 +130,9 @@ class ProjectService:
                 start_date=start_date,
                 target_date=target_date,
             )
+
+            WorkflowService.create_default_workflow(project=project)
+            
         except IntegrityError as exc:
             raise ProjectAlreadyExistsException(
                 "Unable to create the project."
@@ -210,7 +215,7 @@ class ProjectService:
         expected_confirmation = (
             f"{PROJECT_DELETE_CONFIRMATION_PREFIX} " f"{project.name}"
         )
-        
+
         if confirmation != expected_confirmation:
             raise ProjectDeleteConfirmationException(
                 "The confirmation text does not match."
