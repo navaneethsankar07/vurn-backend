@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from .models import Project, WorkflowStatus
 
-from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES
+from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
 
 
 class ProjectCreateSerializer(serializers.Serializer):
@@ -298,3 +298,33 @@ class WorkflowTransitionSerializer(serializers.Serializer):
 class WorkflowOverviewSerializer(serializers.Serializer):
     statuses = WorkflowStatusSerializer(many=True)
     transitions = WorkflowTransitionSerializer(many=True)
+
+
+class WorkflowStatusCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=60)
+    category = serializers.ChoiceField(choices=STATUS_CATEGORY_CHOICES)
+    color = serializers.CharField(max_length=7)
+    icon = serializers.CharField(
+        max_length=50, required=False, allow_blank=True, allow_null=True
+    )
+    position = serializers.IntegerField(min_value=0)
+    is_default = serializers.BooleanField(required=False, default=False)
+    allow_from_backlog = serializers.BooleanField(required=False, default=True)
+    allow_incoming = serializers.BooleanField(required=False, default=True)
+    allow_outgoing = serializers.BooleanField(required=False, default=True)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Status name cannot be empty.")
+
+        return value
+
+    def validate_color(self, value):
+        value = value.strip().upper()
+
+        if not re.fullmatch(r"#[0-9A-F]{6}", value):
+            raise serializers.ValidationError("Enter a valid hex color.")
+
+        return value

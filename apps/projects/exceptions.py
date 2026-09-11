@@ -36,3 +36,12 @@ class ProjectMemberUserNotFoundException(ProjectMemberException):
 
 class ProjectMemberNotFoundException(ProjectMemberException):
     pass
+
+
+class WorkflowException(ProjectException):
+    pass
+
+
+class WorkflowStatusAlreadyExistsException(WorkflowException):
+    pass
+

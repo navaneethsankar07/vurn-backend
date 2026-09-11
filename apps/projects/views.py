@@ -25,6 +25,7 @@ from .exceptions import (
     ProjectMemberUserNotFoundException,
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
+    WorkflowStatusAlreadyExistsException,
 )
 from .serializers import (
     ProjectDeleteSerializer,
@@ -36,6 +37,8 @@ from .serializers import (
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
     WorkflowOverviewSerializer,
+    WorkflowStatusCreateSerializer,
+    WorkflowStatusSerializer,
 )
 from .services.project_service import ProjectService
 from .services.workflow_service import WorkflowService
@@ -402,3 +405,40 @@ class ProjectWorkflowView(APIView):
         serializer = WorkflowOverviewSerializer(workflow)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class WorkflowStatusView(APIView):
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_workflow_management_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = WorkflowStatusCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            workflow_status = WorkflowService.create_status(
+                project=project, **serializer.validated_data
+            )
+        except WorkflowStatusAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        response_serializer = WorkflowStatusSerializer(workflow_status)
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)

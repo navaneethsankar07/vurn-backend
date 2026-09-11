@@ -104,6 +104,25 @@ class ProjectAccessService:
         return False
 
     @staticmethod
+    def can_manage_workflow(*, project, user):
+        organization = project.organization
+
+        if organization.owner_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        if project.project_lead_id == user.id:
+            return True
+
+        access = OrganizationAccessService.get_user_access(
+            organization=organization, user=user
+        )
+
+        return access["role"] == "admin"
+
+    @staticmethod
     def validate_project_view_access(*, project, user) -> None:
         if not ProjectAccessService.can_view_project(project=project, user=user):
             raise ProjectPermissionDeniedException(
@@ -152,4 +171,11 @@ class ProjectAccessService:
         ):
             raise ProjectPermissionDeniedException(
                 "You do not have permission to remove " "members from this project."
+            )
+
+    @staticmethod
+    def validate_workflow_management_access(*, project, user):
+        if not ProjectAccessService.can_manage_workflow(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to manage " "the project workflow."
             )
