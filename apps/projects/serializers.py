@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from .models import Project
+from .models import Project, WorkflowStatus
 
 from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES
 
@@ -268,3 +268,33 @@ class ProjectMemberSerializer(serializers.Serializer):
     avatar = serializers.URLField(allow_null=True)
     project_role = serializers.CharField()
     joined_at = serializers.DateTimeField()
+
+
+class WorkflowStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkflowStatus
+        fields = [
+            "id",
+            "name",
+            "category",
+            "color",
+            "icon",
+            "position",
+            "is_default",
+            "is_archived",
+            "allow_from_backlog",
+            "allow_incoming",
+            "allow_outgoing",
+        ]
+
+
+class WorkflowTransitionSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    from_status_id = serializers.IntegerField()
+    to_status_id = serializers.IntegerField()
+    name = serializers.CharField()
+
+
+class WorkflowOverviewSerializer(serializers.Serializer):
+    statuses = WorkflowStatusSerializer(many=True)
+    transitions = WorkflowTransitionSerializer(many=True)

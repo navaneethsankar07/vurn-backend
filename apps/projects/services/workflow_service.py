@@ -70,3 +70,13 @@ class WorkflowService:
         WorkflowTransition.objects.bulk_create(transitions)
 
         return statuses
+
+    @staticmethod
+    def get_workflow(*, project):
+        statuses = WorkflowStatus.objects.filter(
+            project=project, is_archived=False
+        ).order_by("position", "id")
+
+        transitions = WorkflowTransition.objects.filter(project=project).order_by("id")
+
+        return {"statuses": statuses, "transitions": transitions}

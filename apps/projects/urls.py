@@ -7,6 +7,7 @@ from .views import (
     ProjectOptionsView,
     ProjectSettingsView,
     ProjectView,
+    ProjectWorkflowView,
 )
 
 urlpatterns = [
@@ -33,4 +34,9 @@ urlpatterns = [
         name="project-member",
     ),
     path("<slug:project_slug>/", ProjectDeleteView.as_view(), name="project-delete"),
+    path(
+        "<slug:project_slug>/workflow/",
+        ProjectWorkflowView.as_view(),
+        name="project-workflow",
+    ),
 ]

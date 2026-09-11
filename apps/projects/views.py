@@ -35,8 +35,10 @@ from .serializers import (
     ProjectListSerializer,
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
+    WorkflowOverviewSerializer,
 )
 from .services.project_service import ProjectService
+from .services.workflow_service import WorkflowService
 from .services.project_access_service import ProjectAccessService
 from .services.project_member_service import ProjectMemberService
 
@@ -377,3 +379,26 @@ class ProjectMemberView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ProjectWorkflowView(APIView):
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            workflow = WorkflowService.get_workflow(project=project)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = WorkflowOverviewSerializer(workflow)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

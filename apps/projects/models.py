@@ -155,7 +155,7 @@ class WorkflowTransition(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=("project",), name="idx_workflow_transition_project"),
+            models.Index(fields=("project",), name="idx_wf_transition_project"),
         ]
 
     def __str__(self):
