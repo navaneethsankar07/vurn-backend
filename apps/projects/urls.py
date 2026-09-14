@@ -8,7 +8,9 @@ from .views import (
     ProjectSettingsView,
     ProjectView,
     ProjectWorkflowView,
+    WorkflowStatusPositionView,
     WorkflowStatusView,
+    WorkflowTransitionView,
 )
 
 urlpatterns = [
@@ -49,5 +51,15 @@ urlpatterns = [
         "<slug:project_slug>/workflow/statuses/<int:status_id>/",
         WorkflowStatusView.as_view(),
         name="workflow-status-detail",
+    ),
+    path(
+        "<slug:project_slug>/workflow/statuses/<int:status_id>/position/",
+        WorkflowStatusPositionView.as_view(),
+        name="workflow-status-position",
+    ),
+    path(
+        "<slug:project_slug>/workflow/transitions/",
+        WorkflowTransitionView.as_view(),
+        name="workflow-transitions",
     ),
 ]

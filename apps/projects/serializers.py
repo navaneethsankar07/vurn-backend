@@ -359,3 +359,13 @@ class WorkflowStatusUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Enter a valid hex color.")
 
         return value
+
+
+class WorkflowTransitionCreateSerializer(serializers.Serializer):
+    from_status_id = serializers.IntegerField()
+    to_status_id = serializers.IntegerField()
+    name = serializers.CharField(max_length=60, required=False, allow_blank=True)
+
+
+class WorkflowStatusPositionSerializer(serializers.Serializer):
+    position = serializers.IntegerField(min_value=0)

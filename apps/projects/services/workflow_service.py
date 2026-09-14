@@ -4,6 +4,8 @@ from ..exceptions import (
     WorkflowStatusAlreadyExistsException,
     WorkflowStatusCannotBeDeletedException,
     WorkflowStatusNotFoundException,
+    WorkflowTransitionAlreadyExistsException,
+    WorkflowTransitionInvalidException,
 )
 
 from ..models import WorkflowStatus, WorkflowTransition
@@ -212,6 +214,40 @@ class WorkflowService:
 
     @staticmethod
     @transaction.atomic
+    def update_status_position(*, status, position):
+        status_count = WorkflowStatus.objects.filter(
+            project=status.project, is_archived=False
+        ).count()
+
+        position = min(position, status_count - 1)
+
+        current_position = status.position
+
+        if position == current_position:
+            return status
+
+        if position < current_position:
+            WorkflowStatus.objects.filter(
+                project=status.project,
+                is_archived=False,
+                position__gte=position,
+                position__lt=current_position,
+            ).exclude(id=status.id).update(position=F("position") + 1)
+        else:
+            WorkflowStatus.objects.filter(
+                project=status.project,
+                is_archived=False,
+                position__gt=current_position,
+                position__lte=position,
+            ).exclude(id=status.id).update(position=F("position") - 1)
+
+        status.position = position
+        status.save(update_fields=["position"])
+
+        return status
+
+    @staticmethod
+    @transaction.atomic
     def delete_status(*, status):
         if status.is_default:
             raise WorkflowStatusCannotBeDeletedException(
@@ -230,3 +266,44 @@ class WorkflowService:
         WorkflowStatus.objects.filter(
             project=status.project, position__gt=deleted_position
         ).update(position=F("position") - 1)
+
+    @staticmethod
+    @transaction.atomic
+    def create_transition(*, project, from_status_id, to_status_id, name=""):
+        if from_status_id == to_status_id:
+            raise WorkflowTransitionInvalidException(
+                "A workflow transition cannot point " "to the same status."
+            )
+
+        try:
+            from_status = WorkflowStatus.objects.get(id=from_status_id, project=project)
+        except WorkflowStatus.DoesNotExist as exc:
+            raise WorkflowTransitionInvalidException(
+                "The source status does not belong " "to this project."
+            ) from exc
+
+        try:
+            to_status = WorkflowStatus.objects.get(id=to_status_id, project=project)
+        except WorkflowStatus.DoesNotExist as exc:
+            raise WorkflowTransitionInvalidException(
+                "The destination status does not belong " "to this project."
+            ) from exc
+
+        if WorkflowTransition.objects.filter(
+            project=project, from_status=from_status, to_status=to_status
+        ).exists():
+            raise WorkflowTransitionAlreadyExistsException(
+                "This workflow transition already exists."
+            )
+
+        try:
+            return WorkflowTransition.objects.create(
+                project=project,
+                from_status=from_status,
+                to_status=to_status,
+                name=name.strip(),
+            )
+        except IntegrityError as exc:
+            raise WorkflowTransitionAlreadyExistsException(
+                "Unable to create the workflow transition."
+            ) from exc

@@ -52,3 +52,15 @@ class WorkflowStatusNotFoundException(WorkflowException):
 
 class WorkflowStatusCannotBeDeletedException(WorkflowException):
     pass
+
+
+class WorkflowTransitionNotFoundException(WorkflowException):
+    pass
+
+
+class WorkflowTransitionAlreadyExistsException(WorkflowException):
+    pass
+
+
+class WorkflowTransitionInvalidException(WorkflowException):
+    pass
