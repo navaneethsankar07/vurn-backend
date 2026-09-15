@@ -25,6 +25,8 @@ from .exceptions import (
     ProjectMemberUserNotFoundException,
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
+    SprintAlreadyExistsException,
+    SprintInvalidException,
     WorkflowStatusAlreadyExistsException,
     WorkflowStatusCannotBeDeletedException,
     WorkflowStatusNotFoundException,
@@ -40,6 +42,8 @@ from .serializers import (
     ProjectListSerializer,
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
+    SprintCreateSerializer,
+    SprintSerializer,
     WorkflowOverviewSerializer,
     WorkflowStatusCreateSerializer,
     WorkflowStatusPositionSerializer,
@@ -48,6 +52,7 @@ from .serializers import (
     WorkflowTransitionCreateSerializer,
     WorkflowTransitionSerializer,
 )
+from .services.sprint_service import SprintService
 from .services.project_service import ProjectService
 from .services.workflow_service import WorkflowService
 from .services.project_access_service import ProjectAccessService
@@ -603,3 +608,66 @@ class WorkflowStatusPositionView(APIView):
         response_serializer = WorkflowStatusSerializer(workflow_status)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class SprintView(APIView):
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        sprints = SprintService.list_sprints(project=project)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(sprints, request)
+
+        serializer = SprintSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_sprint_creation_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SprintCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            sprint = SprintService.create_sprint(
+                project=project, user=request.user, **serializer.validated_data
+            )
+        except SprintAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except SprintInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": sprint.id, "message": "Sprint created successfully."},
+            status=status.HTTP_201_CREATED,
+        )

@@ -123,6 +123,29 @@ class ProjectAccessService:
         return access["role"] == "admin"
 
     @staticmethod
+    def can_view_sprints(*, project, user):
+        organization = project.organization
+        return OrganizationAccessService.has_permission(
+            organization=organization, user=user, permission_code="sprint.view"
+        )
+
+    @staticmethod
+    def can_create_sprints(*, project, user):
+        organization = project.organization
+
+        return OrganizationAccessService.has_permission(
+            organization=organization, user=user, permission_code="sprint.create"
+        )
+
+    @staticmethod
+    def can_manage_sprints(*, project, user):
+        organization = project.organization
+
+        return OrganizationAccessService.has_permission(
+            organization=organization, user=user, permission_code="sprint.manage"
+        )
+
+    @staticmethod
     def validate_project_view_access(*, project, user) -> None:
         if not ProjectAccessService.can_view_project(project=project, user=user):
             raise ProjectPermissionDeniedException(
@@ -178,4 +201,25 @@ class ProjectAccessService:
         if not ProjectAccessService.can_manage_workflow(project=project, user=user):
             raise ProjectPermissionDeniedException(
                 "You do not have permission to manage " "the project workflow."
+            )
+
+    @staticmethod
+    def validate_sprint_view_access(*, project, user):
+        if not ProjectAccessService.can_view_sprints(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to view sprints."
+            )
+
+    @staticmethod
+    def validate_sprint_creation_access(*, project, user):
+        if not ProjectAccessService.can_create_sprints(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to create sprints."
+            )
+
+    @staticmethod
+    def validate_sprint_management_access(*, project, user):
+        if not ProjectAccessService.can_manage_sprints(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to manage sprints."
             )

@@ -8,6 +8,7 @@ from .views import (
     ProjectSettingsView,
     ProjectView,
     ProjectWorkflowView,
+    SprintView,
     WorkflowStatusPositionView,
     WorkflowStatusView,
     WorkflowTransitionView,
@@ -62,4 +63,5 @@ urlpatterns = [
         WorkflowTransitionView.as_view(),
         name="workflow-transitions",
     ),
+    path("<slug:project_slug>/sprints/", SprintView.as_view(), name="project-sprints"),
 ]

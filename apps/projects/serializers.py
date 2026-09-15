@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from .models import Project, WorkflowStatus
+from .models import Project, Sprint, WorkflowStatus
 
 from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
 
@@ -369,3 +369,46 @@ class WorkflowTransitionCreateSerializer(serializers.Serializer):
 
 class WorkflowStatusPositionSerializer(serializers.Serializer):
     position = serializers.IntegerField(min_value=0)
+
+
+class SprintSerializer(serializers.ModelSerializer):
+    created_by_id = serializers.IntegerField(source="created_by.id", read_only=True)
+
+    class Meta:
+        model = Sprint
+        fields = [
+            "id",
+            "name",
+            "goal",
+            "description",
+            "start_date",
+            "end_date",
+            "status",
+            "created_by_id",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class SprintCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+    goal = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Sprint name cannot be empty.")
+
+        return value
+
+    def validate(self, attrs):
+        if attrs["start_date"] > attrs["end_date"]:
+            raise serializers.ValidationError(
+                {"end_date": ("End date must be after or equal " "to the start date.")}
+            )
+
+        return attrs

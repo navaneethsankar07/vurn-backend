@@ -51,3 +51,10 @@ STATUS_CATEGORY_CHOICES = (
     ("in_progress", "In Progress"),
     ("done", "Done"),
 )
+
+
+SPRINT_STATUS_CHOICES = (
+    ("planned", "Planned"),
+    ("active", "Active"),
+    ("completed", "Completed"),
+)

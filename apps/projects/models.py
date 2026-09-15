@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from .constants import PROJECT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
+from .constants import PROJECT_STATUS_CHOICES, SPRINT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
 
 
 class Project(models.Model):
@@ -160,3 +160,40 @@ class WorkflowTransition(models.Model):
 
     def __str__(self):
         return f"{self.from_status.name} → " f"{self.to_status.name}"
+
+
+class Sprint(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="sprints"
+    )
+    name = models.CharField(max_length=150)
+    goal = models.TextField(blank=True)
+    description = models.TextField(blank=True)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(
+        max_length=20, choices=SPRINT_STATUS_CHOICES, default="planned"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_sprints",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "sprints"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "name"), name="uq_sprint_name_per_project"
+            )
+        ]
+        indexes = [
+            models.Index(fields=["project"], name="idx_sprints_project"),
+            models.Index(fields=["status"], name="idx_sprints_status"),
+        ]
+
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"

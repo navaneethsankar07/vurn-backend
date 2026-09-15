@@ -64,3 +64,19 @@ class WorkflowTransitionAlreadyExistsException(WorkflowException):
 
 class WorkflowTransitionInvalidException(WorkflowException):
     pass
+
+
+class SprintException(ProjectException):
+    pass
+
+
+class SprintNotFoundException(SprintException):
+    pass
+
+
+class SprintAlreadyExistsException(SprintException):
+    pass
+
+
+class SprintInvalidException(SprintException):
+    pass
