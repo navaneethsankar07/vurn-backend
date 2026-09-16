@@ -53,3 +53,36 @@ class SprintService:
             )
         except IntegrityError as exc:
             raise SprintAlreadyExistsException("Unable to create the sprint.") from exc
+
+    @staticmethod
+    @transaction.atomic
+    def update_sprint(*, sprint, **validated_data):
+        name = validated_data.get("name")
+
+        if (
+            name
+            and Sprint.objects.filter(project=sprint.project, name=name)
+            .exclude(id=sprint.id)
+            .exists()
+        ):
+            raise SprintAlreadyExistsException(
+                "A sprint with this name already exists " "in this project."
+            )
+
+        start_date = validated_data.get("start_date", sprint.start_date)
+        end_date = validated_data.get("end_date", sprint.end_date)
+
+        if start_date > end_date:
+            raise SprintInvalidException(
+                "End date must be after or equal " "to the start date."
+            )
+
+        for field, value in validated_data.items():
+            setattr(sprint, field, value)
+
+        try:
+            sprint.save()
+        except IntegrityError as exc:
+            raise SprintAlreadyExistsException("Unable to update the sprint.") from exc
+
+        return sprint

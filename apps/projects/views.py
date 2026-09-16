@@ -27,6 +27,7 @@ from .exceptions import (
     ProjectPermissionDeniedException,
     SprintAlreadyExistsException,
     SprintInvalidException,
+    SprintNotFoundException,
     WorkflowStatusAlreadyExistsException,
     WorkflowStatusCannotBeDeletedException,
     WorkflowStatusNotFoundException,
@@ -44,6 +45,7 @@ from .serializers import (
     ProjectUpdateSerializer,
     SprintCreateSerializer,
     SprintSerializer,
+    SprintUpdateSerializer,
     WorkflowOverviewSerializer,
     WorkflowStatusCreateSerializer,
     WorkflowStatusPositionSerializer,
@@ -670,4 +672,45 @@ class SprintView(APIView):
         return Response(
             {"id": sprint.id, "message": "Sprint created successfully."},
             status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request, slug, project_slug, sprint_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_sprint_management_access(
+                project=project, user=request.user
+            )
+
+            sprint = SprintService.get_sprint(project=project, sprint_id=sprint_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SprintUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            sprint = SprintService.update_sprint(
+                sprint=sprint, **serializer.validated_data
+            )
+        except SprintAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except SprintInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": sprint.id, "message": "Sprint updated successfully."},
+            status=status.HTTP_200_OK,
         )

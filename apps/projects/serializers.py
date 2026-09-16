@@ -412,3 +412,35 @@ class SprintCreateSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class SprintUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150, required=False)
+    goal = serializers.CharField(required=False, allow_blank=True)
+    description = serializers.CharField(required=False, allow_blank=True)
+    start_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Sprint name cannot be empty.")
+
+        return value
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+
+        if start_date and end_date:
+            if start_date > end_date:
+                raise serializers.ValidationError(
+                    {
+                        "end_date": (
+                            "End date must be after or equal " "to the start date."
+                        )
+                    }
+                )
+
+        return attrs

@@ -64,4 +64,9 @@ urlpatterns = [
         name="workflow-transitions",
     ),
     path("<slug:project_slug>/sprints/", SprintView.as_view(), name="project-sprints"),
+    path(
+        "<slug:project_slug>/sprints/<int:sprint_id>/",
+        SprintView.as_view(),
+        name="sprint-detail",
+    ),
 ]
