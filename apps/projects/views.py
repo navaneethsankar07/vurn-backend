@@ -674,6 +674,31 @@ class SprintView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
+class SprintDetailView(APIView):
+
+    def get(self, request, slug, project_slug, sprint_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            sprint = SprintService.get_sprint(project=project, sprint_id=sprint_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SprintSerializer(sprint)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def patch(self, request, slug, project_slug, sprint_id):
         try:
             organization = OrganizationService.get_user_organization(
