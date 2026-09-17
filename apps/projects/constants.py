@@ -58,3 +58,32 @@ SPRINT_STATUS_CHOICES = (
     ("active", "Active"),
     ("completed", "Completed"),
 )
+
+
+ISSUE_TYPE_CHOICES = (
+    ("epic", "Epic"),
+    ("story", "Story"),
+    ("task", "Task"),
+    ("bug", "Bug"),
+    ("subtask", "Sub-task"),
+)
+
+ISSUE_PRIORITY_CHOICES = (
+    ("urgent", "Urgent"),
+    ("high", "High"),
+    ("medium", "Medium"),
+    ("low", "Low"),
+)
+
+KANBAN_SORT_CHOICES = (
+    ("position", "Position"),
+    ("priority_asc", "Priority Ascending"),
+    ("priority_desc", "Priority Descending"),
+    ("created_asc", "Created Oldest"),
+    ("created_desc", "Created Newest"),
+    ("updated_asc", "Updated Oldest"),
+    ("updated_desc", "Updated Newest"),
+)
+
+BOARD_VIEW_PERMISSION = "board.view"
+BOARD_MANAGE_PERMISSION = "board.manage"
