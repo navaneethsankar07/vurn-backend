@@ -739,3 +739,40 @@ class SprintDetailView(APIView):
             {"id": sprint.id, "message": "Sprint updated successfully."},
             status=status.HTTP_200_OK,
         )
+
+
+class SprintStartView(APIView):
+
+    def post(self, request, slug, project_slug, sprint_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_sprint_management_access(
+                project=project, user=request.user
+            )
+
+            sprint = SprintService.get_sprint(project=project, sprint_id=sprint_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            sprint = SprintService.start_sprint(sprint=sprint)
+        except SprintInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": sprint.id, "message": "Sprint started successfully."},
+            status=status.HTTP_200_OK,
+        )

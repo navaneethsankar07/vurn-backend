@@ -86,3 +86,23 @@ class SprintService:
             raise SprintAlreadyExistsException("Unable to update the sprint.") from exc
 
         return sprint
+
+    @staticmethod
+    @transaction.atomic
+    def start_sprint(*, sprint):
+        if sprint.status != "planned":
+            raise SprintInvalidException("Only planned sprints can be started.")
+
+        active_sprint_exists = (
+            Sprint.objects.filter(project=sprint.project, status="active")
+            .exclude(id=sprint.id)
+            .exists()
+        )
+
+        if active_sprint_exists:
+            raise SprintInvalidException("This project already has an active sprint.")
+
+        sprint.status = "active"
+        sprint.save(update_fields=["status", "updated_at"])
+
+        return sprint

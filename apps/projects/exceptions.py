@@ -80,3 +80,7 @@ class SprintAlreadyExistsException(SprintException):
 
 class SprintInvalidException(SprintException):
     pass
+
+
+class SprintInvalidException(SprintException):
+    pass

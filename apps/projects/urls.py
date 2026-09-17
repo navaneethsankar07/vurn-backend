@@ -9,6 +9,7 @@ from .views import (
     ProjectView,
     ProjectWorkflowView,
     SprintDetailView,
+    SprintStartView,
     SprintView,
     WorkflowStatusPositionView,
     WorkflowStatusView,
@@ -69,5 +70,10 @@ urlpatterns = [
         "<slug:project_slug>/sprints/<int:sprint_id>/",
         SprintDetailView.as_view(),
         name="sprint-detail",
+    ),
+    path(
+        "<slug:project_slug>/sprints/<int:sprint_id>/start/",
+        SprintStartView.as_view(),
+        name="sprint-start",
     ),
 ]
