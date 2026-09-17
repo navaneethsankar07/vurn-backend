@@ -1,6 +1,10 @@
 from django.urls import path
 
 from .views import (
+    KanbanBoardView,
+    KanbanColumnIssueView,
+    KanbanIssuePositionView,
+    KanbanIssueStatusView,
     ProjectArchiveView,
     ProjectDeleteView,
     ProjectMemberView,
@@ -75,5 +79,25 @@ urlpatterns = [
         "<slug:project_slug>/sprints/<int:sprint_id>/start/",
         SprintStartView.as_view(),
         name="sprint-start",
+    ),
+    path(
+        "<slug:project_slug>/board/",
+        KanbanBoardView.as_view(),
+        name="project-kanban-board",
+    ),
+    path(
+        "<slug:project_slug>/board/columns/<int:status_id>/issues/",
+        KanbanColumnIssueView.as_view(),
+        name="kanban-column-issues",
+    ),
+    path(
+        "<slug:project_slug>/board/issues/<int:issue_id>/status/",
+        KanbanIssueStatusView.as_view(),
+        name="kanban-issue-status",
+    ),
+    path(
+        "<slug:project_slug>/board/issues/<int:issue_id>/position/",
+        KanbanIssuePositionView.as_view(),
+        name="kanban-issue-position",
     ),
 ]

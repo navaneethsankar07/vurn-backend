@@ -84,3 +84,23 @@ class SprintInvalidException(SprintException):
 
 class SprintInvalidException(SprintException):
     pass
+
+
+class KanbanException(ProjectException):
+    pass
+
+
+class KanbanIssueNotFoundException(KanbanException):
+    """Base exception for all kanban-related business exceptions."""
+
+
+class KanbanStatusNotFoundException(KanbanException):
+    pass
+
+
+class KanbanInvalidMovementException(KanbanException):
+    pass
+
+
+class KanbanIssuePositionException(KanbanException):
+    pass
