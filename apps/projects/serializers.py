@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from .models import Project, Sprint, WorkflowStatus
 
-from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
+from .constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES, SPRINT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
 
 
 class ProjectCreateSerializer(serializers.Serializer):
@@ -388,6 +388,25 @@ class SprintSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class SprintListQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+    status = serializers.ChoiceField(choices=SPRINT_STATUS_CHOICES, required=False)
+    sort = serializers.ChoiceField(
+        choices=[
+            "name_asc",
+            "name_desc",
+            "start_date_asc",
+            "start_date_desc",
+            "end_date_asc",
+            "end_date_desc",
+            "created_asc",
+            "created_desc",
+        ],
+        required=False,
+        default="created_desc",
+    )
 
 
 class SprintCreateSerializer(serializers.Serializer):

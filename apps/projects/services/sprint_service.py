@@ -1,4 +1,5 @@
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 
 from apps.projects.exceptions import (
     SprintAlreadyExistsException,
@@ -18,12 +19,31 @@ class SprintService:
             raise SprintNotFoundException("Sprint not found.") from exc
 
     @staticmethod
-    def list_sprints(*, project):
-        return (
-            Sprint.objects.filter(project=project)
-            .select_related("created_by")
-            .order_by("-created_at")
-        )
+    def list_sprints(*, project, search=None, status=None, sort="created_desc"):
+        queryset = Sprint.objects.filter(project=project).select_related("created_by")
+
+        if search:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(goal__icontains=search)
+            )
+
+        if status:
+            queryset = queryset.filter(status=status)
+
+        sort_options = {
+            "name_asc": "name",
+            "name_desc": "-name",
+            "start_date_asc": "start_date",
+            "start_date_desc": "-start_date",
+            "end_date_asc": "end_date",
+            "end_date_desc": "-end_date",
+            "created_asc": "created_at",
+            "created_desc": "-created_at",
+        }
+
+        queryset = queryset.order_by(sort_options.get(sort, "-created_at"))
+
+        return queryset
 
     @staticmethod
     @transaction.atomic

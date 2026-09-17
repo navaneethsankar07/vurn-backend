@@ -44,6 +44,7 @@ from .serializers import (
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
     SprintCreateSerializer,
+    SprintListQuerySerializer,
     SprintSerializer,
     SprintUpdateSerializer,
     WorkflowOverviewSerializer,
@@ -628,7 +629,12 @@ class SprintView(APIView):
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
-        sprints = SprintService.list_sprints(project=project)
+        query_serializer = SprintListQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        sprints = SprintService.list_sprints(
+            project=project, **query_serializer.validated_data
+        )
 
         paginator = StandardPagination()
         page = paginator.paginate_queryset(sprints, request)
