@@ -506,3 +506,9 @@ class KanbanIssueSerializer(serializers.Serializer):
     position = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+
+
+class KanbanSprintFilterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sprint
+        fields = ["id", "name"]

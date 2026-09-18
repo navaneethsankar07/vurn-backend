@@ -126,3 +126,7 @@ class SprintService:
         sprint.save(update_fields=["status", "updated_at"])
 
         return sprint
+
+    @staticmethod
+    def list_project_sprints_for_board(*, project):
+        return Sprint.objects.filter(project=project).order_by("start_date", "id")

@@ -41,6 +41,7 @@ from .serializers import (
     KanbanIssueQuerySerializer,
     KanbanIssueSerializer,
     KanbanIssueStatusSerializer,
+    KanbanSprintFilterSerializer,
     ProjectDeleteSerializer,
     ProjectMemberCreateSerializer,
     ProjectMemberSerializer,
@@ -818,6 +819,7 @@ class KanbanBoardView(APIView):
                 "color": workflow_status.color,
                 "icon": workflow_status.icon,
                 "position": workflow_status.position,
+                "hello": "hai",
             }
             for workflow_status in statuses
         ]
@@ -865,6 +867,30 @@ class KanbanColumnIssueView(APIView):
         }
 
         return response
+
+
+class KanbanSprintFilterView(APIView):
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        sprints = SprintService.list_project_sprints_for_board(project=project)
+
+        serializer = KanbanSprintFilterSerializer(sprints, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class KanbanIssueStatusView(APIView):

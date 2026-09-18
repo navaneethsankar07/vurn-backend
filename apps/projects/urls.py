@@ -5,6 +5,7 @@ from .views import (
     KanbanColumnIssueView,
     KanbanIssuePositionView,
     KanbanIssueStatusView,
+    KanbanSprintFilterView,
     ProjectArchiveView,
     ProjectDeleteView,
     ProjectMemberView,
@@ -84,6 +85,11 @@ urlpatterns = [
         "<slug:project_slug>/board/",
         KanbanBoardView.as_view(),
         name="project-kanban-board",
+    ),
+    path(
+        "<slug:project_slug>/board/sprints/",
+        KanbanSprintFilterView.as_view(),
+        name="kanban-sprint-filter",
     ),
     path(
         "<slug:project_slug>/board/columns/<int:status_id>/issues/",
