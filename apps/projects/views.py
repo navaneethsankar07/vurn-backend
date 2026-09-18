@@ -576,9 +576,10 @@ class WorkflowTransitionView(APIView):
         except WorkflowTransitionAlreadyExistsException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
-        response_serializer = WorkflowTransitionSerializer(transition)
-
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Workflow transition created successfully."},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class WorkflowStatusPositionView(APIView):
