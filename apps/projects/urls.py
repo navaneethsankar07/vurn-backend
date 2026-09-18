@@ -6,6 +6,7 @@ from .views import (
     KanbanIssuePositionView,
     KanbanIssueStatusView,
     KanbanSprintFilterView,
+    ProjectArchiveStatusView,
     ProjectArchiveView,
     ProjectDeleteView,
     ProjectMemberView,
@@ -39,6 +40,11 @@ urlpatterns = [
         "<slug:project_slug>/unarchive/",
         ProjectUnarchiveView.as_view(),
         name="project-unarchive",
+    ),
+    path(
+        "<slug:project_slug>/archive-status/",
+        ProjectArchiveStatusView.as_view(),
+        name="project-archive-status",
     ),
     path(
         "<slug:project_slug>/members/",

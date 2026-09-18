@@ -127,6 +127,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "EXCEPTION_HANDLER": "apps.core.exception_handler.custom_exception_handler",
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_PAGINATION_CLASS": ("apps.shared.utils.pagination.StandardPagination"),
     "PAGE_SIZE": env.int("DEFAULT_PAGE_SIZE", default=5),
@@ -181,3 +182,49 @@ FRONTEND_URL = env("FRONTEND_URL")
 CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME")
 CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY")
 CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
+
+
+# -----------------------------------------------------------------------------
+# Logger Configuration
+# -----------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_error": {"()": "apps.core.logging_filters.RequireErrorLevelFilter"}
+    },
+    "formatters": {
+        "standard": {
+            "format": ("{levelname} {asctime} " "{name} {message}"),
+            "style": "{",
+        },
+        "django_server": {"format": "{message}", "style": "{"},
+    },
+    "handlers": {
+        "app_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "app.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+        },
+        "error_file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "logs" / "error.log",
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 5,
+            "formatter": "standard",
+            "filters": ["require_error"],
+        },
+        "console": {"class": "logging.StreamHandler", "formatter": "django_server"},
+    },
+    "loggers": {
+        "apps": {
+            "handlers": ["app_file", "error_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}

@@ -304,6 +304,27 @@ class ProjectUnarchiveView(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
+class ProjectArchiveStatusView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"is_archived": project.is_archived}, status=status.HTTP_200_OK)
+
+
 class ProjectDeleteView(APIView):
     permission_classes = [
         IsAuthenticated,

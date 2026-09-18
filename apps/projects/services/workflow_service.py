@@ -9,8 +9,11 @@ from ..exceptions import (
     WorkflowTransitionNotFoundException,
     WorkflowTransitionStatusException,
 )
+import logging
 
 from ..models import WorkflowStatus, WorkflowTransition
+
+logger = logging.getLogger(__name__)
 
 
 class WorkflowService:
@@ -272,6 +275,13 @@ class WorkflowService:
     @staticmethod
     @transaction.atomic
     def create_transition(*, project, from_status_id, to_status_id, name=""):
+        logger.info(
+            "Creating workflow transition | project=%s " "from_status=%s to_status=%s",
+            project.id,
+            from_status_id,
+            to_status_id,
+        )
+
         if from_status_id == to_status_id:
             raise WorkflowTransitionInvalidException(
                 "A workflow transition cannot point " "to the same status."
@@ -301,17 +311,17 @@ class WorkflowService:
 
         if not from_status.allow_outgoing:
             raise WorkflowTransitionStatusException(
-                "The selected From Status does not allow outgoing transitions."
+                "The selected From Status does not allow " "outgoing transitions."
             )
 
         if not to_status.allow_incoming:
             raise WorkflowTransitionStatusException(
-                "The destination status does not allow incoming transitions."
+                "The destination status does not allow " "incoming transitions."
             )
 
         if from_status.category == "backlog" and not to_status.allow_from_backlog:
             raise WorkflowTransitionStatusException(
-                "The destination status does not allow transitions from Backlog."
+                "The destination status does not allow " "transitions from Backlog."
             )
 
         if WorkflowTransition.objects.filter(
@@ -322,22 +332,49 @@ class WorkflowService:
             )
 
         try:
-            return WorkflowTransition.objects.create(
+            transition = WorkflowTransition.objects.create(
                 project=project,
                 from_status=from_status,
                 to_status=to_status,
                 name=name.strip(),
             )
         except IntegrityError as exc:
+            logger.exception(
+                "Failed to create workflow transition | "
+                "project=%s from_status=%s to_status=%s",
+                project.id,
+                from_status_id,
+                to_status_id,
+            )
             raise WorkflowTransitionAlreadyExistsException(
                 "Unable to create the workflow transition."
             ) from exc
+
+        logger.info(
+            "Workflow transition created | transition=%s "
+            "project=%s from_status=%s to_status=%s",
+            transition.id,
+            project.id,
+            from_status_id,
+            to_status_id,
+        )
+
+        return transition
 
     @staticmethod
     @transaction.atomic
     def update_transition(
         *, project, transition_id, from_status_id, to_status_id, name=""
     ):
+        logger.info(
+            "Updating workflow transition | transition=%s "
+            "project=%s from_status=%s to_status=%s",
+            transition_id,
+            project.id,
+            from_status_id,
+            to_status_id,
+        )
+
         if from_status_id == to_status_id:
             raise WorkflowTransitionInvalidException(
                 "A workflow transition cannot point " "to the same status."
@@ -409,5 +446,11 @@ class WorkflowService:
             raise WorkflowTransitionAlreadyExistsException(
                 "Unable to update the workflow transition."
             ) from exc
+
+        logger.info(
+            "Workflow transition updated | transition=%s " "project=%s",
+            transition.id,
+            project.id,
+        )
 
         return transition
