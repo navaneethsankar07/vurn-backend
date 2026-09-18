@@ -6,6 +6,7 @@ from ..exceptions import (
     WorkflowStatusNotFoundException,
     WorkflowTransitionAlreadyExistsException,
     WorkflowTransitionInvalidException,
+    WorkflowTransitionNotFoundException,
 )
 
 from ..models import WorkflowStatus, WorkflowTransition
@@ -307,3 +308,59 @@ class WorkflowService:
             raise WorkflowTransitionAlreadyExistsException(
                 "Unable to create the workflow transition."
             ) from exc
+
+    @staticmethod
+    @transaction.atomic
+    def update_transition(
+        *, project, transition_id, from_status_id, to_status_id, name=""
+    ):
+        if from_status_id == to_status_id:
+            raise WorkflowTransitionInvalidException(
+                "A workflow transition cannot point " "to the same status."
+            )
+
+        try:
+            transition = WorkflowTransition.objects.get(
+                id=transition_id, project=project
+            )
+        except WorkflowTransition.DoesNotExist as exc:
+            raise WorkflowTransitionNotFoundException(
+                "Workflow transition not found."
+            ) from exc
+
+        try:
+            from_status = WorkflowStatus.objects.get(id=from_status_id, project=project)
+        except WorkflowStatus.DoesNotExist as exc:
+            raise WorkflowTransitionInvalidException(
+                "The source status does not belong " "to this project."
+            ) from exc
+
+        try:
+            to_status = WorkflowStatus.objects.get(id=to_status_id, project=project)
+        except WorkflowStatus.DoesNotExist as exc:
+            raise WorkflowTransitionInvalidException(
+                "The destination status does not belong " "to this project."
+            ) from exc
+
+        if (
+            WorkflowTransition.objects.filter(
+                project=project, from_status=from_status, to_status=to_status
+            )
+            .exclude(id=transition.id)
+            .exists()
+        ):
+            raise WorkflowTransitionAlreadyExistsException(
+                "This workflow transition already exists."
+            )
+
+        try:
+            transition.from_status = from_status
+            transition.to_status = to_status
+            transition.name = name.strip()
+            transition.save(update_fields=["from_status", "to_status", "name"])
+        except IntegrityError as exc:
+            raise WorkflowTransitionAlreadyExistsException(
+                "Unable to update the workflow transition."
+            ) from exc
+
+        return transition

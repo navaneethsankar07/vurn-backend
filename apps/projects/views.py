@@ -35,6 +35,7 @@ from .exceptions import (
     WorkflowStatusNotFoundException,
     WorkflowTransitionAlreadyExistsException,
     WorkflowTransitionInvalidException,
+    WorkflowTransitionNotFoundException,
 )
 from .serializers import (
     KanbanIssuePositionSerializer,
@@ -61,6 +62,7 @@ from .serializers import (
     WorkflowStatusUpdateSerializer,
     WorkflowTransitionCreateSerializer,
     WorkflowTransitionSerializer,
+    WorkflowTransitionUpdateSerializer,
 )
 from .services.sprint_service import SprintService
 from .services.kanban_service import KanbanService
@@ -579,6 +581,45 @@ class WorkflowTransitionView(APIView):
         return Response(
             {"message": "Workflow transition created successfully."},
             status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request, slug, project_slug, transition_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            ProjectAccessService.validate_workflow_management_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = WorkflowTransitionUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            WorkflowService.update_transition(
+                project=project,
+                transition_id=transition_id,
+                **serializer.validated_data,
+            )
+        except WorkflowTransitionNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except WorkflowTransitionInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except WorkflowTransitionAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Workflow transition updated successfully."},
+            status=status.HTTP_200_OK,
         )
 
 
