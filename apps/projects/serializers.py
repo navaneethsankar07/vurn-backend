@@ -387,6 +387,9 @@ class WorkflowStatusPositionSerializer(serializers.Serializer):
 
 class SprintSerializer(serializers.ModelSerializer):
     created_by_id = serializers.IntegerField(source="created_by.id", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True
+    )
 
     class Meta:
         model = Sprint
@@ -399,6 +402,7 @@ class SprintSerializer(serializers.ModelSerializer):
             "end_date",
             "status",
             "created_by_id",
+            "created_by_name",
             "created_at",
             "updated_at",
         ]

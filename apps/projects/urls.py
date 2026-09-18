@@ -11,6 +11,7 @@ from .views import (
     ProjectMemberView,
     ProjectOptionsView,
     ProjectSettingsView,
+    ProjectUnarchiveView,
     ProjectView,
     ProjectWorkflowView,
     SprintDetailView,
@@ -33,6 +34,11 @@ urlpatterns = [
         "<slug:project_slug>/archive/",
         ProjectArchiveView.as_view(),
         name="project-archive",
+    ),
+    path(
+        "<slug:project_slug>/unarchive/",
+        ProjectUnarchiveView.as_view(),
+        name="project-unarchive",
     ),
     path(
         "<slug:project_slug>/members/",

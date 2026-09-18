@@ -36,6 +36,7 @@ from .exceptions import (
     WorkflowTransitionAlreadyExistsException,
     WorkflowTransitionInvalidException,
     WorkflowTransitionNotFoundException,
+    WorkflowTransitionStatusException,
 )
 from .serializers import (
     KanbanIssuePositionSerializer,
@@ -263,6 +264,39 @@ class ProjectArchiveView(APIView):
 
         project = ProjectService.set_project_archive_status(
             project=project, is_archived=True
+        )
+
+        response_serializer = ProjectResponseSerializer(project)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ProjectUnarchiveView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_project_archive_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        project = ProjectService.set_project_archive_status(
+            project=project, is_archived=False
         )
 
         response_serializer = ProjectResponseSerializer(project)
@@ -546,6 +580,7 @@ class WorkflowStatusView(APIView):
 
 
 class WorkflowTransitionView(APIView):
+
     def post(self, request, slug, project_slug):
         try:
             organization = OrganizationService.get_user_organization(
@@ -570,10 +605,12 @@ class WorkflowTransitionView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            transition = WorkflowService.create_transition(
+            WorkflowService.create_transition(
                 project=project, **serializer.validated_data
             )
         except WorkflowTransitionInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except WorkflowTransitionStatusException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except WorkflowTransitionAlreadyExistsException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -588,9 +625,11 @@ class WorkflowTransitionView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
+
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
+
             ProjectAccessService.validate_workflow_management_access(
                 project=project, user=request.user
             )
@@ -613,6 +652,8 @@ class WorkflowTransitionView(APIView):
         except WorkflowTransitionNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except WorkflowTransitionInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except WorkflowTransitionStatusException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except WorkflowTransitionAlreadyExistsException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

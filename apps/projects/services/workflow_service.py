@@ -7,6 +7,7 @@ from ..exceptions import (
     WorkflowTransitionAlreadyExistsException,
     WorkflowTransitionInvalidException,
     WorkflowTransitionNotFoundException,
+    WorkflowTransitionStatusException,
 )
 
 from ..models import WorkflowStatus, WorkflowTransition
@@ -290,6 +291,29 @@ class WorkflowService:
                 "The destination status does not belong " "to this project."
             ) from exc
 
+        if from_status.is_archived:
+            raise WorkflowTransitionStatusException("The source status is archived.")
+
+        if to_status.is_archived:
+            raise WorkflowTransitionStatusException(
+                "The destination status is archived."
+            )
+
+        if not from_status.allow_outgoing:
+            raise WorkflowTransitionStatusException(
+                "The selected From Status does not allow outgoing transitions."
+            )
+
+        if not to_status.allow_incoming:
+            raise WorkflowTransitionStatusException(
+                "The destination status does not allow incoming transitions."
+            )
+
+        if from_status.category == "backlog" and not to_status.allow_from_backlog:
+            raise WorkflowTransitionStatusException(
+                "The destination status does not allow transitions from Backlog."
+            )
+
         if WorkflowTransition.objects.filter(
             project=project, from_status=from_status, to_status=to_status
         ).exists():
@@ -341,6 +365,29 @@ class WorkflowService:
             raise WorkflowTransitionInvalidException(
                 "The destination status does not belong " "to this project."
             ) from exc
+
+        if from_status.is_archived:
+            raise WorkflowTransitionStatusException("The source status is archived.")
+
+        if to_status.is_archived:
+            raise WorkflowTransitionStatusException(
+                "The destination status is archived."
+            )
+
+        if not from_status.allow_outgoing:
+            raise WorkflowTransitionStatusException(
+                "The source status does not allow " "outgoing transitions."
+            )
+
+        if not to_status.allow_incoming:
+            raise WorkflowTransitionStatusException(
+                "The destination status does not allow " "incoming transitions."
+            )
+
+        if from_status.category == "backlog" and not to_status.allow_from_backlog:
+            raise WorkflowTransitionStatusException(
+                "The destination status does not allow " "transitions from Backlog."
+            )
 
         if (
             WorkflowTransition.objects.filter(

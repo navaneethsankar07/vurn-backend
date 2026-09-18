@@ -58,6 +58,10 @@ class WorkflowTransitionNotFoundException(WorkflowException):
     pass
 
 
+class WorkflowTransitionStatusException(WorkflowException):
+    pass
+
+
 class WorkflowTransitionAlreadyExistsException(WorkflowException):
     pass
 
