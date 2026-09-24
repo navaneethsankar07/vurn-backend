@@ -2,10 +2,11 @@ import re
 
 from rest_framework import serializers
 
-from .models import Project, Sprint, WorkflowStatus
+from .models import Issue, Project, Sprint, WorkflowStatus
 
 from .constants import (
     ISSUE_PRIORITY_CHOICES,
+    ISSUE_SORT_CHOICES,
     ISSUE_TYPE_CHOICES,
     KANBAN_SORT_CHOICES,
     PROJECT_ICONS,
@@ -540,3 +541,54 @@ class IssueCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Issue title cannot be empty.")
 
         return value
+
+
+class IssueListQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+    issue_type = serializers.ChoiceField(choices=ISSUE_TYPE_CHOICES, required=False)
+    parent_id = serializers.IntegerField(required=False, min_value=1)
+    epic_id = serializers.IntegerField(required=False, min_value=1)
+    story_id = serializers.IntegerField(required=False, min_value=1)
+    sprint_id = serializers.IntegerField(required=False, min_value=1)
+    assignee_id = serializers.IntegerField(required=False, min_value=1)
+    priority = serializers.ChoiceField(choices=ISSUE_PRIORITY_CHOICES, required=False)
+    status_id = serializers.IntegerField(required=False, min_value=1)
+    sort = serializers.ChoiceField(
+        choices=[choice[0] for choice in ISSUE_SORT_CHOICES],
+        required=False,
+        default="position",
+    )
+
+
+class IssueResponseSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(read_only=True)
+    project_id = serializers.IntegerField(source="project.id", read_only=True)
+    parent_id = serializers.IntegerField(source="parent.id", read_only=True)
+    sprint_id = serializers.IntegerField(source="sprint.id", read_only=True)
+    status_id = serializers.IntegerField(source="status.id", read_only=True)
+    status_name = serializers.CharField(source="status.name", read_only=True)
+    assignee_id = serializers.IntegerField(source="assignee.id", read_only=True)
+    reporter_id = serializers.IntegerField(source="reporter.id", read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = [
+            "id",
+            "key",
+            "project_id",
+            "parent_id",
+            "sprint_id",
+            "status_id",
+            "status_name",
+            "assignee_id",
+            "reporter_id",
+            "issue_number",
+            "issue_type",
+            "title",
+            "description",
+            "priority",
+            "story_points",
+            "position",
+            "created_at",
+            "updated_at",
+        ]

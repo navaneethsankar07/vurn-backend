@@ -87,3 +87,13 @@ KANBAN_SORT_CHOICES = (
 
 BOARD_VIEW_PERMISSION = "board.view"
 BOARD_MANAGE_PERMISSION = "board.manage"
+
+ISSUE_SORT_CHOICES = (
+    ("created_asc", "Created Oldest"),
+    ("created_desc", "Created Newest"),
+    ("updated_asc", "Updated Oldest"),
+    ("updated_desc", "Updated Newest"),
+    ("priority_asc", "Priority Ascending"),
+    ("priority_desc", "Priority Descending"),
+    ("position", "Position"),
+)
