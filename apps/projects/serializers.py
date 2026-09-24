@@ -18,21 +18,15 @@ from .constants import (
 class ProjectCreateSerializer(serializers.Serializer):
 
     name = serializers.CharField(max_length=150)
-
     key = serializers.CharField(max_length=10)
-
     description = serializers.CharField(required=False, allow_blank=True)
-
     icon = serializers.ChoiceField(
         choices=PROJECT_ICONS, required=False, default="hexagon"
     )
-
     accent_color = serializers.CharField(
         max_length=7, required=False, default="#F59E0B"
     )
-
     start_date = serializers.DateField(required=False, allow_null=True)
-
     target_date = serializers.DateField(required=False, allow_null=True)
 
     def validate_name(
@@ -522,3 +516,27 @@ class KanbanSprintFilterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sprint
         fields = ["id", "name"]
+
+
+class IssueCreateSerializer(serializers.Serializer):
+    issue_type = serializers.ChoiceField(choices=ISSUE_TYPE_CHOICES)
+    title = serializers.CharField(max_length=255)
+    description = serializers.CharField(required=False, allow_blank=True)
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    sprint_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    status_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    assignee_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    priority = serializers.ChoiceField(
+        choices=ISSUE_PRIORITY_CHOICES, required=False, default="medium"
+    )
+    story_points = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0
+    )
+
+    def validate_title(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Issue title cannot be empty.")
+
+        return value

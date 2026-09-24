@@ -18,6 +18,8 @@ from apps.shared.utils.pagination import StandardPagination
 
 from .constants import PROJECT_ICONS
 from .exceptions import (
+    IssueAlreadyExistsException,
+    IssueInvalidException,
     KanbanInvalidMovementException,
     KanbanIssueNotFoundException,
     ProjectAlreadyExistsException,
@@ -39,6 +41,7 @@ from .exceptions import (
     WorkflowTransitionStatusException,
 )
 from .serializers import (
+    IssueCreateSerializer,
     KanbanIssuePositionSerializer,
     KanbanIssueQuerySerializer,
     KanbanIssueSerializer,
@@ -65,6 +68,7 @@ from .serializers import (
     WorkflowTransitionSerializer,
     WorkflowTransitionUpdateSerializer,
 )
+from .services.issue_service import IssueService
 from .services.sprint_service import SprintService
 from .services.kanban_service import KanbanService
 from .services.project_service import ProjectService
@@ -1072,4 +1076,39 @@ class KanbanIssuePositionView(APIView):
                 "message": ("Issue position updated successfully."),
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class IssueView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = IssueCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            issue = IssueService.create_issue(
+                project=project, user=request.user, **serializer.validated_data
+            )
+        except IssueInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except IssueAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Issue created successfully."}, status=status.HTTP_201_CREATED
         )

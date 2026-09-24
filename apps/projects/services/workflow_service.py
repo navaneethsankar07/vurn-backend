@@ -276,7 +276,7 @@ class WorkflowService:
     @transaction.atomic
     def create_transition(*, project, from_status_id, to_status_id, name=""):
         logger.info(
-            "Creating workflow transition | project=%s " "from_status=%s to_status=%s",
+            "Creating workflow transition | project=%s from_status=%s to_status=%s",
             project.id,
             from_status_id,
             to_status_id,

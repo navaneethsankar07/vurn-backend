@@ -2,7 +2,13 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from .constants import PROJECT_STATUS_CHOICES, SPRINT_STATUS_CHOICES, STATUS_CATEGORY_CHOICES
+from .constants import (
+    ISSUE_PRIORITY_CHOICES,
+    ISSUE_TYPE_CHOICES,
+    PROJECT_STATUS_CHOICES,
+    SPRINT_STATUS_CHOICES,
+    STATUS_CATEGORY_CHOICES,
+)
 
 
 class Project(models.Model):
@@ -197,3 +203,75 @@ class Sprint(models.Model):
 
     def __str__(self):
         return f"{self.project.name} - {self.name}"
+
+
+class Issue(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="issues"
+    )
+    parent = models.ForeignKey(
+        "self", on_delete=models.CASCADE, related_name="children", null=True, blank=True
+    )
+    sprint = models.ForeignKey(
+        "projects.Sprint",
+        on_delete=models.SET_NULL,
+        related_name="issues",
+        null=True,
+        blank=True,
+    )
+    status = models.ForeignKey(
+        "projects.WorkflowStatus", on_delete=models.PROTECT, related_name="issues"
+    )
+    assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="assigned_issues",
+        null=True,
+        blank=True,
+    )
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="reported_issues",
+    )
+    issue_number = models.PositiveIntegerField()
+    issue_type = models.CharField(max_length=20, choices=ISSUE_TYPE_CHOICES)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    priority = models.CharField(
+        max_length=20, choices=ISSUE_PRIORITY_CHOICES, default="medium"
+    )
+    story_points = models.PositiveIntegerField(null=True, blank=True)
+    position = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "issues"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "issue_number"), name="uq_issue_number_per_project"
+            )
+        ]
+        indexes = [
+            models.Index(fields=("project",), name="idx_issues_project"),
+            models.Index(
+                fields=("project", "issue_type"), name="idx_issues_project_type"
+            ),
+            models.Index(
+                fields=("project", "status"), name="idx_issues_project_status"
+            ),
+            models.Index(
+                fields=("project", "sprint"), name="idx_issues_project_sprint"
+            ),
+            models.Index(fields=("parent",), name="idx_issues_parent"),
+            models.Index(fields=("assignee",), name="idx_issues_assignee"),
+        ]
+
+    @property
+    def key(self):
+        return f"{self.project.key}-{self.issue_number}"
+
+    def __str__(self):
+        return f"{self.key} - {self.title}"

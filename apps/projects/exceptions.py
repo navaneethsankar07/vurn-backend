@@ -108,3 +108,19 @@ class KanbanInvalidMovementException(KanbanException):
 
 class KanbanIssuePositionException(KanbanException):
     pass
+
+
+class IssueException(ProjectException):
+    """Base exception for all issues-related business exceptions."""
+
+
+class IssueNotFoundException(IssueException):
+    pass
+
+
+class IssueAlreadyExistsException(IssueException):
+    pass
+
+
+class IssueInvalidException(IssueException):
+    pass
