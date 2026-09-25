@@ -4,7 +4,11 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, CharField
 from django.db.models.functions import Cast
 
-from apps.projects.exceptions import IssueAlreadyExistsException, IssueInvalidException, IssueNotFoundException
+from apps.projects.exceptions import (
+    IssueAlreadyExistsException,
+    IssueInvalidException,
+    IssueNotFoundException,
+)
 from apps.projects.models import Issue, Project
 from apps.projects.models import Sprint, WorkflowStatus
 
@@ -269,6 +273,87 @@ class IssueService:
             issue_type,
             user.id,
         )
+
+        return issue
+
+    @staticmethod
+    @transaction.atomic
+    def update_issue(*, project, issue_id, **validated_data):
+        issue = IssueService.get_issue(project=project, issue_id=issue_id)
+
+        if "parent_id" in validated_data:
+            parent_id = validated_data.pop("parent_id")
+
+            if parent_id is None:
+                parent = None
+            else:
+                parent = Issue.objects.filter(project=project, id=parent_id).first()
+
+                if parent is None:
+                    raise IssueInvalidException(
+                        "The parent issue does not belong " "to this project."
+                    )
+
+                if parent.id == issue.id:
+                    raise IssueInvalidException("An issue cannot be its own parent.")
+
+            IssueService._validate_parent(issue_type=issue.issue_type, parent=parent)
+
+            issue.parent = parent
+
+        if "sprint_id" in validated_data:
+            sprint_id = validated_data.pop("sprint_id")
+
+            if sprint_id is None:
+                issue.sprint = None
+            else:
+                sprint = Sprint.objects.filter(project=project, id=sprint_id).first()
+
+                if sprint is None:
+                    raise IssueInvalidException(
+                        "The sprint does not belong " "to this project."
+                    )
+
+                if issue.issue_type == "epic":
+                    raise IssueInvalidException("An epic cannot belong to a sprint.")
+
+                issue.sprint = sprint
+
+        if "status_id" in validated_data:
+            status_id = validated_data.pop("status_id")
+
+            workflow_status = WorkflowStatus.objects.filter(
+                project=project, id=status_id, is_archived=False
+            ).first()
+
+            if workflow_status is None:
+                raise IssueInvalidException(
+                    "The workflow status does not belong " "to this project."
+                )
+
+            issue.status = workflow_status
+
+        if "assignee_id" in validated_data:
+            assignee_id = validated_data.pop("assignee_id")
+
+            if assignee_id is None:
+                issue.assignee = None
+            else:
+                assignee = IssueService._get_project_member(
+                    project=project, user_id=assignee_id
+                )
+
+                if assignee is None:
+                    raise IssueInvalidException(
+                        "The assignee is not a member " "of this project."
+                    )
+
+                issue.assignee = assignee
+
+        for field, value in validated_data.items():
+            setattr(issue, field, value)
+
+        issue.save()
 
         return issue
 

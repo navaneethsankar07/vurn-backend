@@ -570,7 +570,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
     status_id = serializers.IntegerField(source="status.id", read_only=True)
     status_name = serializers.CharField(source="status.name", read_only=True)
     assignee_id = serializers.IntegerField(source="assignee.id", read_only=True)
-    reporter_id = serializers.IntegerField(source="reporter.id", read_only=True)
+    reporter_name = serializers.CharField(source="reporter.full_name", read_only=True)
 
     class Meta:
         model = Issue
@@ -583,7 +583,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "status_id",
             "status_name",
             "assignee_id",
-            "reporter_id",
+            "reporter_name",
             "issue_number",
             "issue_type",
             "title",
@@ -594,3 +594,24 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class IssueUpdateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=255, required=False)
+    description = serializers.CharField(required=False, allow_blank=True)
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    sprint_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    status_id = serializers.IntegerField(required=False, min_value=1)
+    assignee_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    priority = serializers.ChoiceField(choices=ISSUE_PRIORITY_CHOICES, required=False)
+    story_points = serializers.IntegerField(
+        required=False, allow_null=True, min_value=0
+    )
+
+    def validate_title(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Issue title cannot be empty.")
+
+        return value

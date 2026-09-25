@@ -45,6 +45,7 @@ from .serializers import (
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
+    IssueUpdateSerializer,
     KanbanIssuePositionSerializer,
     KanbanIssueQuerySerializer,
     KanbanIssueSerializer,
@@ -1145,7 +1146,8 @@ class IssueView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            {"message": f"{issue.issue_type} created successfully."}, status=status.HTTP_201_CREATED
+            {"message": f"{issue.issue_type} created successfully."},
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -1171,3 +1173,32 @@ class IssueDetailView(APIView):
         serializer = IssueResponseSerializer(issue)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = IssueUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            issue = IssueService.update_issue(
+                project=project, issue_id=issue_id, **serializer.validated_data
+            )
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        response_serializer = IssueResponseSerializer(issue)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
