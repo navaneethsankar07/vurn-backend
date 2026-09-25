@@ -563,7 +563,9 @@ class IssueListQuerySerializer(serializers.Serializer):
 class IssueResponseSerializer(serializers.ModelSerializer):
     key = serializers.CharField(read_only=True)
     project_id = serializers.IntegerField(source="project.id", read_only=True)
-    parent_id = serializers.IntegerField(source="parent.id", read_only=True)
+    parent_key = serializers.CharField(
+        source="parent.key", read_only=True, allow_null=True
+    )
     sprint_id = serializers.IntegerField(source="sprint.id", read_only=True)
     status_id = serializers.IntegerField(source="status.id", read_only=True)
     status_name = serializers.CharField(source="status.name", read_only=True)
@@ -576,7 +578,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "id",
             "key",
             "project_id",
-            "parent_id",
+            "parent_key",
             "sprint_id",
             "status_id",
             "status_name",

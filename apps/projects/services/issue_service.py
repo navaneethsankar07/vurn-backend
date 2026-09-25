@@ -4,7 +4,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q, CharField
 from django.db.models.functions import Cast
 
-from apps.projects.exceptions import IssueAlreadyExistsException, IssueInvalidException
+from apps.projects.exceptions import IssueAlreadyExistsException, IssueInvalidException, IssueNotFoundException
 from apps.projects.models import Issue, Project
 from apps.projects.models import Sprint, WorkflowStatus
 
@@ -12,6 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 class IssueService:
+
+    @staticmethod
+    def get_issue(*, project, issue_id):
+        issue = (
+            Issue.objects.filter(project=project, id=issue_id)
+            .select_related(
+                "project", "parent", "sprint", "status", "assignee", "reporter"
+            )
+            .first()
+        )
+
+        if issue is None:
+            raise IssueNotFoundException("Issue not found.")
+
+        return issue
 
     @staticmethod
     def list_issues(
@@ -28,8 +43,10 @@ class IssueService:
         status_id=None,
         sort="position",
     ):
-        issues = Issue.objects.filter(project=project).select_related(
-            "parent", "sprint", "status", "assignee", "reporter"
+        issues = (
+            Issue.objects.filter(project=project)
+            .exclude(issue_type="subtask")
+            .select_related("parent", "sprint", "status", "assignee", "reporter")
         )
 
         if search:

@@ -20,6 +20,7 @@ from .constants import PROJECT_ICONS
 from .exceptions import (
     IssueAlreadyExistsException,
     IssueInvalidException,
+    IssueNotFoundException,
     KanbanInvalidMovementException,
     KanbanIssueNotFoundException,
     ProjectAlreadyExistsException,
@@ -1144,5 +1145,29 @@ class IssueView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            {"message": "Issue created successfully."}, status=status.HTTP_201_CREATED
+            {"message": f"{issue.issue_type} created successfully."}, status=status.HTTP_201_CREATED
         )
+
+
+class IssueDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = IssueResponseSerializer(issue)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
