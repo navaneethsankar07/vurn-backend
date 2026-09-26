@@ -1399,3 +1399,30 @@ class IssueCommentDetailView(APIView):
         response_serializer = CommentSerializer(comment)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, slug, project_slug, issue_id, comment_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            CommentService.delete_comment(
+                issue=issue, comment_id=comment_id, user=request.user
+            )
+        except CommentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except CommentPermissionException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

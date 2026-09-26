@@ -1,6 +1,11 @@
 from django.db import transaction
+from django.utils import timezone
 
-from ..exceptions import CommentInvalidException, CommentNotFoundException, CommentPermissionException
+from ..exceptions import (
+    CommentInvalidException,
+    CommentNotFoundException,
+    CommentPermissionException,
+)
 from ..models import Comment
 
 
@@ -55,3 +60,18 @@ class CommentService:
         comment.save(update_fields=["content", "updated_at"])
 
         return comment
+
+    @staticmethod
+    def delete_comment(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        if comment.author_id != user.id:
+            raise CommentPermissionException("You can only delete your own comments.")
+
+        comment.deleted_at = timezone.now()
+        comment.save(update_fields=["deleted_at"])
