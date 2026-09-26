@@ -23,6 +23,8 @@ from .exceptions import (
     IssueNotFoundException,
     KanbanInvalidMovementException,
     KanbanIssueNotFoundException,
+    KanbanIssuePositionException,
+    KanbanStatusNotFoundException,
     LabelInvalidException,
     LabelNotFoundException,
     ProjectAlreadyExistsException,
@@ -917,11 +919,9 @@ class KanbanBoardView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
@@ -937,7 +937,6 @@ class KanbanBoardView(APIView):
                 "color": workflow_status.color,
                 "icon": workflow_status.icon,
                 "position": workflow_status.position,
-                "hello": "hai",
             }
             for workflow_status in statuses
         ]
@@ -952,11 +951,9 @@ class KanbanColumnIssueView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
@@ -964,12 +961,14 @@ class KanbanColumnIssueView(APIView):
 
         query_serializer = KanbanIssueQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
+
         try:
             workflow_status, issues = KanbanService.list_column_issues(
                 project=project, status_id=status_id, **query_serializer.validated_data
             )
-        except KanbanInvalidMovementException as exc:
+        except KanbanStatusNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
         paginator = StandardPagination()
 
         page = paginator.paginate_queryset(issues, request)
@@ -994,11 +993,9 @@ class KanbanSprintFilterView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
@@ -1018,11 +1015,9 @@ class KanbanIssueStatusView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
@@ -1042,10 +1037,10 @@ class KanbanIssueStatusView(APIView):
 
         return Response(
             {
-                "id": issue["id"],
-                "status_id": issue["status_id"],
-                "position": issue["position"],
-                "message": ("Issue status updated successfully."),
+                "id": issue.id,
+                "status_id": issue.status_id,
+                "position": issue.position,
+                "message": "Issue status updated successfully.",
             },
             status=status.HTTP_200_OK,
         )
@@ -1058,11 +1053,9 @@ class KanbanIssuePositionView(APIView):
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
@@ -1077,13 +1070,15 @@ class KanbanIssuePositionView(APIView):
             )
         except KanbanIssueNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except KanbanIssuePositionException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {
-                "id": issue["id"],
-                "status_id": issue["status_id"],
-                "position": issue["position"],
-                "message": ("Issue position updated successfully."),
+                "id": issue.id,
+                "status_id": issue.status_id,
+                "position": issue.position,
+                "message": "Issue position updated successfully.",
             },
             status=status.HTTP_200_OK,
         )
