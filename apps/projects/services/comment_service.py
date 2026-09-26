@@ -1,5 +1,7 @@
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
+
+from ..constants import COMMENT_REACTION_CHOICES
 
 from ..exceptions import (
     CommentInvalidException,
@@ -111,3 +113,33 @@ class CommentService:
             raise CommentInvalidException("You have not reacted to this comment.")
 
         reaction.delete()
+
+    @staticmethod
+    def get_reaction_summary(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        reactions = (
+            CommentReaction.objects.filter(comment=comment)
+            .values("reaction")
+            .annotate(count=models.Count("id"))
+        )
+
+        summary = {reaction: 0 for reaction, _ in COMMENT_REACTION_CHOICES}
+
+        for item in reactions:
+            summary[item["reaction"]] = item["count"]
+
+        my_reaction = (
+            CommentReaction.objects.filter(comment=comment, user=user)
+            .values_list("reaction", flat=True)
+            .first()
+        )
+
+        summary["my_reaction"] = my_reaction
+
+        return summary

@@ -728,3 +728,12 @@ class CommentUpdateSerializer(serializers.Serializer):
 
 class CommentReactionSerializer(serializers.Serializer):
     reaction = serializers.ChoiceField(choices=COMMENT_REACTION_CHOICES)
+
+
+class CommentReactionSummarySerializer(serializers.Serializer):
+    heart = serializers.IntegerField()
+    laugh = serializers.IntegerField()
+    celebrate = serializers.IntegerField()
+    surprised = serializers.IntegerField()
+    sad = serializers.IntegerField()
+    my_reaction = serializers.CharField(allow_null=True)
