@@ -95,3 +95,19 @@ class CommentService:
             comment_reaction.save(update_fields=["reaction", "updated_at"])
 
         return comment_reaction
+
+    @staticmethod
+    def remove_reaction(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        reaction = CommentReaction.objects.filter(comment=comment, user=user).first()
+
+        if reaction is None:
+            raise CommentInvalidException("You have not reacted to this comment.")
+
+        reaction.delete()
