@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from .constants import (
+    COMMENT_REACTION_CHOICES,
     ISSUE_PRIORITY_CHOICES,
     ISSUE_TYPE_CHOICES,
     PROJECT_STATUS_CHOICES,
@@ -316,4 +317,56 @@ class IssueLabel(models.Model):
         indexes = [
             models.Index(fields=("issue",), name="idx_issue_labels_issue"),
             models.Index(fields=("label",), name="idx_issue_labels_label"),
+        ]
+
+
+class Comment(models.Model):
+    issue = models.ForeignKey(
+        "projects.Issue", on_delete=models.CASCADE, related_name="comments"
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="comments"
+    )
+    parent = models.ForeignKey(
+        "self", on_delete=models.CASCADE, related_name="replies", null=True, blank=True
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "comments"
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["issue"], name="idx_comments_issue"),
+            models.Index(fields=["parent"], name="idx_comments_parent"),
+        ]
+
+    def __str__(self):
+        return f"{self.author} - {self.issue.key}"
+
+
+class CommentReaction(models.Model):
+    comment = models.ForeignKey(
+        "projects.Comment", on_delete=models.CASCADE, related_name="reactions"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="comment_reactions",
+    )
+    reaction = models.CharField(max_length=20, choices=COMMENT_REACTION_CHOICES)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "comment_reactions"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("comment", "user"), name="uq_comment_reaction_user"
+            )
+        ]
+        indexes = [
+            models.Index(fields=("comment",), name="idx_comment_reactions_comment")
         ]

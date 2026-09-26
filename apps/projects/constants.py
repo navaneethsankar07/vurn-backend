@@ -97,3 +97,12 @@ ISSUE_SORT_CHOICES = (
     ("priority_desc", "Priority Descending"),
     ("position", "Position"),
 )
+
+COMMENT_REACTION_CHOICES = (
+    ("heart", "Heart"),
+    ("like", "Like"),
+    ("laugh", "Laugh"),
+    ("celebrate", "Celebrate"),
+    ("surprised", "Surprised"),
+    ("sad", "Sad"),
+)

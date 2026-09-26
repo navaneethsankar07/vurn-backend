@@ -3,7 +3,7 @@ import re
 from django.db.migrations import serializer
 from rest_framework import serializers
 
-from .models import Issue, Label, Project, Sprint, WorkflowStatus
+from .models import Comment, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
     ISSUE_PRIORITY_CHOICES,
@@ -648,3 +648,34 @@ class AddLabelSerializer(serializers.Serializer):
             raise serializers.ValidationError("Provide either label_id or name.")
 
         return attrs
+
+
+class CommentCreateSerializer(serializers.Serializer):
+    content = serializers.CharField(max_length=5000)
+    parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+
+    def validate_content(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Comment cannot be empty.")
+
+        return value
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source="author.id", read_only=True)
+    author_name = serializers.CharField(source="author.full_name", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = [
+            "id",
+            "issue_id",
+            "parent_id",
+            "author_id",
+            "author_name",
+            "content",
+            "created_at",
+            "updated_at",
+        ]

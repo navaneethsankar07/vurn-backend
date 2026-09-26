@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    IssueCommentView,
     IssueDetailView,
     IssueLabelDetailView,
     IssueLabelView,
@@ -147,5 +148,10 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/labels/<int:label_id>/",
         IssueLabelDetailView.as_view(),
         name="issue-label-detail",
+    ),
+    path(
+        "<slug:project_slug>/issues/<int:issue_id>/comments/",
+        IssueCommentView.as_view(),
+        name="issue-comments",
     ),
 ]

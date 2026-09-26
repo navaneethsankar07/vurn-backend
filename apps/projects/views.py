@@ -18,6 +18,7 @@ from apps.shared.utils.pagination import StandardPagination
 
 from .constants import PROJECT_ICONS
 from .exceptions import (
+    CommentInvalidException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -47,6 +48,8 @@ from .exceptions import (
 )
 from .serializers import (
     AddLabelSerializer,
+    CommentCreateSerializer,
+    CommentSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
@@ -84,6 +87,7 @@ from .services.label_service import LabelService
 from .services.sprint_service import SprintService
 from .services.kanban_service import KanbanService
 from .services.project_service import ProjectService
+from .services.comment_service import CommentService
 from .services.workflow_service import WorkflowService
 from .services.project_access_service import ProjectAccessService
 from .services.project_member_service import ProjectMemberService
@@ -1293,3 +1297,37 @@ class IssueLabelDetailView(APIView):
             {"message": "Label removed successfully."},
             status=status.HTTP_204_NO_CONTENT,
         )
+
+
+class IssueCommentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            comment = CommentService.create_comment(
+                issue=issue, user=request.user, **serializer.validated_data
+            )
+        except CommentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        response_serializer = CommentSerializer(comment)
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)

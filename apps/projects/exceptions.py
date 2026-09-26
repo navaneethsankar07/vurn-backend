@@ -129,6 +129,7 @@ class IssueInvalidException(IssueException):
 class LabelException(ProjectException):
     """Base exception for all label-related business exceptions."""
 
+
 class LabelNotFoundException(LabelException):
     pass
 
@@ -138,4 +139,20 @@ class LabelInvalidException(LabelException):
 
 
 class LabelAlreadyExistsException(LabelException):
+    pass
+
+
+class CommentException(ProjectException):
+    """Base exception for all comment-related business exceptions."""
+
+
+class CommentNotFoundException(CommentException):
+    pass
+
+
+class CommentInvalidException(CommentException):
+    pass
+
+
+class CommentPermissionException(CommentException):
     pass
