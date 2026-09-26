@@ -52,6 +52,7 @@ from .serializers import (
     AddLabelSerializer,
     CommentCreateSerializer,
     CommentListSerializer,
+    CommentReactionSerializer,
     CommentSerializer,
     CommentUpdateSerializer,
     IssueCreateSerializer,
@@ -1426,3 +1427,39 @@ class IssueCommentDetailView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class IssueCommentReactionView(APIView):
+
+    def put(self, request, slug, project_slug, issue_id, comment_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentReactionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            CommentService.set_reaction(
+                issue=issue,
+                comment_id=comment_id,
+                user=request.user,
+                **serializer.validated_data,
+            )
+        except CommentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"message": "Reaction added successfully."}, status=status.HTTP_200_OK
+        )

@@ -6,7 +6,7 @@ from ..exceptions import (
     CommentNotFoundException,
     CommentPermissionException,
 )
-from ..models import Comment
+from ..models import Comment, CommentReaction
 
 
 class CommentService:
@@ -75,3 +75,23 @@ class CommentService:
 
         comment.deleted_at = timezone.now()
         comment.save(update_fields=["deleted_at"])
+
+    @staticmethod
+    @transaction.atomic
+    def set_reaction(*, issue, comment_id, user, reaction):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        comment_reaction, created = CommentReaction.objects.get_or_create(
+            comment=comment, user=user, defaults={"reaction": reaction}
+        )
+
+        if not created and comment_reaction.reaction != reaction:
+            comment_reaction.reaction = reaction
+            comment_reaction.save(update_fields=["reaction", "updated_at"])
+
+        return comment_reaction

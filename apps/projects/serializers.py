@@ -6,6 +6,7 @@ from rest_framework import serializers
 from .models import Comment, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
+    COMMENT_REACTION_CHOICES,
     ISSUE_PRIORITY_CHOICES,
     ISSUE_SORT_CHOICES,
     ISSUE_TYPE_CHOICES,
@@ -723,3 +724,7 @@ class CommentUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Comment cannot be empty.")
 
         return value
+
+
+class CommentReactionSerializer(serializers.Serializer):
+    reaction = serializers.ChoiceField(choices=COMMENT_REACTION_CHOICES)
