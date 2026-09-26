@@ -679,3 +679,35 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class CommentReplySerializer(serializers.ModelSerializer):
+    author_id = serializers.IntegerField(source="author.id", read_only=True)
+    author_name = serializers.CharField(source="author.full_name", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = [
+            "id",
+            "author_id",
+            "author_name",
+            "content",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class CommentListSerializer(CommentSerializer):
+    replies = CommentReplySerializer(many=True, read_only=True)
+
+    class Meta(CommentSerializer.Meta):
+        fields = [
+            "id",
+            "issue_id",
+            "author_id",
+            "author_name",
+            "content",
+            "created_at",
+            "updated_at",
+            "replies",
+        ]

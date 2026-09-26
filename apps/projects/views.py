@@ -49,6 +49,7 @@ from .exceptions import (
 from .serializers import (
     AddLabelSerializer,
     CommentCreateSerializer,
+    CommentListSerializer,
     CommentSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
@@ -1301,6 +1302,31 @@ class IssueLabelDetailView(APIView):
 
 class IssueCommentView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        comments = CommentService.list_comments(issue=issue)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(comments, request)
+
+        serializer = CommentListSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, slug, project_slug, issue_id):
         try:

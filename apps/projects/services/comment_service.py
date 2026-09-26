@@ -27,3 +27,14 @@ class CommentService:
         return Comment.objects.create(
             issue=issue, author=user, parent=parent, content=content
         )
+
+    @staticmethod
+    def list_comments(*, issue):
+        return (
+            Comment.objects.filter(
+                issue=issue, parent__isnull=True, deleted_at__isnull=True
+            )
+            .select_related("author")
+            .prefetch_related("replies__author")
+            .order_by("created_at")
+        )
