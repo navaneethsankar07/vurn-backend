@@ -212,6 +212,9 @@ class Issue(models.Model):
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, related_name="children", null=True, blank=True
     )
+    labels = models.ManyToManyField(
+        "projects.Label", through="IssueLabel", related_name="issues", blank=True
+    )
     sprint = models.ForeignKey(
         "projects.Sprint",
         on_delete=models.SET_NULL,
@@ -275,3 +278,42 @@ class Issue(models.Model):
 
     def __str__(self):
         return f"{self.key} - {self.title}"
+
+
+class Label(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="labels"
+    )
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=7, default="#999999")
+
+    class Meta:
+        db_table = "labels"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "name"), name="uq_label_per_project"
+            )
+        ]
+        indexes = [models.Index(fields=("project",), name="idx_labels_project")]
+
+    def __str__(self):
+        return self.name
+
+
+class IssueLabel(models.Model):
+    issue = models.ForeignKey(
+        "projects.Issue", on_delete=models.CASCADE, related_name="issue_labels"
+    )
+    label = models.ForeignKey(
+        "projects.Label", on_delete=models.CASCADE, related_name="issue_labels"
+    )
+
+    class Meta:
+        db_table = "issue_labels"
+        constraints = [
+            models.UniqueConstraint(fields=("issue", "label"), name="uq_issue_label")
+        ]
+        indexes = [
+            models.Index(fields=("issue",), name="idx_issue_labels_issue"),
+            models.Index(fields=("label",), name="idx_issue_labels_label"),
+        ]

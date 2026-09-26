@@ -124,3 +124,18 @@ class IssueAlreadyExistsException(IssueException):
 
 class IssueInvalidException(IssueException):
     pass
+
+
+class LabelException(ProjectException):
+    """Base exception for all label-related business exceptions."""
+
+class LabelNotFoundException(LabelException):
+    pass
+
+
+class LabelInvalidException(LabelException):
+    pass
+
+
+class LabelAlreadyExistsException(LabelException):
+    pass

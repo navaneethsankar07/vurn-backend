@@ -24,6 +24,7 @@ class IssueService:
             .select_related(
                 "project", "parent", "sprint", "status", "assignee", "reporter"
             )
+            .prefetch_related("labels")
             .first()
         )
 

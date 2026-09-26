@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     IssueDetailView,
+    IssueLabelDetailView,
+    IssueLabelView,
     IssueView,
     KanbanBoardView,
     KanbanColumnIssueView,
@@ -130,5 +132,20 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/",
         IssueDetailView.as_view(),
         name="issue-detail",
+    ),
+    path(
+        "<slug:project_slug>/issues/labels/",
+        IssueLabelView.as_view(),
+        name="issue-labels",
+    ),
+    path(
+        "<slug:project_slug>/issues/<int:issue_id>/labels/",
+        IssueLabelView.as_view(),
+        name="issue-label-add",
+    ),
+    path(
+        "<slug:project_slug>/issues/<int:issue_id>/labels/<int:label_id>/",
+        IssueLabelDetailView.as_view(),
+        name="issue-label-detail",
     ),
 ]

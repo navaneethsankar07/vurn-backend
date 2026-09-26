@@ -1,8 +1,9 @@
 import re
 
+from django.db.migrations import serializer
 from rest_framework import serializers
 
-from .models import Issue, Project, Sprint, WorkflowStatus
+from .models import Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
     ISSUE_PRIORITY_CHOICES,
@@ -560,6 +561,13 @@ class IssueListQuerySerializer(serializers.Serializer):
     )
 
 
+class LabelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Label
+        fields = ["id", "name", "color"]
+
+
 class IssueResponseSerializer(serializers.ModelSerializer):
     key = serializers.CharField(read_only=True)
     project_id = serializers.IntegerField(source="project.id", read_only=True)
@@ -567,10 +575,13 @@ class IssueResponseSerializer(serializers.ModelSerializer):
         source="parent.key", read_only=True, allow_null=True
     )
     sprint_id = serializers.IntegerField(source="sprint.id", read_only=True)
+    sprint_name = serializers.CharField(source="sprint.name", read_only=True)
     status_id = serializers.IntegerField(source="status.id", read_only=True)
     status_name = serializers.CharField(source="status.name", read_only=True)
     assignee_id = serializers.IntegerField(source="assignee.id", read_only=True)
+    assignee_name = serializers.CharField(source="assignee.full_name", read_only=True)
     reporter_name = serializers.CharField(source="reporter.full_name", read_only=True)
+    labels = LabelSerializer(many=True, read_only=True)
 
     class Meta:
         model = Issue
@@ -580,9 +591,11 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "project_id",
             "parent_key",
             "sprint_id",
+            "sprint_name",
             "status_id",
             "status_name",
             "assignee_id",
+            "assignee_name",
             "reporter_name",
             "issue_number",
             "issue_type",
@@ -591,6 +604,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "priority",
             "story_points",
             "position",
+            "labels",
             "created_at",
             "updated_at",
         ]
@@ -615,3 +629,22 @@ class IssueUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Issue title cannot be empty.")
 
         return value
+
+
+class LabelQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+
+
+class AddLabelSerializer(serializers.Serializer):
+    label_id = serializers.IntegerField(required=False, min_value=1)
+    name = serializers.CharField(required=False, max_length=50)
+    color = serializers.CharField(required=False, max_length=7, default="#999999")
+
+    def validate(self, attrs):
+        if not attrs.get("label_id") and not attrs.get("name"):
+            raise serializers.ValidationError("Either label_id or name is required.")
+
+        if attrs.get("label_id") and attrs.get("name"):
+            raise serializers.ValidationError("Provide either label_id or name.")
+
+        return attrs
