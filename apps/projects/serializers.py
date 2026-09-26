@@ -711,3 +711,15 @@ class CommentListSerializer(CommentSerializer):
             "updated_at",
             "replies",
         ]
+
+
+class CommentUpdateSerializer(serializers.Serializer):
+    content = serializers.CharField(max_length=5000)
+
+    def validate_content(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Comment cannot be empty.")
+
+        return value

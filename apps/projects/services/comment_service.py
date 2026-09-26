@@ -1,6 +1,6 @@
 from django.db import transaction
 
-from ..exceptions import CommentInvalidException
+from ..exceptions import CommentInvalidException, CommentNotFoundException, CommentPermissionException
 from ..models import Comment
 
 
@@ -38,3 +38,20 @@ class CommentService:
             .prefetch_related("replies__author")
             .order_by("created_at")
         )
+
+    @staticmethod
+    def update_comment(*, issue, comment_id, user, content):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        if comment.author_id != user.id:
+            raise CommentPermissionException("You can only edit your own comments.")
+
+        comment.content = content
+        comment.save(update_fields=["content", "updated_at"])
+
+        return comment

@@ -19,6 +19,8 @@ from apps.shared.utils.pagination import StandardPagination
 from .constants import PROJECT_ICONS
 from .exceptions import (
     CommentInvalidException,
+    CommentNotFoundException,
+    CommentPermissionException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -51,6 +53,7 @@ from .serializers import (
     CommentCreateSerializer,
     CommentListSerializer,
     CommentSerializer,
+    CommentUpdateSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
@@ -1357,3 +1360,42 @@ class IssueCommentView(APIView):
         response_serializer = CommentSerializer(comment)
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class IssueCommentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, slug, project_slug, issue_id, comment_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            comment = CommentService.update_comment(
+                issue=issue,
+                comment_id=comment_id,
+                user=request.user,
+                **serializer.validated_data,
+            )
+        except CommentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except CommentPermissionException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        response_serializer = CommentSerializer(comment)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
