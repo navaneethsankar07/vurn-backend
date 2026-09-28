@@ -79,6 +79,7 @@ from .serializers import (
     SprintListQuerySerializer,
     SprintSerializer,
     SprintUpdateSerializer,
+    SubtaskListQuerySerializer,
     WorkflowOverviewSerializer,
     WorkflowStatusCreateSerializer,
     WorkflowStatusPositionSerializer,
@@ -1156,8 +1157,13 @@ class IssueView(APIView):
         except IssueAlreadyExistsException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        response_serializer = IssueResponseSerializer(issue)
+
         return Response(
-            {"message": (f"{issue.issue_type} created successfully.")},
+            {
+                "message": (f"{issue.issue_type} created successfully."),
+                "issue": response_serializer.data,
+            },
             status=status.HTTP_201_CREATED,
         )
 
@@ -1538,3 +1544,39 @@ class IssueCommentReactionSummaryView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(summary, status=status.HTTP_200_OK)
+
+
+class IssueSubtaskView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        query_serializer = SubtaskListQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        try:
+            subtasks = IssueService.list_subtasks(
+                project=project, issue_id=issue_id, **query_serializer.validated_data
+            )
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(subtasks, request)
+
+        response_serializer = IssueResponseSerializer(page, many=True)
+
+        return paginator.get_paginated_response(response_serializer.data)

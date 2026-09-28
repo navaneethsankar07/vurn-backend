@@ -361,6 +361,36 @@ class IssueService:
         return issue
 
     @staticmethod
+    def list_subtasks(*, project, issue_id, search=None, sort="position"):
+        parent = Issue.objects.filter(project=project, id=issue_id).first()
+
+        if parent is None:
+            raise IssueNotFoundException("Issue not found.")
+
+        issues = (
+            Issue.objects.filter(project=project, parent=parent, issue_type="subtask")
+            .select_related("parent", "sprint", "status", "assignee", "reporter")
+            .prefetch_related("labels")
+        )
+
+        if search:
+            search = search.strip()
+
+            issues = issues.filter(
+                Q(title__icontains=search) | Q(issue_number__icontains=search)
+            )
+
+        ordering = {
+            "created_asc": "created_at",
+            "created_desc": "-created_at",
+            "updated_asc": "updated_at",
+            "updated_desc": "-updated_at",
+            "position": "position",
+        }
+
+        return issues.order_by(ordering.get(sort, "position"), "id")
+
+    @staticmethod
     def _validate_parent(*, issue_type, parent):
         allowed_parents = {
             "story": {"epic"},

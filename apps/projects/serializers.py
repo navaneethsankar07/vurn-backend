@@ -509,6 +509,8 @@ class KanbanIssueSerializer(serializers.Serializer):
     issue_type = serializers.CharField()
     status_id = serializers.IntegerField()
     sprint_id = serializers.IntegerField(allow_null=True)
+    due_date = serializers.DateField(allow_null=True)
+    estimated_time = serializers.IntegerField(allow_null=True)
     priority = serializers.CharField()
     assignee_id = serializers.IntegerField(allow_null=True)
     position = serializers.IntegerField()
@@ -599,6 +601,8 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "sprint_id",
             "sprint_name",
             "status_id",
+            "due_date",
+            "estimated_time",
             "status_name",
             "assignee_id",
             "assignee_name",
@@ -622,6 +626,10 @@ class IssueUpdateSerializer(serializers.Serializer):
     parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     sprint_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     status_id = serializers.IntegerField(required=False, min_value=1)
+    due_date = serializers.DateField(required=False, allow_null=True)
+    estimated_time = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1
+    )
     assignee_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     priority = serializers.ChoiceField(choices=ISSUE_PRIORITY_CHOICES, required=False)
     story_points = serializers.IntegerField(
@@ -755,3 +763,18 @@ class CommentReactionSummarySerializer(serializers.Serializer):
     surprised = serializers.IntegerField()
     sad = serializers.IntegerField()
     my_reaction = serializers.CharField(allow_null=True)
+
+
+class SubtaskListQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+    sort = serializers.ChoiceField(
+        choices=[
+            "position",
+            "created_asc",
+            "created_desc",
+            "updated_asc",
+            "updated_desc",
+        ],
+        required=False,
+        default="position",
+    )
