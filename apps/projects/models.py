@@ -251,6 +251,7 @@ class Issue(models.Model):
     estimated_time = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "issues"
@@ -273,6 +274,7 @@ class Issue(models.Model):
             ),
             models.Index(fields=("parent",), name="idx_issues_parent"),
             models.Index(fields=("assignee",), name="idx_issues_assignee"),
+            models.Index(fields=("deleted_at",), name="idx_issues_deleted_at"),
         ]
 
     @property

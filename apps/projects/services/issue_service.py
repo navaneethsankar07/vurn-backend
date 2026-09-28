@@ -3,14 +3,14 @@ import logging
 from django.db import IntegrityError, transaction
 from django.db.models import Q, CharField
 from django.db.models.functions import Cast
+from django.utils import timezone
 
 from apps.projects.exceptions import (
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
 )
-from apps.projects.models import Issue, Project
-from apps.projects.models import Sprint, WorkflowStatus
+from ..models import Comment, Issue, WorkflowStatus, Sprint
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class IssueService:
     @staticmethod
     def get_issue(*, project, issue_id):
         issue = (
-            Issue.objects.filter(project=project, id=issue_id)
+            Issue.objects.filter(project=project, id=issue_id, deleted_at__isnull=True)
             .select_related(
                 "project", "parent", "sprint", "status", "assignee", "reporter"
             )
@@ -49,7 +49,7 @@ class IssueService:
         sort="position",
     ):
         issues = (
-            Issue.objects.filter(project=project)
+            Issue.objects.filter(project=project, deleted_at__isnull=True)
             .exclude(issue_type="subtask")
             .select_related("parent", "sprint", "status", "assignee", "reporter")
         )
@@ -368,7 +368,12 @@ class IssueService:
             raise IssueNotFoundException("Issue not found.")
 
         issues = (
-            Issue.objects.filter(project=project, parent=parent, issue_type="subtask")
+            Issue.objects.filter(
+                project=project,
+                parent=parent,
+                issue_type="subtask",
+                deleted_at__isnull=True,
+            )
             .select_related("parent", "sprint", "status", "assignee", "reporter")
             .prefetch_related("labels")
         )
@@ -389,6 +394,48 @@ class IssueService:
         }
 
         return issues.order_by(ordering.get(sort, "position"), "id")
+
+    @staticmethod
+    @transaction.atomic
+    def delete_issue(*, project, issue_id):
+        issue = (
+            Issue.objects.select_for_update()
+            .filter(project=project, id=issue_id, deleted_at__isnull=True)
+            .first()
+        )
+
+        if issue is None:
+            raise IssueNotFoundException("Issue not found.")
+
+        deleted_at = timezone.now()
+
+        try:
+            Comment.objects.filter(issue=issue, deleted_at__isnull=True).update(
+                deleted_at=deleted_at
+            )
+
+            if issue.issue_type == "epic":
+                Issue.objects.filter(
+                    project=project, parent=issue, deleted_at__isnull=True
+                ).update(parent=None)
+            else:
+                Issue.objects.filter(
+                    project=project,
+                    parent=issue,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                ).update(deleted_at=deleted_at)
+
+            issue.deleted_at = deleted_at
+            issue.save(update_fields=["deleted_at", "updated_at"])
+        except Exception:
+            logger.exception(
+                "Failed to delete issue | issue=%s project=%s type=%s",
+                issue.id,
+                project.id,
+                issue.issue_type,
+            )
+            raise
 
     @staticmethod
     def _validate_parent(*, issue_type, parent):
