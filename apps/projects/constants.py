@@ -106,3 +106,6 @@ COMMENT_REACTION_CHOICES = (
     ("surprised", "Surprised"),
     ("sad", "Sad"),
 )
+
+
+COMMENT_SORT_CHOICES = (("newest", "Newest"), ("top", "Top"))

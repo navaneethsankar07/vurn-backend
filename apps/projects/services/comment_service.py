@@ -1,4 +1,5 @@
 from django.db import models, transaction
+from django.db.models import Q, Count
 from django.utils import timezone
 
 from ..constants import COMMENT_REACTION_CHOICES
@@ -36,15 +37,23 @@ class CommentService:
         )
 
     @staticmethod
-    def list_comments(*, issue):
-        return (
+    def list_comments(*, issue, sort="newest"):
+        comments = (
             Comment.objects.filter(
                 issue=issue, parent__isnull=True, deleted_at__isnull=True
             )
             .select_related("author")
             .prefetch_related("replies__author")
-            .order_by("created_at")
         )
+
+        if sort == "top":
+            comments = comments.annotate(
+                reply_count=Count("replies", filter=Q(replies__deleted_at__isnull=True))
+            ).order_by("-reply_count", "-created_at")
+        else:
+            comments = comments.order_by("-created_at")
+
+        return comments
 
     @staticmethod
     def update_comment(*, issue, comment_id, user, content):

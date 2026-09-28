@@ -51,6 +51,7 @@ from .exceptions import (
 from .serializers import (
     AddLabelSerializer,
     CommentCreateSerializer,
+    CommentListQuerySerializer,
     CommentListSerializer,
     CommentReactionSerializer,
     CommentSerializer,
@@ -1323,9 +1324,15 @@ class IssueCommentView(APIView):
         except IssueNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
-        comments = CommentService.list_comments(issue=issue)
+        query_serializer = CommentListQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        comments = CommentService.list_comments(
+            issue=issue, **query_serializer.validated_data
+        )
 
         paginator = StandardPagination()
+
         page = paginator.paginate_queryset(comments, request)
 
         serializer = CommentListSerializer(page, many=True)
@@ -1360,7 +1367,13 @@ class IssueCommentView(APIView):
 
         response_serializer = CommentSerializer(comment)
 
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "message": "Comment created successfully.",
+                "comment": response_serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class IssueCommentDetailView(APIView):

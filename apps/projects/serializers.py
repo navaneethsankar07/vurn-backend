@@ -7,6 +7,7 @@ from .models import Comment, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
     COMMENT_REACTION_CHOICES,
+    COMMENT_SORT_CHOICES,
     ISSUE_PRIORITY_CHOICES,
     ISSUE_SORT_CHOICES,
     ISSUE_TYPE_CHOICES,
@@ -664,9 +665,18 @@ class CommentCreateSerializer(serializers.Serializer):
         return value
 
 
+class CommentListQuerySerializer(serializers.Serializer):
+    sort = serializers.ChoiceField(
+        choices=[choice[0] for choice in COMMENT_SORT_CHOICES],
+        required=False,
+        default="newest",
+    )
+
+
 class CommentSerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source="author.id", read_only=True)
     author_name = serializers.CharField(source="author.full_name", read_only=True)
+    author_profile = serializers.URLField(source="author.avatar", read_only=True)
 
     class Meta:
         model = Comment
@@ -674,6 +684,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "id",
             "issue_id",
             "parent_id",
+            "author_profile",
             "author_id",
             "author_name",
             "content",
@@ -685,6 +696,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class CommentReplySerializer(serializers.ModelSerializer):
     author_id = serializers.IntegerField(source="author.id", read_only=True)
     author_name = serializers.CharField(source="author.full_name", read_only=True)
+    author_profile = serializers.URLField(source="author.avatar", read_only=True)
 
     class Meta:
         model = Comment
@@ -692,6 +704,7 @@ class CommentReplySerializer(serializers.ModelSerializer):
             "id",
             "author_id",
             "author_name",
+            "author_profile",
             "content",
             "created_at",
             "updated_at",
@@ -707,6 +720,7 @@ class CommentListSerializer(CommentSerializer):
             "issue_id",
             "author_id",
             "author_name",
+            "author_profile",
             "content",
             "created_at",
             "updated_at",
