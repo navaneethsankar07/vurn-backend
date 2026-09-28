@@ -1157,12 +1157,13 @@ class IssueView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            {"message": f"{issue.issue_type} created successfully."},
+            {"message": (f"{issue.issue_type} created successfully.")},
             status=status.HTTP_201_CREATED,
         )
 
 
 class IssueDetailView(APIView):
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, slug, project_slug, issue_id):

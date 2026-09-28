@@ -247,6 +247,8 @@ class Issue(models.Model):
     )
     story_points = models.PositiveIntegerField(null=True, blank=True)
     position = models.PositiveIntegerField(default=0)
+    due_date = models.DateField(null=True, blank=True)
+    estimated_time = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
 

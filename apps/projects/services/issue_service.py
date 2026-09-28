@@ -178,6 +178,8 @@ class IssueService:
         assignee_id=None,
         priority="medium",
         story_points=None,
+        due_date=None,
+        estimated_time=None,
     ):
         parent = None
 
@@ -262,18 +264,18 @@ class IssueService:
                 description=description,
                 priority=priority,
                 story_points=story_points,
+                due_date=due_date,
+                estimated_time=estimated_time,
                 position=position,
             )
         except IntegrityError as exc:
+            logger.exception(
+                "Failed to create issue | " "project=%s user=%s issue_type=%s",
+                project.id,
+                user.id,
+                issue_type,
+            )
             raise IssueAlreadyExistsException("Unable to create the issue.") from exc
-
-        logger.info(
-            "Issue created | issue=%s project=%s " "type=%s user=%s",
-            issue.id,
-            project.id,
-            issue_type,
-            user.id,
-        )
 
         return issue
 
@@ -373,6 +375,9 @@ class IssueService:
             return
 
         allowed = allowed_parents.get(issue_type, set())
+
+        if parent is None:
+            return
 
         if parent.issue_type not in allowed:
             raise IssueInvalidException(

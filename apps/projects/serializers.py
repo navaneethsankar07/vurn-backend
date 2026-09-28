@@ -528,6 +528,10 @@ class IssueCreateSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True)
     parent_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     sprint_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    due_date = serializers.DateField(required=False, allow_null=True)
+    estimated_time = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1
+    )
     status_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     assignee_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     priority = serializers.ChoiceField(
