@@ -108,4 +108,4 @@ COMMENT_REACTION_CHOICES = (
 )
 
 
-COMMENT_SORT_CHOICES = (("newest", "Newest"), ("top", "Top"))
+COMMENT_SORT_CHOICES = (("newest", "Newest"), ("top", "Top"), ("oldest", "Oldest"))

@@ -37,7 +37,7 @@ class CommentService:
         )
 
     @staticmethod
-    def list_comments(*, issue, sort="newest"):
+    def list_comments(*, issue, sort="oldest"):
         comments = (
             Comment.objects.filter(
                 issue=issue, parent__isnull=True, deleted_at__isnull=True
@@ -50,6 +50,8 @@ class CommentService:
             comments = comments.annotate(
                 reply_count=Count("replies", filter=Q(replies__deleted_at__isnull=True))
             ).order_by("-reply_count", "-created_at")
+        elif sort == "oldest":
+            coomments = comments.order_by("created_at")
         else:
             comments = comments.order_by("-created_at")
 
@@ -84,8 +86,12 @@ class CommentService:
         if comment.author_id != user.id:
             raise CommentPermissionException("You can only delete your own comments.")
 
-        comment.deleted_at = timezone.now()
+        deleted_at = timezone.now()
+
+        comment.deleted_at = deleted_at
         comment.save(update_fields=["deleted_at"])
+
+        comment.replies.filter(deleted_at__isnull=True).update(deleted_at=deleted_at)
 
     @staticmethod
     @transaction.atomic
@@ -105,7 +111,9 @@ class CommentService:
             comment_reaction.reaction = reaction
             comment_reaction.save(update_fields=["reaction", "updated_at"])
 
-        return comment_reaction
+        return CommentService.get_reaction_summary(
+            issue=issue, comment_id=comment_id, user=user
+        )
 
     @staticmethod
     def remove_reaction(*, issue, comment_id, user):
@@ -134,14 +142,26 @@ class CommentService:
 
         reactions = (
             CommentReaction.objects.filter(comment=comment)
-            .values("reaction")
-            .annotate(count=models.Count("id"))
+            .select_related("user")
+            .order_by("created_at")
         )
 
-        summary = {reaction: 0 for reaction, _ in COMMENT_REACTION_CHOICES}
+        summary = {
+            reaction: {"count": 0, "users": []}
+            for reaction, _ in COMMENT_REACTION_CHOICES
+        }
 
         for item in reactions:
-            summary[item["reaction"]] = item["count"]
+            reaction = item.reaction
+
+            summary[reaction]["count"] += 1
+            summary[reaction]["users"].append(
+                {
+                    "id": item.user.id,
+                    "name": item.user.full_name,
+                    "avatar": item.user.avatar,
+                }
+            )
 
         my_reaction = (
             CommentReaction.objects.filter(comment=comment, user=user)

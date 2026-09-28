@@ -1412,7 +1412,10 @@ class IssueCommentDetailView(APIView):
 
         response_serializer = CommentSerializer(comment)
 
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {**response_serializer.data, "message": "Comment updated successfully."},
+            status=status.HTTP_200_OK,
+        )
 
     def delete(self, request, slug, project_slug, issue_id, comment_id):
         try:
@@ -1439,7 +1442,9 @@ class IssueCommentDetailView(APIView):
         except CommentPermissionException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"message": "Comment deleted successfully."}, status=status.HTTP_200_OK
+        )
 
 
 class IssueCommentReactionView(APIView):
@@ -1464,7 +1469,7 @@ class IssueCommentReactionView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            CommentService.set_reaction(
+            reaction_summary = CommentService.set_reaction(
                 issue=issue,
                 comment_id=comment_id,
                 user=request.user,
@@ -1474,7 +1479,8 @@ class IssueCommentReactionView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(
-            {"message": "Reaction added successfully."}, status=status.HTTP_200_OK
+            {"message": "Reaction updated successfully.", "reaction": reaction_summary},
+            status=status.HTTP_200_OK,
         )
 
     def delete(self, request, slug, project_slug, issue_id, comment_id):
