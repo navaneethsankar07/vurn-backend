@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    IssueAttachmentDetailView,
     IssueAttachmentListView,
     IssueAttachmentUploadCompleteView,
     IssueAttachmentUploadView,
@@ -195,5 +196,10 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/attachments/",
         IssueAttachmentListView.as_view(),
         name="issue-attachments",
+    ),
+    path(
+        "<slug:project_slug>/issues/<int:issue_id>/attachments/<int:attachment_id>/",
+        IssueAttachmentDetailView.as_view(),
+        name="issue-attachment-detail",
     ),
 ]

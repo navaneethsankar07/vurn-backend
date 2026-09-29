@@ -53,3 +53,11 @@ class S3Service:
         return client.head_object(
             Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=object_key
         )
+
+    @staticmethod
+    def delete_object(*, object_key):
+        client = S3Service.get_client()
+
+        return client.delete_object(
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=object_key
+        )

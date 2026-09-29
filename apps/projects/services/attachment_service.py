@@ -13,6 +13,7 @@ from ..constants import (
 )
 from ..exceptions import (
     AttachmentInvalidException,
+    AttachmentNotFoundException,
     AttachmentUploadException,
     AttachmentUploadVerificationException,
 )
@@ -157,3 +158,34 @@ class AttachmentService:
             )
 
         return attachments
+
+    @staticmethod
+    @transaction.atomic
+    def delete_attachment(*, project, issue, attachment_id):
+        if issue.project_id != project.id:
+            raise AttachmentInvalidException(
+                "The issue does not belong to this project."
+            )
+
+        if issue.deleted_at is not None:
+            raise AttachmentInvalidException(
+                "Cannot delete attachments of a deleted issue."
+            )
+
+        attachment = Attachment.objects.filter(id=attachment_id, issue=issue).first()
+
+        if attachment is None:
+            raise AttachmentNotFoundException("Attachment not found.")
+
+        try:
+            S3Service.delete_object(object_key=attachment.object_key)
+
+            attachment.delete()
+        except Exception as exc:
+            logger.exception(
+                "Failed to delete attachment | " "attachment=%s issue=%s project=%s",
+                attachment.id,
+                issue.id,
+                project.id,
+            )
+            raise AttachmentUploadException("Unable to delete attachment.") from exc
