@@ -374,3 +374,35 @@ class CommentReaction(models.Model):
         indexes = [
             models.Index(fields=("comment",), name="idx_comment_reactions_comment")
         ]
+
+
+class Attachment(models.Model):
+    issue = models.ForeignKey(
+        "projects.Issue", on_delete=models.CASCADE, related_name="attachments"
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="uploaded_attachments",
+    )
+    file_name = models.CharField(max_length=255)
+    object_key = models.CharField(max_length=500)
+    file_size = models.PositiveBigIntegerField()
+    mime_type = models.CharField(max_length=100)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "attachments"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("issue", "object_key"), name="uq_attachment_issue_object_key"
+            )
+        ]
+        indexes = [
+            models.Index(fields=("issue",), name="idx_attachments_issue"),
+            models.Index(fields=("uploaded_by",), name="idx_attachments_uploaded_by"),
+        ]
+
+    def __str__(self):
+        return self.file_name

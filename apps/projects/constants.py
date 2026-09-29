@@ -109,3 +109,28 @@ COMMENT_REACTION_CHOICES = (
 
 
 COMMENT_SORT_CHOICES = (("newest", "Newest"), ("top", "Top"), ("oldest", "Oldest"))
+
+
+MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
+
+ALLOWED_ATTACHMENT_MIME_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/svg+xml",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "text/csv",
+}
+
+ATTACHMENT_UPLOAD_EXPIRY = 900

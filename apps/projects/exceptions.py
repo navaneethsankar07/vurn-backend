@@ -156,3 +156,22 @@ class CommentInvalidException(CommentException):
 
 class CommentPermissionException(CommentException):
     pass
+
+
+class AttachmentException(ProjectException):
+    """Base exception for all attachment-related business exceptions."""
+
+class AttachmentNotFoundException(AttachmentException):
+    pass
+
+
+class AttachmentInvalidException(AttachmentException):
+    pass
+
+
+class AttachmentUploadException(AttachmentException):
+    pass
+
+
+class AttachmentUploadVerificationException(AttachmentException):
+    pass

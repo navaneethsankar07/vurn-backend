@@ -15,9 +15,12 @@ from apps.organizations.services.organization_service import (
     OrganizationService,
 )
 from apps.shared.utils.pagination import StandardPagination
+from .services.attachment_service import AttachmentService
 
 from .constants import PROJECT_ICONS
 from .exceptions import (
+    AttachmentInvalidException,
+    AttachmentUploadException,
     CommentInvalidException,
     CommentNotFoundException,
     CommentPermissionException,
@@ -50,6 +53,7 @@ from .exceptions import (
 )
 from .serializers import (
     AddLabelSerializer,
+    AttachmentUploadSerializer,
     CommentCreateSerializer,
     CommentListQuerySerializer,
     CommentListSerializer,
@@ -1602,3 +1606,52 @@ class IssueSubtaskView(APIView):
         response_serializer = IssueResponseSerializer(page, many=True)
 
         return paginator.get_paginated_response(response_serializer.data)
+
+
+class IssueAttachmentUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AttachmentUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            upload = AttachmentService.initialize_issue_upload(
+                project=project, issue=issue, **serializer.validated_data
+            )
+        except AttachmentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttachmentUploadException as exc:
+            return Response(
+                {"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(
+            {
+                "message": ("Attachment upload initialized successfully."),
+                "upload_url": upload["upload_url"],
+                "file_name": upload["file_name"],
+                "file_size": upload["file_size"],
+                "mime_type": upload["mime_type"],
+                "expires_in": upload["expires_in"],
+                "object_key": upload["object_key"],
+            },
+            status=status.HTTP_200_OK,
+        )

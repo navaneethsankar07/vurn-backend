@@ -6,12 +6,14 @@ from rest_framework import serializers
 from .models import Comment, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
+    ALLOWED_ATTACHMENT_MIME_TYPES,
     COMMENT_REACTION_CHOICES,
     COMMENT_SORT_CHOICES,
     ISSUE_PRIORITY_CHOICES,
     ISSUE_SORT_CHOICES,
     ISSUE_TYPE_CHOICES,
     KANBAN_SORT_CHOICES,
+    MAX_ATTACHMENT_SIZE,
     PROJECT_ICONS,
     PROJECT_STATUS_CHOICES,
     SPRINT_STATUS_CHOICES,
@@ -582,7 +584,9 @@ class IssueResponseSerializer(serializers.ModelSerializer):
     parent_key = serializers.CharField(
         source="parent.key", read_only=True, allow_null=True
     )
-    parent_id = serializers.IntegerField(source="parent.id", read_only=True, allow_null=True)
+    parent_id = serializers.IntegerField(
+        source="parent.id", read_only=True, allow_null=True
+    )
     sprint_id = serializers.IntegerField(source="sprint.id", read_only=True)
     sprint_name = serializers.CharField(source="sprint.name", read_only=True)
     status_id = serializers.IntegerField(source="status.id", read_only=True)
@@ -780,3 +784,25 @@ class SubtaskListQuerySerializer(serializers.Serializer):
         required=False,
         default="position",
     )
+
+
+class AttachmentUploadSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=255)
+    file_size = serializers.IntegerField(min_value=1, max_value=MAX_ATTACHMENT_SIZE)
+    mime_type = serializers.CharField(max_length=100)
+
+    def validate_file_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("File name cannot be empty.")
+
+        return value
+
+    def validate_mime_type(self, value):
+        value = value.strip().lower()
+
+        if value not in ALLOWED_ATTACHMENT_MIME_TYPES:
+            raise serializers.ValidationError("This file type is not supported.")
+
+        return value
