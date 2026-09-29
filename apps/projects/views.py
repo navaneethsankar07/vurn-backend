@@ -21,6 +21,7 @@ from .constants import PROJECT_ICONS
 from .exceptions import (
     AttachmentInvalidException,
     AttachmentUploadException,
+    AttachmentUploadVerificationException,
     CommentInvalidException,
     CommentNotFoundException,
     CommentPermissionException,
@@ -53,6 +54,7 @@ from .exceptions import (
 )
 from .serializers import (
     AddLabelSerializer,
+    AttachmentUploadCompleteSerializer,
     AttachmentUploadSerializer,
     CommentCreateSerializer,
     CommentListQuerySerializer,
@@ -1654,4 +1656,55 @@ class IssueAttachmentUploadView(APIView):
                 "object_key": upload["object_key"],
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class IssueAttachmentUploadCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AttachmentUploadCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            attachment = AttachmentService.complete_issue_upload(
+                project=project,
+                issue=issue,
+                user=request.user,
+                **serializer.validated_data,
+            )
+        except AttachmentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttachmentUploadVerificationException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "message": ("Attachment uploaded successfully."),
+                "attachment": {
+                    "id": attachment.id,
+                    "file_name": attachment.file_name,
+                    "file_size": attachment.file_size,
+                    "mime_type": attachment.mime_type,
+                    "created_at": attachment.created_at,
+                },
+            },
+            status=status.HTTP_201_CREATED,
         )

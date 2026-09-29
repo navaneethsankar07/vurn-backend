@@ -45,3 +45,11 @@ class S3Service:
             Params={"Bucket": settings.AWS_STORAGE_BUCKET_NAME, "Key": object_key},
             ExpiresIn=expires_in,
         )
+
+    @staticmethod
+    def head_object(*, object_key):
+        client = S3Service.get_client()
+
+        return client.head_object(
+            Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=object_key
+        )

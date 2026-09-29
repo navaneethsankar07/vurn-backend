@@ -1,11 +1,20 @@
 import logging
 import uuid
 
+from django.db import transaction
+
 from apps.shared.services.s3_service import S3Service
-from ..constants import ATTACHMENT_UPLOAD_EXPIRY
+
+from ..models import Attachment
+from ..constants import (
+    ALLOWED_ATTACHMENT_MIME_TYPES,
+    ATTACHMENT_UPLOAD_EXPIRY,
+    MAX_ATTACHMENT_SIZE,
+)
 from ..exceptions import (
     AttachmentInvalidException,
     AttachmentUploadException,
+    AttachmentUploadVerificationException,
 )
 
 logger = logging.getLogger("apps")
@@ -41,7 +50,7 @@ class AttachmentService:
             )
         except Exception as exc:
             logger.exception(
-                "Failed to generate attachment upload URL | " "issue=%s project=%s",
+                "Failed to generate attachment upload URL | issue=%s project=%s",
                 issue.id,
                 project.id,
             )
@@ -57,3 +66,67 @@ class AttachmentService:
             "expires_in": ATTACHMENT_UPLOAD_EXPIRY,
             "object_key": object_key,
         }
+
+    @staticmethod
+    @transaction.atomic
+    def complete_issue_upload(*, project, issue, user, object_key):
+        if issue.project_id != project.id:
+            raise AttachmentInvalidException(
+                "The issue does not belong to this project."
+            )
+
+        if issue.deleted_at is not None:
+            raise AttachmentInvalidException("Cannot attach files to a deleted issue.")
+
+        prefix = f"issues/{issue.id}/attachments/"
+
+        if not object_key.startswith(prefix):
+            raise AttachmentInvalidException("Invalid attachment object.")
+
+        try:
+            metadata = S3Service.head_object(object_key=object_key)
+        except Exception as exc:
+            logger.exception(
+                "Failed to verify attachment upload | " "issue=%s project=%s",
+                issue.id,
+                project.id,
+            )
+            raise AttachmentUploadVerificationException(
+                "Unable to verify uploaded file."
+            ) from exc
+
+        file_size = metadata.get("ContentLength", 0)
+        mime_type = metadata.get("ContentType", "").lower()
+
+        if file_size < 1:
+            raise AttachmentUploadVerificationException("Uploaded file is empty.")
+
+        if file_size > MAX_ATTACHMENT_SIZE:
+            raise AttachmentUploadVerificationException(
+                "Uploaded file exceeds the 50 MB limit."
+            )
+
+        if mime_type not in ALLOWED_ATTACHMENT_MIME_TYPES:
+            raise AttachmentUploadVerificationException(
+                "Uploaded file type is not supported."
+            )
+
+        if Attachment.objects.filter(object_key=object_key).exists():
+            raise AttachmentInvalidException(
+                "This attachment has already been uploaded."
+            )
+
+        file_name = object_key.rsplit("/", 1)[-1]
+
+        file_name = file_name.split("-", 1)[1]
+
+        attachment = Attachment.objects.create(
+            issue=issue,
+            uploaded_by=user,
+            file_name=file_name,
+            object_key=object_key,
+            file_size=file_size,
+            mime_type=mime_type,
+        )
+
+        return attachment

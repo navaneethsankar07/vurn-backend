@@ -806,3 +806,15 @@ class AttachmentUploadSerializer(serializers.Serializer):
             raise serializers.ValidationError("This file type is not supported.")
 
         return value
+
+
+class AttachmentUploadCompleteSerializer(serializers.Serializer):
+    object_key = serializers.CharField(max_length=500)
+
+    def validate_object_key(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Object key cannot be empty.")
+
+        return value
