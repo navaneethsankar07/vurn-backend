@@ -3,7 +3,7 @@ import re
 from django.db.migrations import serializer
 from rest_framework import serializers
 
-from .models import Comment, Issue, Label, Project, Sprint, WorkflowStatus
+from .models import Attachment, Comment, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
     ALLOWED_ATTACHMENT_MIME_TYPES,
@@ -818,3 +818,28 @@ class AttachmentUploadCompleteSerializer(serializers.Serializer):
             raise serializers.ValidationError("Object key cannot be empty.")
 
         return value
+
+
+class AttachmentSerializer(serializers.ModelSerializer):
+    uploaded_by_id = serializers.IntegerField(source="uploaded_by.id", read_only=True)
+    uploaded_by_name = serializers.CharField(
+        source="uploaded_by.full_name", read_only=True
+    )
+    uploaded_by_avatar = serializers.URLField(
+        source="uploaded_by.avatar", read_only=True, allow_null=True
+    )
+    download_url = serializers.URLField(read_only=True)
+
+    class Meta:
+        model = Attachment
+        fields = [
+            "id",
+            "file_name",
+            "file_size",
+            "mime_type",
+            "uploaded_by_id",
+            "uploaded_by_name",
+            "uploaded_by_avatar",
+            "created_at",
+            "download_url",
+        ]

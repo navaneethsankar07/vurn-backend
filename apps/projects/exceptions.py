@@ -161,6 +161,7 @@ class CommentPermissionException(CommentException):
 class AttachmentException(ProjectException):
     """Base exception for all attachment-related business exceptions."""
 
+
 class AttachmentNotFoundException(AttachmentException):
     pass
 

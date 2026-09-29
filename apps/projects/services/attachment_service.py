@@ -130,3 +130,30 @@ class AttachmentService:
         )
 
         return attachment
+
+    @staticmethod
+    def list_issue_attachments(*, project, issue):
+        if issue.project_id != project.id:
+            raise AttachmentInvalidException(
+                "The issue does not belong to this project."
+            )
+
+        if issue.deleted_at is not None:
+            raise AttachmentInvalidException(
+                "Cannot access attachments of a deleted issue."
+            )
+
+        return (
+            Attachment.objects.filter(issue=issue)
+            .select_related("uploaded_by")
+            .order_by("-created_at", "-id")
+        )
+
+    @staticmethod
+    def add_download_urls(*, attachments):
+        for attachment in attachments:
+            attachment.download_url = S3Service.generate_download_url(
+                object_key=attachment.object_key
+            )
+
+        return attachments

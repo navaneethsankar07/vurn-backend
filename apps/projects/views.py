@@ -54,6 +54,7 @@ from .exceptions import (
 )
 from .serializers import (
     AddLabelSerializer,
+    AttachmentSerializer,
     AttachmentUploadCompleteSerializer,
     AttachmentUploadSerializer,
     CommentCreateSerializer,
@@ -1708,3 +1709,42 @@ class IssueAttachmentUploadCompleteView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class IssueAttachmentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            attachments = AttachmentService.list_issue_attachments(
+                project=project, issue=issue
+            )
+        except AttachmentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(attachments, request)
+
+        AttachmentService.add_download_urls(attachments=page)
+
+        serializer = AttachmentSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
