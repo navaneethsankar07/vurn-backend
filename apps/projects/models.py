@@ -178,6 +178,7 @@ class Sprint(models.Model):
     description = models.TextField(blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
+    estimated_days = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(
         max_length=20, choices=SPRINT_STATUS_CHOICES, default="planned"
     )

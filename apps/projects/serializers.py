@@ -400,6 +400,7 @@ class SprintSerializer(serializers.ModelSerializer):
             "description",
             "start_date",
             "end_date",
+            "estimated_days",
             "status",
             "created_by_id",
             "created_by_name",
@@ -432,7 +433,10 @@ class SprintCreateSerializer(serializers.Serializer):
     goal = serializers.CharField(required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
     start_date = serializers.DateField()
-    end_date = serializers.DateField()
+    end_date = serializers.DateField(required=False, allow_null=True)
+    estimated_days = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1
+    )
 
     def validate_name(self, value):
         value = value.strip()
@@ -443,10 +447,24 @@ class SprintCreateSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        if attrs["start_date"] > attrs["end_date"]:
+        end_date = attrs.get("end_date")
+        estimated_days = attrs.get("estimated_days")
+
+        if end_date is None and estimated_days is None:
             raise serializers.ValidationError(
-                {"end_date": ("End date must be after or equal " "to the start date.")}
+                "Either end date or estimated days is required."
             )
+
+        if end_date is not None and estimated_days is not None:
+            raise serializers.ValidationError(
+                "Provide either end date or estimated days."
+            )
+
+        if end_date is not None:
+            if attrs["start_date"] > end_date:
+                raise serializers.ValidationError(
+                    {"end_date": ("End date must be after the start date.")}
+                )
 
         return attrs
 
@@ -456,7 +474,10 @@ class SprintUpdateSerializer(serializers.Serializer):
     goal = serializers.CharField(required=False, allow_blank=True)
     description = serializers.CharField(required=False, allow_blank=True)
     start_date = serializers.DateField(required=False)
-    end_date = serializers.DateField(required=False)
+    end_date = serializers.DateField(required=False, allow_null=True)
+    estimated_days = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1
+    )
 
     def validate_name(self, value):
         value = value.strip()
@@ -469,6 +490,12 @@ class SprintUpdateSerializer(serializers.Serializer):
     def validate(self, attrs):
         start_date = attrs.get("start_date")
         end_date = attrs.get("end_date")
+        estimated_days = attrs.get("estimated_days")
+
+        if end_date is not None and estimated_days is not None:
+            raise serializers.ValidationError(
+                "Provide either end date or estimated days."
+            )
 
         if start_date and end_date:
             if start_date > end_date:

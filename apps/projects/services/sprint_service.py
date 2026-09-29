@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
@@ -48,17 +50,32 @@ class SprintService:
     @staticmethod
     @transaction.atomic
     def create_sprint(
-        *, project, user, name, goal="", description="", start_date=None, end_date=None
+        *,
+        project,
+        user,
+        name,
+        goal="",
+        description="",
+        start_date=None,
+        end_date=None,
+        estimated_days=None
     ):
         if Sprint.objects.filter(project=project, name=name).exists():
             raise SprintAlreadyExistsException(
                 "A sprint with this name already exists in this project."
             )
 
+        if estimated_days is not None:
+            end_date = start_date + timedelta(days=estimated_days - 1)
+
         if start_date > end_date:
             raise SprintInvalidException(
                 "End date must be after or equal to the start date."
             )
+
+        SprintService._validate_sprint_dates(
+            project=project, start_date=start_date, end_date=end_date
+        )
 
         try:
             return Sprint.objects.create(
@@ -68,11 +85,26 @@ class SprintService:
                 description=description,
                 start_date=start_date,
                 end_date=end_date,
+                estimated_days=estimated_days,
                 status="planned",
                 created_by=user,
             )
         except IntegrityError as exc:
             raise SprintAlreadyExistsException("Unable to create the sprint.") from exc
+
+    @staticmethod
+    def _validate_sprint_dates(*, project, start_date, end_date, sprint_id=None):
+        overlapping_sprints = Sprint.objects.filter(
+            project=project, start_date__lte=end_date, end_date__gte=start_date
+        )
+
+        if sprint_id is not None:
+            overlapping_sprints = overlapping_sprints.exclude(id=sprint_id)
+
+        if overlapping_sprints.exists():
+            raise SprintInvalidException(
+                "Sprint dates overlap with an existing sprint."
+            )
 
     @staticmethod
     @transaction.atomic
@@ -90,12 +122,28 @@ class SprintService:
             )
 
         start_date = validated_data.get("start_date", sprint.start_date)
+
         end_date = validated_data.get("end_date", sprint.end_date)
+
+        estimated_days = validated_data.get("estimated_days")
+
+        if estimated_days is not None:
+            end_date = start_date + timedelta(days=estimated_days - 1)
 
         if start_date > end_date:
             raise SprintInvalidException(
                 "End date must be after or equal " "to the start date."
             )
+
+        SprintService._validate_sprint_dates(
+            project=sprint.project,
+            start_date=start_date,
+            end_date=end_date,
+            sprint_id=sprint.id,
+        )
+
+        validated_data["start_date"] = start_date
+        validated_data["end_date"] = end_date
 
         for field, value in validated_data.items():
             setattr(sprint, field, value)
