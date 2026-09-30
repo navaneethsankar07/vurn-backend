@@ -938,3 +938,15 @@ class DocumentFolderSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class DocumentFolderCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Folder name cannot be empty.")
+
+        return value

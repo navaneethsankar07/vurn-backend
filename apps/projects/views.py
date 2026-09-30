@@ -26,6 +26,7 @@ from .exceptions import (
     CommentInvalidException,
     CommentNotFoundException,
     CommentPermissionException,
+    DocumentFolderAlreadyExistsException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -66,6 +67,7 @@ from .serializers import (
     CommentReactionSerializer,
     CommentSerializer,
     CommentUpdateSerializer,
+    DocumentFolderCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderSerializer,
     IssueCreateSerializer,
@@ -1924,3 +1926,38 @@ class DocumentFolderView(APIView):
         serializer = DocumentFolderSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_project_management_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = DocumentFolderCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            folder = DocumentFolderService.create_folder(
+                project=project, user=request.user, **serializer.validated_data
+            )
+        except DocumentFolderAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": folder.id, "message": "Document folder created successfully."},
+            status=status.HTTP_201_CREATED,
+        )
