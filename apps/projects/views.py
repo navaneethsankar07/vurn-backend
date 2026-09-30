@@ -1989,10 +1989,16 @@ class DocumentView(APIView):
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
+
+            ProjectAccessService.validate_knowledge_base_view_access(
+                project=project, user=request.user
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         query_serializer = DocumentQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
@@ -2018,10 +2024,16 @@ class DocumentView(APIView):
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = DocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
