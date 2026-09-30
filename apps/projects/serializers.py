@@ -1020,3 +1020,27 @@ class DocumentCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Document content cannot be empty.")
 
         return value
+
+
+class DocumentDetailSerializer(serializers.ModelSerializer):
+    folder_id = serializers.IntegerField(source="folder.id", read_only=True)
+    folder_name = serializers.CharField(source="folder.name", read_only=True)
+    created_by_id = serializers.IntegerField(source="created_by.id", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True
+    )
+
+    class Meta:
+        model = Document
+        fields = [
+            "id",
+            "folder_id",
+            "folder_name",
+            "title",
+            "content",
+            "created_by_id",
+            "created_by_name",
+            "current_version",
+            "created_at",
+            "updated_at",
+        ]

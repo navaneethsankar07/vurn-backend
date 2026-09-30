@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    DocumentDetailView,
     DocumentFolderView,
     DocumentView,
     IssueAttachmentDetailView,
@@ -222,4 +223,9 @@ urlpatterns = [
         name="document-folders",
     ),
     path("<slug:project_slug>/documents/", DocumentView.as_view(), name="documents"),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/",
+        DocumentDetailView.as_view(),
+        name="document-detail",
+    ),
 ]

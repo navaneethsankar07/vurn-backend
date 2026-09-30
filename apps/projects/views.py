@@ -27,6 +27,7 @@ from .exceptions import (
     CommentPermissionException,
     DocumentFolderAlreadyExistsException,
     DocumentInvalidException,
+    DocumentNotFoundException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -68,6 +69,7 @@ from .serializers import (
     CommentSerializer,
     CommentUpdateSerializer,
     DocumentCreateSerializer,
+    DocumentDetailSerializer,
     DocumentFolderCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderSerializer,
@@ -2028,3 +2030,32 @@ class DocumentView(APIView):
             {"id": document.id, "message": "Document created successfully."},
             status=status.HTTP_201_CREATED,
         )
+
+
+class DocumentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, document_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DocumentDetailSerializer(document)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -2,7 +2,7 @@ import logging
 
 from django.db import IntegrityError, transaction
 
-from ..exceptions import DocumentInvalidException
+from ..exceptions import DocumentInvalidException, DocumentNotFoundException
 
 from ..models import Document, DocumentFolder
 
@@ -60,3 +60,18 @@ class DocumentService:
                 user.id,
             )
             raise DocumentInvalidException("Unable to create the document.") from exc
+
+    @staticmethod
+    def get_document(*, project, document_id):
+        document = (
+            Document.objects.filter(
+                project=project, id=document_id, deleted_at__isnull=True
+            )
+            .select_related("folder", "created_by")
+            .first()
+        )
+
+        if document is None:
+            raise DocumentNotFoundException("Document not found.")
+
+        return document
