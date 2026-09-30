@@ -2094,10 +2094,16 @@ class DocumentDetailView(APIView):
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = DocumentUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
