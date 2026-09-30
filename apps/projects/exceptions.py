@@ -187,7 +187,7 @@ class AttachmentUploadVerificationException(AttachmentException):
 
 
 class DocumentFolderException(ProjectException):
-    """Base exception for all document-related business exceptions."""
+    """Base exception for all folder-related business exceptions."""
 
 
 class DocumentFolderNotFoundException(DocumentFolderException):
@@ -199,4 +199,19 @@ class DocumentFolderAlreadyExistsException(DocumentFolderException):
 
 
 class DocumentFolderInvalidException(DocumentFolderException):
+    pass
+
+
+class DocumentException(ProjectException):
+    """Base exception for all document-related business exceptions."""
+
+class DocumentNotFoundException(DocumentException):
+    pass
+
+
+class DocumentAlreadyExistsException(DocumentException):
+    pass
+
+
+class DocumentInvalidException(DocumentException):
     pass

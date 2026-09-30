@@ -3,7 +3,17 @@ import re
 from django.db.migrations import serializer
 from rest_framework import serializers
 
-from .models import Attachment, Comment, DocumentFolder, Issue, Label, Project, Sprint, WorkflowStatus
+from .models import (
+    Attachment,
+    Comment,
+    Document,
+    DocumentFolder,
+    Issue,
+    Label,
+    Project,
+    Sprint,
+    WorkflowStatus,
+)
 
 from .constants import (
     ALLOWED_ATTACHMENT_MIME_TYPES,
@@ -950,3 +960,43 @@ class DocumentFolderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Folder name cannot be empty.")
 
         return value
+
+
+class DocumentQuerySerializer(serializers.Serializer):
+    folder_id = serializers.IntegerField(required=False, min_value=1)
+    search = serializers.CharField(required=False, allow_blank=True)
+    sort = serializers.ChoiceField(
+        choices=(
+            "updated_desc",
+            "updated_asc",
+            "created_desc",
+            "created_asc",
+            "title_asc",
+            "title_desc",
+        ),
+        required=False,
+        default="updated_desc",
+    )
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    folder_id = serializers.IntegerField(source="folder.id", read_only=True)
+    folder_name = serializers.CharField(source="folder.name", read_only=True)
+    created_by_id = serializers.IntegerField(source="created_by.id", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True
+    )
+
+    class Meta:
+        model = Document
+        fields = [
+            "id",
+            "folder_id",
+            "folder_name",
+            "title",
+            "created_by_id",
+            "created_by_name",
+            "current_version",
+            "created_at",
+            "updated_at",
+        ]

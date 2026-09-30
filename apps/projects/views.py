@@ -15,7 +15,6 @@ from apps.organizations.services.organization_service import (
     OrganizationService,
 )
 from apps.shared.utils.pagination import StandardPagination
-from .services.attachment_service import AttachmentService
 
 from .constants import PROJECT_ICONS
 from .exceptions import (
@@ -70,6 +69,8 @@ from .serializers import (
     DocumentFolderCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderSerializer,
+    DocumentQuerySerializer,
+    DocumentSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
@@ -112,6 +113,8 @@ from .services.kanban_service import KanbanService
 from .services.project_service import ProjectService
 from .services.comment_service import CommentService
 from .services.workflow_service import WorkflowService
+from .services.document_service import DocumentService
+from .services.attachment_service import AttachmentService
 from .services.project_access_service import ProjectAccessService
 from .services.project_member_service import ProjectMemberService
 from .services.document_folder_service import DocumentFolderService
@@ -1961,3 +1964,36 @@ class DocumentFolderView(APIView):
             {"id": folder.id, "message": "Document folder created successfully."},
             status=status.HTTP_201_CREATED,
         )
+
+
+class DocumentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        query_serializer = DocumentQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        documents = DocumentService.list_documents(
+            project=project, **query_serializer.validated_data
+        )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(documents, request)
+
+        serializer = DocumentSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
