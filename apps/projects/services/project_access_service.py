@@ -146,6 +146,64 @@ class ProjectAccessService:
         )
 
     @staticmethod
+    def can_view_knowledge_base(*, project, user):
+        if project.project_lead_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        if project.organization.owner_id == user.id:
+            return True
+
+        is_member = project.members.filter(user=user).exists()
+
+        if not is_member:
+            return False
+
+        return OrganizationAccessService.has_permission(
+            organization=project.organization,
+            user=user,
+            permission_code="knowledge_base.view",
+        )
+
+    @staticmethod
+    def can_edit_knowledge_base(*, project, user):
+        if project.project_lead_id == user.id:
+            return True
+
+        if project.owner_id == user.id:
+            return True
+
+        if project.organization.owner_id == user.id:
+            return True
+
+        is_member = project.members.filter(user=user).exists()
+
+        if not is_member:
+            return False
+
+        return OrganizationAccessService.has_permission(
+            organization=project.organization,
+            user=user,
+            permission_code="knowledge_base.edit",
+        )
+
+    @staticmethod
+    def validate_knowledge_base_view_access(*, project, user):
+        if not ProjectAccessService.can_view_knowledge_base(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to view " "the knowledge base."
+            )
+
+    @staticmethod
+    def validate_knowledge_base_edit_access(*, project, user):
+        if not ProjectAccessService.can_edit_knowledge_base(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to edit " "the knowledge base."
+            )
+
+    @staticmethod
     def validate_project_view_access(*, project, user) -> None:
         if not ProjectAccessService.can_view_project(project=project, user=user):
             raise ProjectPermissionDeniedException(
