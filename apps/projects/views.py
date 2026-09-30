@@ -2063,10 +2063,16 @@ class DocumentDetailView(APIView):
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
+
+            ProjectAccessService.validate_knowledge_base_view_access(
+                project=project, user=request.user
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         try:
             document = DocumentService.get_document(
