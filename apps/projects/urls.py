@@ -28,6 +28,7 @@ from .views import (
     ProjectUnarchiveView,
     ProjectView,
     ProjectWorkflowView,
+    SprintCompletionCheckView,
     SprintDetailView,
     SprintStartView,
     SprintView,
@@ -201,5 +202,10 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/attachments/<int:attachment_id>/",
         IssueAttachmentDetailView.as_view(),
         name="issue-attachment-detail",
+    ),
+    path(
+        "<slug:project_slug>/sprints/<int:sprint_id>/completion-check/",
+        SprintCompletionCheckView.as_view(),
+        name="sprint-completion-check",
     ),
 ]

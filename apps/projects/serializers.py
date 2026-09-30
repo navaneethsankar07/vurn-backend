@@ -510,9 +510,21 @@ class SprintUpdateSerializer(serializers.Serializer):
         return attrs
 
 
+class SprintCompletionIssueSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    key = serializers.CharField()
+    title = serializers.CharField()
+    issue_type = serializers.CharField()
+    status_id = serializers.IntegerField()
+    status_name = serializers.CharField()
+    parent_id = serializers.IntegerField(allow_null=True)
+    parent_key = serializers.CharField(allow_null=True)
+
+
 class KanbanIssueQuerySerializer(serializers.Serializer):
     search = serializers.CharField(required=False, allow_blank=True)
     sprint_id = serializers.IntegerField(required=False, min_value=1)
+    parent_id = serializers.IntegerField(required=False, min_value=1)
     issue_type = serializers.ChoiceField(choices=ISSUE_TYPE_CHOICES, required=False)
     assignee_id = serializers.IntegerField(required=False, min_value=1)
     priority = serializers.ChoiceField(choices=ISSUE_PRIORITY_CHOICES, required=False)
@@ -538,6 +550,7 @@ class KanbanIssueSerializer(serializers.Serializer):
     issue_type = serializers.CharField()
     status_id = serializers.IntegerField()
     sprint_id = serializers.IntegerField(allow_null=True)
+    story_points = serializers.IntegerField(allow_null=True)
     due_date = serializers.DateField(allow_null=True)
     estimated_time = serializers.IntegerField(allow_null=True)
     priority = serializers.CharField()
@@ -550,7 +563,7 @@ class KanbanIssueSerializer(serializers.Serializer):
 class KanbanSprintFilterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Sprint
-        fields = ["id", "name"]
+        fields = ["id", "name", "status"]
 
 
 class IssueCreateSerializer(serializers.Serializer):

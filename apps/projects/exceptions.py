@@ -90,6 +90,10 @@ class SprintInvalidException(SprintException):
     pass
 
 
+class SprintCompletionBlockedException(SprintException):
+    pass
+
+
 class KanbanException(ProjectException):
     pass
 

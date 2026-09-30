@@ -83,6 +83,7 @@ from .serializers import (
     ProjectListSerializer,
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
+    SprintCompletionIssueSerializer,
     SprintCreateSerializer,
     SprintListQuerySerializer,
     SprintSerializer,
@@ -927,6 +928,49 @@ class SprintStartView(APIView):
 
         return Response(
             {"id": sprint.id, "message": "Sprint started successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SprintCompletionCheckView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, sprint_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            sprint = SprintService.get_sprint(project=project, sprint_id=sprint_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        completion_data = SprintService.get_sprint_completion_data(sprint=sprint)
+
+        incomplete_issues = SprintCompletionIssueSerializer(
+            completion_data["incomplete_issues"], many=True
+        ).data
+
+        incomplete_subtasks = SprintCompletionIssueSerializer(
+            completion_data["incomplete_subtasks"], many=True
+        ).data
+
+        return Response(
+            {
+                "can_complete": completion_data["can_complete"],
+                "requires_issue_action": bool(incomplete_issues),
+                "requires_subtask_completion": bool(incomplete_subtasks),
+                "incomplete_issues": incomplete_issues,
+                "incomplete_subtasks": incomplete_subtasks,
+            },
             status=status.HTTP_200_OK,
         )
 

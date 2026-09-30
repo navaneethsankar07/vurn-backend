@@ -1,3 +1,4 @@
+from importlib.abc import PathEntryFinder
 import logging
 
 from django.db import models, transaction
@@ -30,6 +31,7 @@ class KanbanService:
         status_id,
         search=None,
         sprint_id=None,
+        parent_id=None,
         issue_type=None,
         assignee_id=None,
         priority=None,
@@ -43,8 +45,10 @@ class KanbanService:
             raise KanbanStatusNotFoundException("Workflow status not found.")
 
         issues = (
-            Issue.objects.filter(project=project, status=status)
-            .exclude(issue_type="subtask")
+            Issue.objects.filter(
+                project=project, status=status, deleted_at__isnull=True
+            )
+            .exclude(issue_type__in=["subtask", "epic"])
             .select_related("parent", "sprint", "status", "assignee", "reporter")
         )
 
@@ -57,6 +61,9 @@ class KanbanService:
 
         if sprint_id:
             issues = issues.filter(sprint_id=sprint_id)
+
+        if parent_id:
+            issues = issues.filter(parent_id=parent_id)
 
         if issue_type:
             issues = issues.filter(issue_type=issue_type)

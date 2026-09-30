@@ -8,7 +8,7 @@ from apps.projects.exceptions import (
     SprintInvalidException,
     SprintNotFoundException,
 )
-from apps.projects.models import Sprint
+from apps.projects.models import Issue, Sprint
 
 
 class SprintService:
@@ -174,6 +174,38 @@ class SprintService:
         sprint.save(update_fields=["status", "updated_at"])
 
         return sprint
+
+    @staticmethod
+    def get_sprint_completion_data(*, sprint):
+        work_items = (
+            Issue.objects.filter(
+                project=sprint.project, sprint=sprint, deleted_at__isnull=True
+            )
+            .exclude(issue_type="subtask")
+            .select_related("status", "parent")
+        )
+
+        incomplete_issues = list(work_items.exclude(status__category="done"))
+
+        incomplete_subtasks = []
+
+        if not incomplete_issues:
+            incomplete_subtasks = list(
+                Issue.objects.filter(
+                    project=sprint.project,
+                    sprint=sprint,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                )
+                .exclude(status__category="done")
+                .select_related("status", "parent")
+            )
+
+        return {
+            "can_complete": (not incomplete_issues and not incomplete_subtasks),
+            "incomplete_issues": incomplete_issues,
+            "incomplete_subtasks": incomplete_subtasks,
+        }
 
     @staticmethod
     def list_project_sprints_for_board(*, project):
