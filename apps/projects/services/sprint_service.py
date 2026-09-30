@@ -1,10 +1,13 @@
 from datetime import timedelta
+import re
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
-from apps.projects.exceptions import (
+from ..exceptions import (
     SprintAlreadyExistsException,
+    SprintCompletionBlockedException,
+    SprintCompletionException,
     SprintInvalidException,
     SprintNotFoundException,
 )
@@ -58,7 +61,7 @@ class SprintService:
         description="",
         start_date=None,
         end_date=None,
-        estimated_days=None
+        estimated_days=None,
     ):
         if Sprint.objects.filter(project=project, name=name).exists():
             raise SprintAlreadyExistsException(
@@ -206,6 +209,171 @@ class SprintService:
             "incomplete_issues": incomplete_issues,
             "incomplete_subtasks": incomplete_subtasks,
         }
+
+    @staticmethod
+    def _generate_next_sprint_name(*, project, current_name):
+        match = re.match(r"^(.*?)(?:\s+(\d+))$", current_name.strip())
+
+        if match:
+            base_name = match.group(1).strip()
+            number = int(match.group(2)) + 1
+        else:
+            base_name = current_name.strip()
+            number = 1
+
+        while True:
+            name = f"{base_name} {number}"
+
+            if not Sprint.objects.filter(project=project, name=name).exists():
+                return name
+
+            number += 1
+
+    @staticmethod
+    def _create_following_sprint(*, sprint, user):
+        duration = (sprint.end_date - sprint.start_date).days + 1
+
+        start_date = sprint.end_date + timedelta(days=1)
+
+        end_date = start_date + timedelta(days=duration - 1)
+
+        name = SprintService._generate_next_sprint_name(
+            project=sprint.project, current_name=sprint.name
+        )
+
+        return Sprint.objects.create(
+            project=sprint.project,
+            name=name,
+            goal="",
+            description="",
+            start_date=start_date,
+            end_date=end_date,
+            estimated_days=duration,
+            status="planned",
+            created_by=user,
+        )
+
+    @staticmethod
+    def _get_completion_target_sprint(*, sprint, target_sprint_id):
+        target_sprint = Sprint.objects.filter(
+            id=target_sprint_id, project=sprint.project
+        ).first()
+
+        if target_sprint is None:
+            raise SprintInvalidException("Target sprint not found.")
+
+        if target_sprint.id == sprint.id:
+            raise SprintInvalidException(
+                "The current sprint cannot be used " "as the target sprint."
+            )
+
+        if target_sprint.status == "completed":
+            raise SprintInvalidException(
+                "Issues cannot be moved to a completed sprint."
+            )
+
+        return target_sprint
+
+    @staticmethod
+    @transaction.atomic
+    def complete_sprint(
+        *, project, sprint_id, user, incomplete_issue_action=None, target_sprint_id=None
+    ):
+        sprint = (
+            Sprint.objects.select_for_update()
+            .filter(id=sprint_id, project=project)
+            .first()
+        )
+
+        if sprint is None:
+            raise SprintNotFoundException("Sprint not found.")
+
+        if sprint.status != "active":
+            raise SprintCompletionException("Only an active sprint can be completed.")
+
+        work_items = list(
+            Issue.objects.select_for_update()
+            .filter(project=project, sprint=sprint, deleted_at__isnull=True)
+            .exclude(issue_type="subtask")
+            .select_related("status")
+        )
+
+        incomplete_issues = [
+            issue for issue in work_items if issue.status.category != "done"
+        ]
+
+        target_sprint = None
+
+        if incomplete_issues:
+            if incomplete_issue_action is None:
+                raise SprintCompletionBlockedException(
+                    "Incomplete issues require an action."
+                )
+
+            if incomplete_issue_action == "sprint":
+                target_sprint = SprintService._get_completion_target_sprint(
+                    sprint=sprint, target_sprint_id=target_sprint_id
+                )
+
+                target_sprint = Sprint.objects.select_for_update().get(
+                    id=target_sprint.id
+                )
+
+            elif incomplete_issue_action == "new_sprint":
+                target_sprint = SprintService._create_following_sprint(
+                    sprint=sprint, user=user
+                )
+
+            elif incomplete_issue_action == "backlog":
+                target_sprint = None
+
+            else:
+                raise SprintCompletionException("Invalid incomplete issue action.")
+
+            incomplete_issue_ids = [issue.id for issue in incomplete_issues]
+
+            if target_sprint is None:
+                Issue.objects.filter(id__in=incomplete_issue_ids).update(sprint=None)
+
+                Issue.objects.filter(
+                    project=project,
+                    parent_id__in=incomplete_issue_ids,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                ).update(sprint=None)
+            else:
+                Issue.objects.filter(id__in=incomplete_issue_ids).update(
+                    sprint=target_sprint
+                )
+
+                Issue.objects.filter(
+                    project=project,
+                    parent_id__in=incomplete_issue_ids,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                ).update(sprint=target_sprint)
+
+        remaining_subtasks = (
+            Issue.objects.select_for_update()
+            .filter(
+                project=project,
+                sprint=sprint,
+                issue_type="subtask",
+                deleted_at__isnull=True,
+            )
+            .exclude(status__category="done")
+            .select_related("status")
+        )
+
+        if remaining_subtasks.exists():
+            raise SprintCompletionBlockedException(
+                "Sprint cannot be completed because " "there are incomplete subtasks."
+            )
+
+        sprint.status = "completed"
+        sprint.save(update_fields=["status", "updated_at"])
+
+        return sprint, target_sprint
 
     @staticmethod
     def list_project_sprints_for_board(*, project):

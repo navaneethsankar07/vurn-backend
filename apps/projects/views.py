@@ -43,6 +43,8 @@ from .exceptions import (
     ProjectNotFoundException,
     ProjectPermissionDeniedException,
     SprintAlreadyExistsException,
+    SprintCompletionBlockedException,
+    SprintCompletionException,
     SprintInvalidException,
     SprintNotFoundException,
     WorkflowStatusAlreadyExistsException,
@@ -83,6 +85,7 @@ from .serializers import (
     ProjectListSerializer,
     ProjectSettingsSerializer,
     ProjectUpdateSerializer,
+    SprintCompleteSerializer,
     SprintCompletionIssueSerializer,
     SprintCreateSerializer,
     SprintListQuerySerializer,
@@ -970,6 +973,59 @@ class SprintCompletionCheckView(APIView):
                 "requires_subtask_completion": bool(incomplete_subtasks),
                 "incomplete_issues": incomplete_issues,
                 "incomplete_subtasks": incomplete_subtasks,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class SprintCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug, sprint_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_sprint_management_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = SprintCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            sprint, target_sprint = SprintService.complete_sprint(
+                project=project,
+                sprint_id=sprint_id,
+                user=request.user,
+                **serializer.validated_data,
+            )
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except SprintInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except SprintCompletionBlockedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except SprintCompletionException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "id": sprint.id,
+                "status": sprint.status,
+                "target_sprint_id": (target_sprint.id if target_sprint else None),
+                "message": "Sprint completed successfully.",
             },
             status=status.HTTP_200_OK,
         )

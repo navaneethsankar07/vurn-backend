@@ -90,6 +90,10 @@ class SprintInvalidException(SprintException):
     pass
 
 
+class SprintCompletionException(SprintException):
+    pass
+
+
 class SprintCompletionBlockedException(SprintException):
     pass
 

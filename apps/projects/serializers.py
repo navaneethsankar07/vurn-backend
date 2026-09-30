@@ -611,6 +611,39 @@ class IssueListQuerySerializer(serializers.Serializer):
     )
 
 
+class SprintCompleteSerializer(serializers.Serializer):
+    incomplete_issue_action = serializers.ChoiceField(
+        choices=(
+            ("sprint", "Move to Sprint"),
+            ("new_sprint", "Create New Sprint"),
+            ("backlog", "Move to Backlog"),
+        ),
+        required=False,
+    )
+    target_sprint_id = serializers.IntegerField(required=False, min_value=1)
+
+    def validate(self, attrs):
+        action = attrs.get("incomplete_issue_action")
+        target_sprint_id = attrs.get("target_sprint_id")
+
+        if action == "sprint" and target_sprint_id is None:
+            raise serializers.ValidationError(
+                {"target_sprint_id": ("Target sprint is required.")}
+            )
+
+        if action != "sprint" and target_sprint_id is not None:
+            raise serializers.ValidationError(
+                {
+                    "target_sprint_id": (
+                        "Target sprint is only allowed "
+                        "when moving issues to another sprint."
+                    )
+                }
+            )
+
+        return attrs
+
+
 class LabelSerializer(serializers.ModelSerializer):
 
     class Meta:

@@ -28,6 +28,7 @@ from .views import (
     ProjectUnarchiveView,
     ProjectView,
     ProjectWorkflowView,
+    SprintCompleteView,
     SprintCompletionCheckView,
     SprintDetailView,
     SprintStartView,
@@ -207,5 +208,10 @@ urlpatterns = [
         "<slug:project_slug>/sprints/<int:sprint_id>/completion-check/",
         SprintCompletionCheckView.as_view(),
         name="sprint-completion-check",
+    ),
+    path(
+        "<slug:project_slug>/sprints/<int:sprint_id>/complete/",
+        SprintCompleteView.as_view(),
+        name="sprint-complete",
     ),
 ]
