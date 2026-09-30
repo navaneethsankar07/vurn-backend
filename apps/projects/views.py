@@ -75,6 +75,7 @@ from .serializers import (
     DocumentFolderSerializer,
     DocumentQuerySerializer,
     DocumentSerializer,
+    DocumentUpdateSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
@@ -2059,3 +2060,34 @@ class DocumentDetailView(APIView):
         serializer = DocumentDetailSerializer(document)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, slug, project_slug, document_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DocumentUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            document = DocumentService.update_document(
+                project=project, document_id=document_id, **serializer.validated_data
+            )
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": document.id, "message": "Document updated successfully."},
+            status=status.HTTP_200_OK,
+        )

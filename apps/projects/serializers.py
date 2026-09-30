@@ -1044,3 +1044,23 @@ class DocumentDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class DocumentUpdateSerializer(serializers.Serializer):
+    folder_id = serializers.IntegerField(required=False, min_value=1)
+    title = serializers.CharField(max_length=255, required=False)
+    content = serializers.CharField(required=False)
+
+    def validate_title(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Document title cannot be empty.")
+
+        return value
+
+    def validate_content(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Document content cannot be empty.")
+
+        return value

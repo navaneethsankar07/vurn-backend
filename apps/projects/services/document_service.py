@@ -75,3 +75,39 @@ class DocumentService:
             raise DocumentNotFoundException("Document not found.")
 
         return document
+
+    @staticmethod
+    @transaction.atomic
+    def update_document(*, project, document_id, **validated_data):
+        document = DocumentService.get_document(
+            project=project, document_id=document_id
+        )
+
+        if "folder_id" in validated_data:
+            folder_id = validated_data.pop("folder_id")
+
+            folder = DocumentFolder.objects.filter(
+                id=folder_id, project=project
+            ).first()
+
+            if folder is None:
+                raise DocumentInvalidException(
+                    "The document folder does not belong " "to this project."
+                )
+
+            document.folder = folder
+
+        for field, value in validated_data.items():
+            setattr(document, field, value)
+
+        try:
+            document.save()
+        except IntegrityError as exc:
+            logger.exception(
+                "Failed to update document | " "document=%s project=%s",
+                document.id,
+                project.id,
+            )
+            raise DocumentInvalidException("Unable to update the document.") from exc
+
+        return document
