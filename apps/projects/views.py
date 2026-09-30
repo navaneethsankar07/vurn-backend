@@ -26,6 +26,7 @@ from .exceptions import (
     CommentNotFoundException,
     CommentPermissionException,
     DocumentFolderAlreadyExistsException,
+    DocumentInvalidException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -66,6 +67,7 @@ from .serializers import (
     CommentReactionSerializer,
     CommentSerializer,
     CommentUpdateSerializer,
+    DocumentCreateSerializer,
     DocumentFolderCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderSerializer,
@@ -1997,3 +1999,32 @@ class DocumentView(APIView):
         serializer = DocumentSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = DocumentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            document = DocumentService.create_document(
+                project=project, user=request.user, **serializer.validated_data
+            )
+        except DocumentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"id": document.id, "message": "Document created successfully."},
+            status=status.HTTP_201_CREATED,
+        )

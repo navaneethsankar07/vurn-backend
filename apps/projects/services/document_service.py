@@ -1,6 +1,10 @@
 import logging
 
-from ..models import Document
+from django.db import IntegrityError, transaction
+
+from ..exceptions import DocumentInvalidException
+
+from ..models import Document, DocumentFolder
 
 logger = logging.getLogger(__name__)
 
@@ -29,3 +33,30 @@ class DocumentService:
         }
 
         return documents.order_by(ordering.get(sort, "-updated_at"), "id")
+
+    @staticmethod
+    @transaction.atomic
+    def create_document(*, project, user, folder_id, title, content):
+        folder = DocumentFolder.objects.filter(id=folder_id, project=project).first()
+
+        if folder is None:
+            raise DocumentInvalidException(
+                "The document folder does not belong " "to this project."
+            )
+
+        try:
+            return Document.objects.create(
+                project=project,
+                folder=folder,
+                title=title,
+                content=content,
+                created_by=user,
+            )
+        except IntegrityError as exc:
+            logger.exception(
+                "Failed to create document | " "project=%s folder=%s user=%s",
+                project.id,
+                folder.id,
+                user.id,
+            )
+            raise DocumentInvalidException("Unable to create the document.") from exc
