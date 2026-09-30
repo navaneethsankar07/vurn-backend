@@ -66,6 +66,8 @@ from .serializers import (
     CommentReactionSerializer,
     CommentSerializer,
     CommentUpdateSerializer,
+    DocumentFolderQuerySerializer,
+    DocumentFolderSerializer,
     IssueCreateSerializer,
     IssueListQuerySerializer,
     IssueResponseSerializer,
@@ -110,6 +112,7 @@ from .services.comment_service import CommentService
 from .services.workflow_service import WorkflowService
 from .services.project_access_service import ProjectAccessService
 from .services.project_member_service import ProjectMemberService
+from .services.document_folder_service import DocumentFolderService
 
 
 class ProjectView(APIView):
@@ -1888,3 +1891,36 @@ class IssueAttachmentDetailView(APIView):
         return Response(
             {"message": "Attachment deleted successfully."}, status=status.HTTP_200_OK
         )
+
+
+class DocumentFolderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        query_serializer = DocumentFolderQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        folders = DocumentFolderService.list_folders(
+            project=project, **query_serializer.validated_data
+        )
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(folders, request)
+
+        serializer = DocumentFolderSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

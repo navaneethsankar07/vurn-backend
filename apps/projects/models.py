@@ -407,3 +407,32 @@ class Attachment(models.Model):
 
     def __str__(self):
         return self.file_name
+
+
+class DocumentFolder(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="document_folders"
+    )
+    name = models.CharField(max_length=150)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_document_folders",
+    )
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "document_folders"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "name"), name="uq_document_folder_project_name"
+            )
+        ]
+        indexes = [
+            models.Index(fields=("project",), name="idx_document_folders_project")
+        ]
+
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"

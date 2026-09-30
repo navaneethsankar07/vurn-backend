@@ -203,6 +203,7 @@ class SprintService:
                 .exclude(status__category="done")
                 .select_related("status", "parent")
             )
+        print(incomplete_subtasks)
 
         return {
             "can_complete": (not incomplete_issues and not incomplete_subtasks),

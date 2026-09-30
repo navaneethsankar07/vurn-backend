@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    DocumentFolderView,
     IssueAttachmentDetailView,
     IssueAttachmentListView,
     IssueAttachmentUploadCompleteView,
@@ -213,5 +214,10 @@ urlpatterns = [
         "<slug:project_slug>/sprints/<int:sprint_id>/complete/",
         SprintCompleteView.as_view(),
         name="sprint-complete",
+    ),
+    path(
+        "<slug:project_slug>/document-folders/",
+        DocumentFolderView.as_view(),
+        name="document-folders",
     ),
 ]

@@ -3,7 +3,7 @@ import re
 from django.db.migrations import serializer
 from rest_framework import serializers
 
-from .models import Attachment, Comment, Issue, Label, Project, Sprint, WorkflowStatus
+from .models import Attachment, Comment, DocumentFolder, Issue, Label, Project, Sprint, WorkflowStatus
 
 from .constants import (
     ALLOWED_ATTACHMENT_MIME_TYPES,
@@ -515,10 +515,10 @@ class SprintCompletionIssueSerializer(serializers.Serializer):
     key = serializers.CharField()
     title = serializers.CharField()
     issue_type = serializers.CharField()
-    status_id = serializers.IntegerField()
-    status_name = serializers.CharField()
+    status_id = serializers.IntegerField(source="status.id")
+    status_name = serializers.CharField(source="status.name")
     parent_id = serializers.IntegerField(allow_null=True)
-    parent_key = serializers.CharField(allow_null=True)
+    parent_key = serializers.CharField(source="parent.key", allow_null=True)
 
 
 class KanbanIssueQuerySerializer(serializers.Serializer):
@@ -915,4 +915,26 @@ class AttachmentSerializer(serializers.ModelSerializer):
             "uploaded_by_avatar",
             "created_at",
             "download_url",
+        ]
+
+
+class DocumentFolderQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+
+
+class DocumentFolderSerializer(serializers.ModelSerializer):
+    created_by_id = serializers.IntegerField(source="created_by.id", read_only=True)
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True
+    )
+
+    class Meta:
+        model = DocumentFolder
+        fields = [
+            "id",
+            "name",
+            "created_by_id",
+            "created_by_name",
+            "created_at",
+            "updated_at",
         ]

@@ -284,6 +284,9 @@ class IssueService:
     def update_issue(*, project, issue_id, **validated_data):
         issue = IssueService.get_issue(project=project, issue_id=issue_id)
 
+        sprint_changed = False
+        new_sprint = issue.sprint
+
         if "parent_id" in validated_data:
             parent_id = validated_data.pop("parent_id")
 
@@ -308,7 +311,7 @@ class IssueService:
             sprint_id = validated_data.pop("sprint_id")
 
             if sprint_id is None:
-                issue.sprint = None
+                new_sprint = None
             else:
                 sprint = Sprint.objects.filter(project=project, id=sprint_id).first()
 
@@ -320,7 +323,13 @@ class IssueService:
                 if issue.issue_type == "epic":
                     raise IssueInvalidException("An epic cannot belong to a sprint.")
 
-                issue.sprint = sprint
+                new_sprint = sprint
+
+            sprint_changed = issue.sprint_id != (
+                new_sprint.id if new_sprint is not None else None
+            )
+
+            issue.sprint = new_sprint
 
         if "status_id" in validated_data:
             status_id = validated_data.pop("status_id")
@@ -357,6 +366,14 @@ class IssueService:
             setattr(issue, field, value)
 
         issue.save()
+
+        if sprint_changed:
+            Issue.objects.filter(
+                project=project,
+                parent=issue,
+                issue_type="subtask",
+                deleted_at__isnull=True,
+            ).update(sprint=new_sprint)
 
         return issue
 
