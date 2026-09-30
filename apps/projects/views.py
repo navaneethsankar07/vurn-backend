@@ -2091,3 +2091,26 @@ class DocumentDetailView(APIView):
             {"id": document.id, "message": "Document updated successfully."},
             status=status.HTTP_200_OK,
         )
+
+    def delete(self, request, slug, project_slug, document_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            DocumentService.delete_document(project=project, document_id=document_id)
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"message": "Document deleted successfully."}, status=status.HTTP_200_OK
+        )

@@ -1,6 +1,7 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from ..exceptions import DocumentInvalidException, DocumentNotFoundException
 
@@ -111,3 +112,27 @@ class DocumentService:
             raise DocumentInvalidException("Unable to update the document.") from exc
 
         return document
+
+    @staticmethod
+    @transaction.atomic
+    def delete_document(*, project, document_id):
+        document = (
+            Document.objects.select_for_update()
+            .filter(project=project, id=document_id, deleted_at__isnull=True)
+            .first()
+        )
+
+        if document is None:
+            raise DocumentNotFoundException("Document not found.")
+
+        try:
+            document.deleted_at = timezone.now()
+
+            document.save(update_fields=["deleted_at", "updated_at"])
+        except Exception:
+            logger.exception(
+                "Failed to delete document | " "document=%s project=%s",
+                document.id,
+                project.id,
+            )
+            raise
