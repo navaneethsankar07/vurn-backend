@@ -331,6 +331,26 @@ class IssueService:
 
             issue.sprint = new_sprint
 
+            if (
+                sprint_changed
+                and new_sprint is not None
+                and issue.status.category == "backlog"
+            ):
+                todo_status = (
+                    WorkflowStatus.objects.filter(
+                        project=project, category="todo", is_archived=False
+                    )
+                    .order_by("position", "id")
+                    .first()
+                )
+
+                if todo_status is None:
+                    raise IssueInvalidException(
+                        "The project does not have an active " "To Do workflow status."
+                    )
+
+                issue.status = todo_status
+
         if "status_id" in validated_data:
             status_id = validated_data.pop("status_id")
 

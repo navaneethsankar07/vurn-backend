@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..serializers import LabelSerializer
+from .issue_label_serializers import LabelSerializer
 
 from ..constants import ISSUE_PRIORITY_CHOICES, ISSUE_SORT_CHOICES, ISSUE_TYPE_CHOICES
 
