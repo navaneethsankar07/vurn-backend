@@ -89,6 +89,7 @@ class ProjectMemberService:
                 "avatar": owner.avatar,
                 "project_role": "Project Owner",
                 "joined_at": project.created_at,
+                "is_project_lead": owner.id == project.project_lead_id,
             }
         ]
 
@@ -101,6 +102,7 @@ class ProjectMemberService:
                 "avatar": member.user.avatar,
                 "project_role": member.project_role,
                 "joined_at": member.joined_at,
+                "is_project_lead": member.user_id == project.project_lead_id,
             }
             for member in members
         )

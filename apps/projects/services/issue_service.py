@@ -117,7 +117,7 @@ class IssueService:
 
             if not sprint_exists:
                 raise IssueInvalidException(
-                    "The sprint does not belong " "to this project."
+                    "The sprint does not belong to this project."
                 )
 
             issues = issues.filter(sprint_id=sprint_id)
@@ -129,7 +129,7 @@ class IssueService:
 
             if not assignee_exists:
                 raise IssueInvalidException(
-                    "The assignee is not a member " "of this project."
+                    "The assignee is not a member of this project."
                 )
 
             issues = issues.filter(assignee_id=assignee_id)
@@ -536,5 +536,6 @@ class IssueService:
     def _is_project_member(*, project, user_id):
         if project.owner_id == user_id:
             return True
-
+        print(user_id)
+        print("project members     ",project.members.all())
         return project.members.filter(user_id=user_id).exists()

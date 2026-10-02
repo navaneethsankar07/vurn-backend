@@ -19,3 +19,4 @@ class ProjectMemberSerializer(serializers.Serializer):
     avatar = serializers.URLField(allow_null=True)
     project_role = serializers.CharField()
     joined_at = serializers.DateTimeField()
+    is_project_lead = serializers.BooleanField()

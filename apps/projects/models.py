@@ -104,7 +104,7 @@ class ProjectMember(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user.email} - " f"{self.project.name}"
+        return f"{self.user.email} - " f"{self.project.name} - " f"{self.user.id}"
 
 
 class WorkflowStatus(models.Model):
