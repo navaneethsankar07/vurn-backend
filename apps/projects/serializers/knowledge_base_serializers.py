@@ -174,3 +174,7 @@ class ProjectTagSerializer(serializers.ModelSerializer):
 
 class ProjectTagQuerySerializer(serializers.Serializer):
     search = serializers.CharField(required=False, allow_blank=True)
+
+
+class DocumentTagCreateSerializer(serializers.Serializer):
+    tag_id = serializers.IntegerField(min_value=1)

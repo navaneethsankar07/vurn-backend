@@ -2,8 +2,12 @@ import logging
 
 from django.db import IntegrityError, transaction
 
-from ..exceptions import ProjectTagAlreadyExistsException
-from ..models import ProjectTag
+from ..exceptions import (
+    ProjectTagAlreadyExistsException,
+    ProjectTagInvalidException,
+    ProjectTagNotFoundException,
+)
+from ..models import DocumentTag, ProjectTag
 
 logger = logging.getLogger(__name__)
 
@@ -36,3 +40,31 @@ class ProjectTagService:
             raise ProjectTagAlreadyExistsException(
                 "Unable to create the document tag."
             ) from exc
+
+    @staticmethod
+    @transaction.atomic
+    def add_tag(*, project, document, tag_id):
+        tag = ProjectTag.objects.filter(id=tag_id, project=project).first()
+
+        if tag is None:
+            raise ProjectTagNotFoundException("Document tag not found.")
+
+        if document.project_id != project.id:
+            raise ProjectTagInvalidException(
+                "The document does not belong to this project."
+            )
+
+        if DocumentTag.objects.filter(document=document, tag=tag).exists():
+            raise ProjectTagAlreadyExistsException(
+                "This tag is already attached to the document."
+            )
+
+        try:
+            return DocumentTag.objects.create(document=document, tag=tag)
+        except IntegrityError as exc:
+            logger.exception(
+                "Failed to add document tag | " "document=%s tag=%s",
+                document.id,
+                tag.id,
+            )
+            raise ProjectTagInvalidException("Unable to add the document tag.") from exc
