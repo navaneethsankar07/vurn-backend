@@ -11,6 +11,15 @@ logger = logging.getLogger(__name__)
 class ProjectTagService:
 
     @staticmethod
+    def list_tags(*, project, search=None):
+        tags = ProjectTag.objects.filter(project=project)
+
+        if search:
+            tags = tags.filter(name__icontains=search.strip())
+
+        return tags.order_by("name", "id")
+
+    @staticmethod
     @transaction.atomic
     def create_tag(*, project, name):
         if ProjectTag.objects.filter(project=project, name=name).exists():

@@ -170,3 +170,7 @@ class ProjectTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectTag
         fields = ["id", "name", "created_at"]
+
+
+class ProjectTagQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False, allow_blank=True)

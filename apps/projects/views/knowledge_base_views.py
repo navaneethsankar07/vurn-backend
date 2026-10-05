@@ -10,11 +10,13 @@ from apps.organizations.services.organization_service import OrganizationService
 
 from ..serializers import (
     DocumentSerializer,
+    ProjectTagSerializer,
     DocumentQuerySerializer,
     DocumentFolderSerializer,
     DocumentCreateSerializer,
     DocumentUpdateSerializer,
     DocumentDetailSerializer,
+    ProjectTagQuerySerializer,
     ProjectTagCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderCreateSerializer,
@@ -363,6 +365,40 @@ class DocumentDetailView(APIView):
 
 class DocumentTagView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_view_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        query_serializer = ProjectTagQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        tags = ProjectTagService.list_tags(
+            project=project, **query_serializer.validated_data
+        )
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(tags, request)
+
+        serializer = ProjectTagSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, slug, project_slug):
         try:
