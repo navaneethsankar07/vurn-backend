@@ -137,6 +137,7 @@ class IssueInvalidException(IssueException):
 class IssueSprintHistoryException(ProjectException):
     """Base exception for all history-related business exceptions."""
 
+
 class IssueSprintHistoryNotFoundException(IssueSprintHistoryException):
     pass
 
@@ -216,6 +217,7 @@ class DocumentFolderInvalidException(DocumentFolderException):
 class DocumentException(ProjectException):
     """Base exception for all document-related business exceptions."""
 
+
 class DocumentNotFoundException(DocumentException):
     pass
 
@@ -225,4 +227,20 @@ class DocumentAlreadyExistsException(DocumentException):
 
 
 class DocumentInvalidException(DocumentException):
+    pass
+
+
+class ProjectTagException(ProjectException):
+    """Base exception for all tag-related business exceptions."""
+
+
+class ProjectTagNotFoundException(ProjectTagException):
+    pass
+
+
+class ProjectTagAlreadyExistsException(ProjectTagException):
+    pass
+
+
+class ProjectTagInvalidException(ProjectTagException):
     pass

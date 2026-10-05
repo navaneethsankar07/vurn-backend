@@ -15,6 +15,7 @@ from ..serializers import (
     DocumentCreateSerializer,
     DocumentUpdateSerializer,
     DocumentDetailSerializer,
+    ProjectTagCreateSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderCreateSerializer,
     DocumentFolderUpdateSerializer,
@@ -28,10 +29,12 @@ from ..exceptions import (
     DocumentNotFoundException,
     ProjectPermissionDeniedException,
     DocumentFolderAlreadyExistsException,
+    ProjectTagAlreadyExistsException,
 )
 
 from ..services.project_service import ProjectService
 from ..services.document_service import DocumentService
+from ..services.project_tag_service import ProjectTagService
 from ..services.project_access_service import ProjectAccessService
 from ..services.document_folder_service import DocumentFolderService
 
@@ -355,4 +358,47 @@ class DocumentDetailView(APIView):
 
         return Response(
             {"message": "Document deleted successfully."}, status=status.HTTP_200_OK
+        )
+
+
+class DocumentTagView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ProjectTagCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            tag = ProjectTagService.create_tag(
+                project=project, **serializer.validated_data
+            )
+        except ProjectTagAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "id": tag.id,
+                "name": tag.name,
+                "message": "Document tag created successfully.",
+            },
+            status=status.HTTP_201_CREATED,
         )

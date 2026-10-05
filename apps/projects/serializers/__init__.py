@@ -82,4 +82,6 @@ from .knowledge_base_serializers import (
     DocumentDetailSerializer,
     DocumentUpdateSerializer,
     DocumentFolderUpdateSerializer,
+    ProjectTagSerializer,
+    ProjectTagCreateSerializer,
 )

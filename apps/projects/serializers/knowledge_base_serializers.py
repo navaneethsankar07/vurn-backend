@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import Document, DocumentFolder
+from ..models import Document, DocumentFolder, ProjectTag
 
 
 class DocumentFolderQuerySerializer(serializers.Serializer):
@@ -151,3 +151,22 @@ class DocumentUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Document content cannot be empty.")
 
         return value
+
+
+class ProjectTagCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=50)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Tag name cannot be empty.")
+
+        return value
+
+
+class ProjectTagSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ProjectTag
+        fields = ["id", "name", "created_at"]
