@@ -467,6 +467,9 @@ class Document(models.Model):
     project = models.ForeignKey(
         "projects.Project", on_delete=models.CASCADE, related_name="documents"
     )
+    tags = models.ManyToManyField(
+        "projects.ProjectTag", related_name="documents", blank=True
+    )
     title = models.CharField(max_length=255)
     content = models.TextField()
     created_by = models.ForeignKey(
@@ -490,3 +493,24 @@ class Document(models.Model):
 
     def __str__(self):
         return f"{self.project.name} - {self.title}"
+
+
+class ProjectTag(models.Model):
+    project = models.ForeignKey(
+        "projects.Project", on_delete=models.CASCADE, related_name="tags"
+    )
+    name = models.CharField(max_length=50)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "project_tags"
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=("project", "name"), name="uq_project_tag_name"
+            )
+        ]
+        indexes = [models.Index(fields=("project",), name="idx_project_tags_project")]
+
+    def __str__(self):
+        return f"{self.project.name} - {self.name}"
