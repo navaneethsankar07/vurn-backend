@@ -141,9 +141,17 @@ class SubtaskListQuerySerializer(serializers.Serializer):
 
 
 class IssueSprintHistorySerializer(serializers.ModelSerializer):
-    sprint_id = serializers.IntegerField(source="sprint.id")
-    sprint_name = serializers.CharField(source="sprint.name")
+    sprint_id = serializers.IntegerField(
+        source="sprint.id", read_only=True, allow_null=True
+    )
+    sprint_name = serializers.SerializerMethodField()
 
     class Meta:
         model = IssueSprintHistory
         fields = ["sprint_id", "sprint_name", "moved_at"]
+
+    def get_sprint_name(self, obj):
+        if obj.sprint is None:
+            return "Backlog"
+
+        return obj.sprint.name

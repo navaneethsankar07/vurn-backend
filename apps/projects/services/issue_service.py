@@ -413,6 +413,10 @@ class IssueService:
                 IssueSprintHistoryService.create_history_bulk(
                     issues=subtasks, sprint=new_sprint
                 )
+            else:
+                IssueSprintHistoryService.create_backlog_history(issue=issue)
+
+                IssueSprintHistoryService.create_backlog_history_bulk(issues=subtasks)
 
         return issue
 

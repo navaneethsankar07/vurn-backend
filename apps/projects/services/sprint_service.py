@@ -66,6 +66,13 @@ class SprintService:
         end_date=None,
         estimated_days=None,
     ):
+        name = name.strip()
+
+        if name.lower() == "backlog":
+            raise SprintInvalidException(
+                "Backlog is a reserved name and cannot be used for a sprint."
+            )
+
         if Sprint.objects.filter(project=project, name=name).exists():
             raise SprintAlreadyExistsException(
                 "A sprint with this name already exists in this project."
@@ -116,6 +123,16 @@ class SprintService:
     @transaction.atomic
     def update_sprint(*, sprint, **validated_data):
         name = validated_data.get("name")
+
+        if name is not None:
+            name = name.strip()
+
+            if name.lower() == "backlog":
+                raise SprintInvalidException(
+                    "Backlog is a reserved name and cannot be used for a sprint."
+                )
+
+            validated_data["name"] = name
 
         if (
             name

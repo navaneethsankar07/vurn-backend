@@ -146,6 +146,13 @@ class ProjectAccessService:
         )
 
     @staticmethod
+    def can_view_issues(*, project, user):
+        organization = project.organization
+        return OrganizationAccessService.has_permission(
+            organization=organization, user=user, permission_code="issue.view"
+        )
+
+    @staticmethod
     def can_view_knowledge_base(*, project, user):
         if project.project_lead_id == user.id:
             return True
@@ -188,6 +195,13 @@ class ProjectAccessService:
             user=user,
             permission_code="knowledge_base.edit",
         )
+
+    @staticmethod
+    def validate_issue_view_access(*, project, user):
+        if not ProjectAccessService.can_view_issues(project=project, user=user):
+            raise ProjectPermissionDeniedException(
+                "You do not have permission to view the issues in this project."
+            )
 
     @staticmethod
     def validate_knowledge_base_view_access(*, project, user):

@@ -16,7 +16,17 @@ class IssueSprintHistoryService:
         return IssueSprintHistory.objects.create(issue=issue, sprint=sprint)
 
     @staticmethod
+    def create_backlog_history(*, issue):
+        return IssueSprintHistory.objects.create(issue=issue, sprint=None)
+
+    @staticmethod
     def create_history_bulk(*, issues, sprint):
         IssueSprintHistory.objects.bulk_create(
             [IssueSprintHistory(issue=issue, sprint=sprint) for issue in issues]
+        )
+
+    @staticmethod
+    def create_backlog_history_bulk(*, issues):
+        IssueSprintHistory.objects.bulk_create(
+            [IssueSprintHistory(issue=issue, sprint=None) for issue in issues]
         )

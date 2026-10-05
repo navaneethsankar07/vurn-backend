@@ -291,7 +291,11 @@ class IssueSprintHistory(models.Model):
         "projects.Issue", on_delete=models.CASCADE, related_name="sprint_history"
     )
     sprint = models.ForeignKey(
-        "projects.Sprint", on_delete=models.PROTECT, related_name="issue_history"
+        "projects.Sprint",
+        on_delete=models.PROTECT,
+        related_name="issue_sprint_history",
+        null=True,
+        blank=True,
     )
     moved_at = models.DateTimeField(default=timezone.now, editable=False)
 
