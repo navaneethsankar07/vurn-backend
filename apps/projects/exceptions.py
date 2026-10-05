@@ -134,6 +134,17 @@ class IssueInvalidException(IssueException):
     pass
 
 
+class IssueSprintHistoryException(ProjectException):
+    """Base exception for all history-related business exceptions."""
+
+class IssueSprintHistoryNotFoundException(IssueSprintHistoryException):
+    pass
+
+
+class IssueSprintHistoryInvalidException(IssueSprintHistoryException):
+    pass
+
+
 class LabelException(ProjectException):
     """Base exception for all label-related business exceptions."""
 

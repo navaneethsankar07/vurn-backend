@@ -46,6 +46,7 @@ from .issue_serializers import (
     IssueResponseSerializer,
     IssueUpdateSerializer,
     SubtaskListQuerySerializer,
+    IssueSprintHistorySerializer,
 )
 
 from .issue_label_serializers import (

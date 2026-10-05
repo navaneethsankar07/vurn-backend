@@ -4,7 +4,7 @@ from .issue_label_serializers import LabelSerializer
 
 from ..constants import ISSUE_PRIORITY_CHOICES, ISSUE_SORT_CHOICES, ISSUE_TYPE_CHOICES
 
-from ..models import Issue
+from ..models import Issue, IssueSprintHistory
 
 
 class IssueCreateSerializer(serializers.Serializer):
@@ -138,3 +138,12 @@ class SubtaskListQuerySerializer(serializers.Serializer):
         required=False,
         default="position",
     )
+
+
+class IssueSprintHistorySerializer(serializers.ModelSerializer):
+    sprint_id = serializers.IntegerField(source="sprint.id")
+    sprint_name = serializers.CharField(source="sprint.name")
+
+    class Meta:
+        model = IssueSprintHistory
+        fields = ["sprint_id", "sprint_name", "moved_at"]

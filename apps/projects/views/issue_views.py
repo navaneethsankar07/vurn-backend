@@ -12,6 +12,7 @@ from ..exceptions import (
     IssueNotFoundException,
     ProjectNotFoundException,
     IssueAlreadyExistsException,
+    ProjectPermissionDeniedException,
 )
 
 from ..serializers import (
@@ -20,10 +21,13 @@ from ..serializers import (
     IssueResponseSerializer,
     IssueListQuerySerializer,
     SubtaskListQuerySerializer,
+    IssueSprintHistorySerializer,
 )
 
 from ..services.issue_service import IssueService
 from ..services.project_service import ProjectService
+from ..services.project_access_service import ProjectAccessService
+from ..services.issue_sprint_history_service import IssueSprintHistoryService
 
 
 class IssueView(APIView):
@@ -209,3 +213,37 @@ class IssueSubtaskView(APIView):
         response_serializer = IssueResponseSerializer(page, many=True)
 
         return paginator.get_paginated_response(response_serializer.data)
+
+
+class IssueSprintHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, issue_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_issue_view_access(
+                project=project, user=request.user
+            )
+
+            issue = IssueService.get_issue(project=project, issue_id=issue_id)
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except IssueNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        history = IssueSprintHistoryService.list_history(issue=issue)
+
+        serializer = IssueSprintHistorySerializer(history, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

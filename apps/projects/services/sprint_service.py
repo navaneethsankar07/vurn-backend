@@ -4,6 +4,7 @@ import re
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
+
 from ..exceptions import (
     SprintAlreadyExistsException,
     SprintCompletionBlockedException,
@@ -12,6 +13,8 @@ from ..exceptions import (
     SprintNotFoundException,
 )
 from apps.projects.models import Issue, Sprint
+
+from .issue_sprint_history_service import IssueSprintHistoryService
 
 
 class SprintService:
@@ -343,16 +346,34 @@ class SprintService:
                     deleted_at__isnull=True,
                 ).update(sprint=None)
             else:
+                incomplete_issues_with_subtasks = list(
+                    Issue.objects.filter(id__in=incomplete_issue_ids)
+                )
+
+                incomplete_subtasks = list(
+                    Issue.objects.filter(
+                        project=project,
+                        parent_id__in=incomplete_issue_ids,
+                        issue_type="subtask",
+                        deleted_at__isnull=True,
+                    )
+                )
+
                 Issue.objects.filter(id__in=incomplete_issue_ids).update(
                     sprint=target_sprint
                 )
 
                 Issue.objects.filter(
-                    project=project,
-                    parent_id__in=incomplete_issue_ids,
-                    issue_type="subtask",
-                    deleted_at__isnull=True,
+                    id__in=[subtask.id for subtask in incomplete_subtasks]
                 ).update(sprint=target_sprint)
+
+                IssueSprintHistoryService.create_history_bulk(
+                    issues=incomplete_issues_with_subtasks, sprint=target_sprint
+                )
+
+                IssueSprintHistoryService.create_history_bulk(
+                    issues=incomplete_subtasks, sprint=target_sprint
+                )
 
         remaining_subtasks = (
             Issue.objects.select_for_update()

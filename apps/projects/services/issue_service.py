@@ -10,6 +10,9 @@ from apps.projects.exceptions import (
     IssueInvalidException,
     IssueNotFoundException,
 )
+from .issue_sprint_history_service import IssueSprintHistoryService
+
+
 from ..models import Comment, Issue, WorkflowStatus, Sprint
 
 logger = logging.getLogger(__name__)
@@ -277,6 +280,9 @@ class IssueService:
             )
             raise IssueAlreadyExistsException("Unable to create the issue.") from exc
 
+        if sprint is not None:
+            IssueSprintHistoryService.create_history(issue=issue, sprint=sprint)
+
         return issue
 
     @staticmethod
@@ -388,12 +394,25 @@ class IssueService:
         issue.save()
 
         if sprint_changed:
-            Issue.objects.filter(
-                project=project,
-                parent=issue,
-                issue_type="subtask",
-                deleted_at__isnull=True,
-            ).update(sprint=new_sprint)
+            subtasks = list(
+                Issue.objects.filter(
+                    project=project,
+                    parent=issue,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                )
+            )
+
+            Issue.objects.filter(id__in=[subtask.id for subtask in subtasks]).update(
+                sprint=new_sprint
+            )
+
+            if new_sprint is not None:
+                IssueSprintHistoryService.create_history(issue=issue, sprint=new_sprint)
+
+                IssueSprintHistoryService.create_history_bulk(
+                    issues=subtasks, sprint=new_sprint
+                )
 
         return issue
 
@@ -537,5 +556,5 @@ class IssueService:
         if project.owner_id == user_id:
             return True
         print(user_id)
-        print("project members     ",project.members.all())
+        print("project members     ", project.members.all())
         return project.members.filter(user_id=user_id).exists()

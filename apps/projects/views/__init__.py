@@ -33,7 +33,12 @@ from .kanban_views import (
     KanbanIssuePositionView,
 )
 
-from .issue_views import IssueView, IssueDetailView, IssueSubtaskView
+from .issue_views import (
+    IssueView,
+    IssueDetailView,
+    IssueSubtaskView,
+    IssueSprintHistoryView,
+)
 
 from .issue_label_views import IssueLabelView, IssueLabelDetailView
 

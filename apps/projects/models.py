@@ -286,6 +286,24 @@ class Issue(models.Model):
         return f"{self.key} - {self.title}"
 
 
+class IssueSprintHistory(models.Model):
+    issue = models.ForeignKey(
+        "projects.Issue", on_delete=models.CASCADE, related_name="sprint_history"
+    )
+    sprint = models.ForeignKey(
+        "projects.Sprint", on_delete=models.PROTECT, related_name="issue_history"
+    )
+    moved_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        db_table = "issue_sprint_history"
+        ordering = ["moved_at"]
+        indexes = [
+            models.Index(fields=("issue", "moved_at"), name="idx_issue_sprint_history"),
+            models.Index(fields=("sprint",), name="idx_sprint_issue_history"),
+        ]
+
+
 class Label(models.Model):
     project = models.ForeignKey(
         "projects.Project", on_delete=models.CASCADE, related_name="labels"
