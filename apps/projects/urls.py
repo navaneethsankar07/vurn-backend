@@ -35,6 +35,7 @@ from .views import (
     ProjectArchiveStatusView,
     IssueCommentReactionView,
     SprintCompletionCheckView,
+    DocumentTagSuggestionView,
     IssueAttachmentDetailView,
     IssueAttachmentUploadView,
     WorkflowStatusPositionView,
@@ -238,5 +239,10 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/sprint-history/",
         IssueSprintHistoryView.as_view(),
         name="issue-sprint-history",
+    ),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/tag-suggestions/",
+        DocumentTagSuggestionView.as_view(),
+        name="document-tag-suggestions",
     ),
 ]

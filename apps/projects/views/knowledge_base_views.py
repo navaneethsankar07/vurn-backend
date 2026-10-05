@@ -35,10 +35,10 @@ from ..exceptions import (
 )
 
 from ..services.project_service import ProjectService
-from ..services.document_service import DocumentService
 from ..services.project_tag_service import ProjectTagService
 from ..services.project_access_service import ProjectAccessService
 from ..services.document_folder_service import DocumentFolderService
+from ..services.document_service import DocumentService, DocumentTagService
 
 
 class DocumentFolderView(APIView):
@@ -438,3 +438,39 @@ class DocumentTagView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class DocumentTagSuggestionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, document_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_view_access(
+                project=project, user=request.user
+            )
+
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        tags = DocumentTagService.get_suggestions(project=project, document=document)
+
+        serializer = ProjectTagSerializer(tags, many=True)
+
+        return Response({"tags": serializer.data}, status=status.HTTP_200_OK)

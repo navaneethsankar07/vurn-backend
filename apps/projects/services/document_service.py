@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from ..exceptions import DocumentInvalidException, DocumentNotFoundException
 
-from ..models import Document, DocumentFolder
+from ..models import Document, DocumentFolder, DocumentTag, ProjectTag
 
 logger = logging.getLogger(__name__)
 
@@ -136,3 +136,41 @@ class DocumentService:
                 project.id,
             )
             raise
+
+
+class DocumentTagService:
+
+    @staticmethod
+    def get_suggestions(*, project, document):
+        folder_tag_ids = list(
+            DocumentTag.objects.filter(
+                document__folder_id=document.folder_id,
+                document__deleted_at__isnull=True,
+            )
+            .order_by("-created_at")
+            .values_list("tag_id", flat=True)
+            .distinct()[:3]
+        )
+
+        tags = list(ProjectTag.objects.filter(id__in=folder_tag_ids))
+
+        tag_map = {tag.id: tag for tag in tags}
+
+        suggestions = [
+            tag_map[tag_id] for tag_id in folder_tag_ids if tag_id in tag_map
+        ]
+
+        remaining = 3 - len(suggestions)
+
+        if remaining > 0:
+            existing_ids = [tag.id for tag in suggestions]
+
+            project_tags = (
+                ProjectTag.objects.filter(project=project)
+                .exclude(id__in=existing_ids)
+                .order_by("-created_at")[:remaining]
+            )
+
+            suggestions.extend(project_tags)
+
+        return suggestions[:3]
