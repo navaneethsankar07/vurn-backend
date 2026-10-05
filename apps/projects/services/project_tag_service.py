@@ -68,3 +68,20 @@ class ProjectTagService:
                 tag.id,
             )
             raise ProjectTagInvalidException("Unable to add the document tag.") from exc
+
+    @staticmethod
+    @transaction.atomic
+    def remove_tag(*, project, document, tag_id):
+        tag = ProjectTag.objects.filter(id=tag_id, project=project).first()
+
+        if tag is None:
+            raise ProjectTagNotFoundException("Document tag not found.")
+
+        document_tag = DocumentTag.objects.filter(document=document, tag=tag).first()
+
+        if document_tag is None:
+            raise ProjectTagNotFoundException(
+                "This tag is not attached to the document."
+            )
+
+        document_tag.delete()
