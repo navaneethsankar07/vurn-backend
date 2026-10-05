@@ -230,6 +230,11 @@ urlpatterns = [
         name="document-detail",
     ),
     path(
+        "<slug:project_slug>/document-folders/<int:folder_id>/",
+        DocumentFolderView.as_view(),
+        name="document-folder-detail",
+    ),
+    path(
         "<slug:project_slug>/issues/<int:issue_id>/sprint-history/",
         IssueSprintHistoryView.as_view(),
         name="issue-sprint-history",

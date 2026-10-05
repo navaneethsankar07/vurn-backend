@@ -17,9 +17,12 @@ from ..serializers import (
     DocumentDetailSerializer,
     DocumentFolderQuerySerializer,
     DocumentFolderCreateSerializer,
+    DocumentFolderUpdateSerializer,
 )
 
 from ..exceptions import (
+    DocumentFolderInvalidException,
+    DocumentFolderNotFoundException,
     ProjectNotFoundException,
     DocumentInvalidException,
     DocumentNotFoundException,
@@ -104,6 +107,79 @@ class DocumentFolderView(APIView):
         return Response(
             {"id": folder.id, "message": "Document folder created successfully."},
             status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request, slug, project_slug, folder_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = DocumentFolderUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            folder = DocumentFolderService.update_folder(
+                project=project, folder_id=folder_id, **serializer.validated_data
+            )
+        except DocumentFolderNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentFolderAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "id": folder.id,
+                "name": folder.name,
+                "message": "Document folder updated successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, slug, project_slug, folder_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            DocumentFolderService.delete_folder(project=project, folder_id=folder_id)
+        except DocumentFolderNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentFolderInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {"message": "Document folder deleted successfully."},
+            status=status.HTTP_200_OK,
         )
 
 

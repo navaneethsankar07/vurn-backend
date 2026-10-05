@@ -37,6 +37,18 @@ class DocumentFolderCreateSerializer(serializers.Serializer):
         return value
 
 
+class DocumentFolderUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=150)
+
+    def validate_name(self, value):
+        value = value.strip()
+
+        if not value:
+            raise serializers.ValidationError("Folder name cannot be empty.")
+
+        return value
+
+
 class DocumentQuerySerializer(serializers.Serializer):
     folder_id = serializers.IntegerField(required=False, min_value=1)
     search = serializers.CharField(required=False, allow_blank=True)

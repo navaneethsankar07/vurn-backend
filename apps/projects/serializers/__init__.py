@@ -81,4 +81,5 @@ from .knowledge_base_serializers import (
     DocumentCreateSerializer,
     DocumentDetailSerializer,
     DocumentUpdateSerializer,
+    DocumentFolderUpdateSerializer,
 )
