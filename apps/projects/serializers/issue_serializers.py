@@ -4,7 +4,7 @@ from .issue_label_serializers import LabelSerializer
 
 from ..constants import ISSUE_PRIORITY_CHOICES, ISSUE_SORT_CHOICES, ISSUE_TYPE_CHOICES
 
-from ..models import Issue, IssueSprintHistory
+from ..models import Issue, IssueSprintHistory, Sprint
 
 
 class IssueCreateSerializer(serializers.Serializer):
@@ -52,6 +52,12 @@ class IssueListQuerySerializer(serializers.Serializer):
     )
 
 
+class IssueSprintSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sprint
+        fields = ["id", "name", "status", "start_date", "end_date"]
+
+
 class IssueResponseSerializer(serializers.ModelSerializer):
     key = serializers.CharField(read_only=True)
     project_id = serializers.IntegerField(source="project.id", read_only=True)
@@ -61,12 +67,21 @@ class IssueResponseSerializer(serializers.ModelSerializer):
     parent_id = serializers.IntegerField(
         source="parent.id", read_only=True, allow_null=True
     )
-    sprint_id = serializers.IntegerField(source="sprint.id", read_only=True)
-    sprint_name = serializers.CharField(source="sprint.name", read_only=True)
+    sprint_id = serializers.IntegerField(
+        source="sprint.id", read_only=True, allow_null=True
+    )
+    sprint_name = serializers.CharField(
+        source="sprint.name", read_only=True, allow_null=True
+    )
+    sprint = IssueSprintSerializer(read_only=True, allow_null=True)
     status_id = serializers.IntegerField(source="status.id", read_only=True)
     status_name = serializers.CharField(source="status.name", read_only=True)
-    assignee_id = serializers.IntegerField(source="assignee.id", read_only=True)
-    assignee_name = serializers.CharField(source="assignee.full_name", read_only=True)
+    assignee_id = serializers.IntegerField(
+        source="assignee.id", read_only=True, allow_null=True
+    )
+    assignee_name = serializers.CharField(
+        source="assignee.full_name", read_only=True, allow_null=True
+    )
     reporter_name = serializers.CharField(source="reporter.full_name", read_only=True)
     labels = LabelSerializer(many=True, read_only=True)
 
@@ -80,6 +95,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "parent_id",
             "sprint_id",
             "sprint_name",
+            "sprint",
             "status_id",
             "due_date",
             "estimated_time",
