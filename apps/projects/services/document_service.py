@@ -142,11 +142,16 @@ class DocumentTagService:
 
     @staticmethod
     def get_suggestions(*, project, document):
+        existing_document_tag_ids = DocumentTag.objects.filter(
+            document=document
+        ).values_list("tag_id", flat=True)
+
         folder_tag_ids = list(
             DocumentTag.objects.filter(
                 document__folder_id=document.folder_id,
                 document__deleted_at__isnull=True,
             )
+            .exclude(tag_id__in=existing_document_tag_ids)
             .order_by("-created_at")
             .values_list("tag_id", flat=True)
             .distinct()[:3]
@@ -164,10 +169,6 @@ class DocumentTagService:
 
         if remaining > 0:
             existing_ids = [tag.id for tag in suggestions]
-
-            existing_document_tag_ids = DocumentTag.objects.filter(
-                document=document
-            ).values_list("tag_id", flat=True)
 
             project_tags = (
                 ProjectTag.objects.filter(project=project)
