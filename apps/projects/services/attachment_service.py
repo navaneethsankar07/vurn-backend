@@ -18,29 +18,56 @@ from ..exceptions import (
     AttachmentUploadVerificationException,
 )
 
-logger = logging.getLogger("apps")
+logger = logging.getLogger(__name__)
 
 
 class AttachmentService:
 
     @staticmethod
-    def _generate_object_key(*, issue, file_name):
+    def _generate_object_key(*, issue=None, document=None, file_name):
         file_uuid = uuid.uuid4()
 
-        return f"issues/{issue.id}/attachments/" f"{file_uuid}-{file_name}"
+        if issue is not None:
+            return f"issues/{issue.id}/attachments/" f"{file_uuid}-{file_name}"
+
+        return f"documents/{document.id}/attachments/" f"{file_uuid}-{file_name}"
 
     @staticmethod
-    def initialize_issue_upload(*, project, issue, file_name, file_size, mime_type):
-        if issue.project_id != project.id:
+    def initialize_upload(
+        *, project, issue=None, document=None, file_name, file_size, mime_type
+    ):
+        if issue is not None:
+            if issue.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The issue does not belong to this project."
+                )
+
+            if issue.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot attach files to a deleted issue."
+                )
+
+        if document is not None:
+            if document.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The document does not belong to this project."
+                )
+
+            if document.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot attach files to a deleted document."
+                )
+
+        if issue is None and document is None:
+            raise AttachmentInvalidException("An issue or document is required.")
+
+        if issue is not None and document is not None:
             raise AttachmentInvalidException(
-                "The issue does not belong to this project."
+                "An attachment cannot belong to both an issue and a document."
             )
 
-        if issue.deleted_at is not None:
-            raise AttachmentInvalidException("Cannot attach files to a deleted issue.")
-
         object_key = AttachmentService._generate_object_key(
-            issue=issue, file_name=file_name
+            issue=issue, document=document, file_name=file_name
         )
 
         try:
@@ -51,8 +78,10 @@ class AttachmentService:
             )
         except Exception as exc:
             logger.exception(
-                "Failed to generate attachment upload URL | issue=%s project=%s",
-                issue.id,
+                "Failed to generate attachment upload URL | "
+                "issue=%s document=%s project=%s",
+                issue.id if issue else None,
+                document.id if document else None,
                 project.id,
             )
             raise AttachmentUploadException(
@@ -70,16 +99,35 @@ class AttachmentService:
 
     @staticmethod
     @transaction.atomic
-    def complete_issue_upload(*, project, issue, user, object_key):
-        if issue.project_id != project.id:
-            raise AttachmentInvalidException(
-                "The issue does not belong to this project."
-            )
+    def complete_upload(*, project, user, object_key, issue=None, document=None):
+        if issue is not None:
+            if issue.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The issue does not belong to this project."
+                )
 
-        if issue.deleted_at is not None:
-            raise AttachmentInvalidException("Cannot attach files to a deleted issue.")
+            if issue.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot attach files to a deleted issue."
+                )
 
-        prefix = f"issues/{issue.id}/attachments/"
+            prefix = f"issues/{issue.id}/attachments/"
+
+        elif document is not None:
+            if document.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The document does not belong to this project."
+                )
+
+            if document.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot attach files to a deleted document."
+                )
+
+            prefix = f"documents/{document.id}/attachments/"
+
+        else:
+            raise AttachmentInvalidException("An issue or document is required.")
 
         if not object_key.startswith(prefix):
             raise AttachmentInvalidException("Invalid attachment object.")
@@ -88,8 +136,10 @@ class AttachmentService:
             metadata = S3Service.head_object(object_key=object_key)
         except Exception as exc:
             logger.exception(
-                "Failed to verify attachment upload | " "issue=%s project=%s",
-                issue.id,
+                "Failed to verify attachment upload | "
+                "issue=%s document=%s project=%s",
+                issue.id if issue else None,
+                document.id if document else None,
                 project.id,
             )
             raise AttachmentUploadVerificationException(
@@ -118,11 +168,11 @@ class AttachmentService:
             )
 
         file_name = object_key.rsplit("/", 1)[-1]
-
         file_name = file_name.split("-", 1)[1]
 
         attachment = Attachment.objects.create(
             issue=issue,
+            document=document,
             uploaded_by=user,
             file_name=file_name,
             object_key=object_key,
@@ -133,22 +183,42 @@ class AttachmentService:
         return attachment
 
     @staticmethod
-    def list_issue_attachments(*, project, issue):
-        if issue.project_id != project.id:
-            raise AttachmentInvalidException(
-                "The issue does not belong to this project."
+    def list_attachments(*, project, issue=None, document=None):
+        if issue is not None:
+            if issue.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The issue does not belong to this project."
+                )
+
+            if issue.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot access attachments of a deleted issue."
+                )
+
+            return (
+                Attachment.objects.filter(issue=issue)
+                .select_related("uploaded_by")
+                .order_by("-created_at", "-id")
             )
 
-        if issue.deleted_at is not None:
-            raise AttachmentInvalidException(
-                "Cannot access attachments of a deleted issue."
+        if document is not None:
+            if document.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The document does not belong to this project."
+                )
+
+            if document.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot access attachments of a deleted document."
+                )
+
+            return (
+                Attachment.objects.filter(document=document)
+                .select_related("uploaded_by")
+                .order_by("-created_at", "-id")
             )
 
-        return (
-            Attachment.objects.filter(issue=issue)
-            .select_related("uploaded_by")
-            .order_by("-created_at", "-id")
-        )
+        raise AttachmentInvalidException("An issue or document is required.")
 
     @staticmethod
     def add_download_urls(*, attachments):
@@ -161,18 +231,39 @@ class AttachmentService:
 
     @staticmethod
     @transaction.atomic
-    def delete_attachment(*, project, issue, attachment_id):
-        if issue.project_id != project.id:
-            raise AttachmentInvalidException(
-                "The issue does not belong to this project."
-            )
+    def delete_attachment(*, project, attachment_id, issue=None, document=None):
+        if issue is not None:
+            if issue.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The issue does not belong to this project."
+                )
 
-        if issue.deleted_at is not None:
-            raise AttachmentInvalidException(
-                "Cannot delete attachments of a deleted issue."
-            )
+            if issue.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot delete attachments of a deleted issue."
+                )
 
-        attachment = Attachment.objects.filter(id=attachment_id, issue=issue).first()
+            attachment = Attachment.objects.filter(
+                id=attachment_id, issue=issue
+            ).first()
+
+        elif document is not None:
+            if document.project_id != project.id:
+                raise AttachmentInvalidException(
+                    "The document does not belong to this project."
+                )
+
+            if document.deleted_at is not None:
+                raise AttachmentInvalidException(
+                    "Cannot delete attachments of a deleted document."
+                )
+
+            attachment = Attachment.objects.filter(
+                id=attachment_id, document=document
+            ).first()
+
+        else:
+            raise AttachmentInvalidException("An issue or document is required.")
 
         if attachment is None:
             raise AttachmentNotFoundException("Attachment not found.")
@@ -183,9 +274,11 @@ class AttachmentService:
             attachment.delete()
         except Exception as exc:
             logger.exception(
-                "Failed to delete attachment | " "attachment=%s issue=%s project=%s",
+                "Failed to delete attachment | "
+                "attachment=%s issue=%s document=%s project=%s",
                 attachment.id,
-                issue.id,
+                issue.id if issue else None,
+                document.id if document else None,
                 project.id,
             )
             raise AttachmentUploadException("Unable to delete attachment.") from exc

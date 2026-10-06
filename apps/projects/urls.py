@@ -40,6 +40,7 @@ from .views import (
     IssueAttachmentDetailView,
     IssueAttachmentUploadView,
     WorkflowStatusPositionView,
+    DocumentAttachmentUploadView,
     IssueCommentReactionSummaryView,
     IssueAttachmentUploadCompleteView,
 )
@@ -255,5 +256,10 @@ urlpatterns = [
         "<slug:project_slug>/documents/<int:document_id>/tag-suggestions/",
         DocumentTagSuggestionView.as_view(),
         name="document-tag-suggestions",
+    ),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/attachments/upload/",
+        DocumentAttachmentUploadView.as_view(),
+        name="document-attachment-upload",
     ),
 ]

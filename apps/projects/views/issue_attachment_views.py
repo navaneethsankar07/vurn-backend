@@ -52,7 +52,7 @@ class IssueAttachmentUploadView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            upload = AttachmentService.initialize_issue_upload(
+            upload = AttachmentService.initialize_upload(
                 project=project, issue=issue, **serializer.validated_data
             )
         except AttachmentInvalidException as exc:
@@ -101,11 +101,11 @@ class IssueAttachmentUploadCompleteView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            attachment = AttachmentService.complete_issue_upload(
+            attachment = AttachmentService.complete_upload(
                 project=project,
                 issue=issue,
                 user=request.user,
-                **serializer.validated_data,
+                **serializer.validated_data
             )
         except AttachmentInvalidException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
@@ -114,7 +114,7 @@ class IssueAttachmentUploadCompleteView(APIView):
 
         return Response(
             {
-                "message": ("Attachment uploaded successfully."),
+                "message": "Attachment uploaded successfully.",
                 "attachment": {
                     "id": attachment.id,
                     "file_name": attachment.file_name,
@@ -149,7 +149,7 @@ class IssueAttachmentListView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         try:
-            attachments = AttachmentService.list_issue_attachments(
+            attachments = AttachmentService.list_attachments(
                 project=project, issue=issue
             )
         except AttachmentInvalidException as exc:

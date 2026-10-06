@@ -401,7 +401,18 @@ class CommentReaction(models.Model):
 
 class Attachment(models.Model):
     issue = models.ForeignKey(
-        "projects.Issue", on_delete=models.CASCADE, related_name="attachments"
+        "projects.Issue",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        null=True,
+        blank=True,
+    )
+    document = models.ForeignKey(
+        "projects.Document",
+        on_delete=models.CASCADE,
+        related_name="attachments",
+        null=True,
+        blank=True,
     )
     uploaded_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -418,12 +429,29 @@ class Attachment(models.Model):
         db_table = "attachments"
         ordering = ["-created_at"]
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(issue__isnull=False) | models.Q(document__isnull=False)
+                ),
+                name="attachment_has_parent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(issue__isnull=True) | models.Q(document__isnull=True)
+                ),
+                name="attachment_single_parent",
+            ),
             models.UniqueConstraint(
                 fields=("issue", "object_key"), name="uq_attachment_issue_object_key"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=("document", "object_key"),
+                name="uq_attachment_document_object_key",
+            ),
         ]
         indexes = [
             models.Index(fields=("issue",), name="idx_attachments_issue"),
+            models.Index(fields=("document",), name="idx_attachments_document"),
             models.Index(fields=("uploaded_by",), name="idx_attachments_uploaded_by"),
         ]
 
