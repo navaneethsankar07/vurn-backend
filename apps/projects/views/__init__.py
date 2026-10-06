@@ -57,8 +57,10 @@ from .issue_attachment_views import (
 )
 
 from .knowledge_base_views import (
-    DocumentFolderView,
     DocumentView,
+    DocumentTagView,
     DocumentDetailView,
+    DocumentFolderView,
+    DocumentTagSuggestionView,
     DocumentTagSuggestionView,
 )

@@ -9,6 +9,7 @@ from .views import (
     KanbanBoardView,
     IssueDetailView,
     SprintStartView,
+    DocumentTagView,
     IssueSubtaskView,
     IssueCommentView,
     SprintDetailView,
@@ -239,6 +240,16 @@ urlpatterns = [
         "<slug:project_slug>/issues/<int:issue_id>/sprint-history/",
         IssueSprintHistoryView.as_view(),
         name="issue-sprint-history",
+    ),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/tags/",
+        DocumentTagView.as_view(),
+        name="document-tags",
+    ),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/tags/<int:tag_id>/",
+        DocumentTagView.as_view(),
+        name="document-tag-detail",
     ),
     path(
         "<slug:project_slug>/documents/<int:document_id>/tag-suggestions/",

@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class ProjectTagService:
 
     @staticmethod
-    def list_tags(*, project, search=None):
-        tags = ProjectTag.objects.filter(project=project)
+    def list_document_tags(*, project, document, search=None):
+        tags = ProjectTag.objects.filter(project=project, documents=document)
 
         if search:
             tags = tags.filter(name__icontains=search.strip())
@@ -25,34 +25,21 @@ class ProjectTagService:
 
     @staticmethod
     @transaction.atomic
-    def create_tag(*, project, name):
-        if ProjectTag.objects.filter(project=project, name=name).exists():
-            raise ProjectTagAlreadyExistsException(
-                "A tag with this name already exists " "in this project."
-            )
-
-        try:
-            return ProjectTag.objects.create(project=project, name=name)
-        except IntegrityError as exc:
-            logger.exception(
-                "Failed to create project tag | " "project=%s name=%s", project.id, name
-            )
-            raise ProjectTagAlreadyExistsException(
-                "Unable to create the document tag."
-            ) from exc
-
-    @staticmethod
-    @transaction.atomic
-    def add_tag(*, project, document, tag_id):
-        tag = ProjectTag.objects.filter(id=tag_id, project=project).first()
+    def create_tag(*, project, document, name):
+        tag = ProjectTag.objects.filter(project=project, name=name).first()
 
         if tag is None:
-            raise ProjectTagNotFoundException("Document tag not found.")
-
-        if document.project_id != project.id:
-            raise ProjectTagInvalidException(
-                "The document does not belong to this project."
-            )
+            try:
+                tag = ProjectTag.objects.create(project=project, name=name)
+            except IntegrityError as exc:
+                logger.exception(
+                    "Failed to create project tag | " "project=%s name=%s",
+                    project.id,
+                    name,
+                )
+                raise ProjectTagAlreadyExistsException(
+                    "Unable to create the document tag."
+                ) from exc
 
         if DocumentTag.objects.filter(document=document, tag=tag).exists():
             raise ProjectTagAlreadyExistsException(
@@ -60,14 +47,16 @@ class ProjectTagService:
             )
 
         try:
-            return DocumentTag.objects.create(document=document, tag=tag)
+            DocumentTag.objects.create(document=document, tag=tag)
         except IntegrityError as exc:
             logger.exception(
-                "Failed to add document tag | " "document=%s tag=%s",
+                "Failed to attach document tag | " "document=%s tag=%s",
                 document.id,
                 tag.id,
             )
             raise ProjectTagInvalidException("Unable to add the document tag.") from exc
+
+        return tag
 
     @staticmethod
     @transaction.atomic

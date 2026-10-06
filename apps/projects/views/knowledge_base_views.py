@@ -32,6 +32,8 @@ from ..exceptions import (
     ProjectPermissionDeniedException,
     DocumentFolderAlreadyExistsException,
     ProjectTagAlreadyExistsException,
+    ProjectTagInvalidException,
+    ProjectTagNotFoundException,
 )
 
 from ..services.project_service import ProjectService
@@ -366,7 +368,7 @@ class DocumentDetailView(APIView):
 class DocumentTagView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, slug, project_slug):
+    def get(self, request, slug, project_slug, document_id):
         try:
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
@@ -379,9 +381,15 @@ class DocumentTagView(APIView):
             ProjectAccessService.validate_knowledge_base_view_access(
                 project=project, user=request.user
             )
+
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectPermissionDeniedException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
@@ -389,8 +397,8 @@ class DocumentTagView(APIView):
         query_serializer = ProjectTagQuerySerializer(data=request.query_params)
         query_serializer.is_valid(raise_exception=True)
 
-        tags = ProjectTagService.list_tags(
-            project=project, **query_serializer.validated_data
+        tags = ProjectTagService.list_document_tags(
+            project=project, document=document, **query_serializer.validated_data
         )
 
         paginator = StandardPagination()
@@ -400,7 +408,7 @@ class DocumentTagView(APIView):
 
         return paginator.get_paginated_response(serializer.data)
 
-    def post(self, request, slug, project_slug):
+    def post(self, request, slug, project_slug, document_id):
         try:
             organization = OrganizationService.get_user_organization(
                 user=request.user, slug=slug
@@ -413,9 +421,15 @@ class DocumentTagView(APIView):
             ProjectAccessService.validate_knowledge_base_edit_access(
                 project=project, user=request.user
             )
+
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except ProjectPermissionDeniedException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
@@ -425,9 +439,11 @@ class DocumentTagView(APIView):
 
         try:
             tag = ProjectTagService.create_tag(
-                project=project, **serializer.validated_data
+                project=project, document=document, **serializer.validated_data
             )
         except ProjectTagAlreadyExistsException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except ProjectTagInvalidException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
@@ -437,6 +453,43 @@ class DocumentTagView(APIView):
                 "message": "Document tag created successfully.",
             },
             status=status.HTTP_201_CREATED,
+        )
+
+    def delete(self, request, slug, project_slug, document_id, tag_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_knowledge_base_edit_access(
+                project=project, user=request.user
+            )
+
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            ProjectTagService.remove_tag(
+                project=project, document=document, tag_id=tag_id
+            )
+        except ProjectTagNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"message": "Document tag removed successfully."}, status=status.HTTP_200_OK
         )
 
 

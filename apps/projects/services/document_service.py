@@ -168,6 +168,7 @@ class DocumentTagService:
             project_tags = (
                 ProjectTag.objects.filter(project=project)
                 .exclude(id__in=existing_ids)
+                .exclude(documents=document)
                 .order_by("-created_at")[:remaining]
             )
 
