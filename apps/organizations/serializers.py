@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.projects.models import Sprint
+from apps.projects.models import Project, Sprint
 
 from .constants import (
     LOGO_ALLOWED_TYPES,
@@ -12,7 +12,6 @@ from .constants import (
 from .models import (
     Organization,
     OrganizationInvitation,
-    OrganizationMember,
     OrganizationPreference,
     OrganizationRole,
 )
@@ -64,13 +63,9 @@ class OrganizationListSerializer(
     serializers.ModelSerializer,
 ):
     role = serializers.SerializerMethodField()
-
     member_count = serializers.SerializerMethodField()
-
     project_count = serializers.SerializerMethodField()
-
     last_opened_at = serializers.SerializerMethodField()
-
     is_pinned = serializers.SerializerMethodField()
 
     class Meta:
@@ -91,36 +86,19 @@ class OrganizationListSerializer(
             "is_pinned",
         ]
 
-    def get_role(
-        self,
-        obj,
-    ):
+    def get_role(self, obj):
         return "owner"
 
-    def get_member_count(
-        self,
-        obj,
-    ):
+    def get_member_count(self, obj):
         stats = MOCK_ORGANIZATION_STATS.get(
-            obj.id,
-            {
-                "member_count": 1,
-                "project_count": 0,
-            },
+            obj.id, {"member_count": 1, "project_count": 0}
         )
 
         return stats["member_count"]
 
-    def get_project_count(
-        self,
-        obj,
-    ):
+    def get_project_count(self, obj):
         stats = MOCK_ORGANIZATION_STATS.get(
-            obj.id,
-            {
-                "member_count": 1,
-                "project_count": 0,
-            },
+            obj.id, {"member_count": 1, "project_count": 0}
         )
 
         return stats["project_count"]
@@ -168,6 +146,12 @@ class DashboardSprintSerializer(serializers.ModelSerializer):
         ]
 
 
+class DashboardProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
+        fields = ["id", "key", "slug", "name", "description", "updated_at"]
+
+
 class OrganizationDashboardSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
@@ -181,10 +165,11 @@ class OrganizationDashboardSerializer(serializers.Serializer):
     permissions = serializers.ListField(child=serializers.CharField())
     total_projects = serializers.IntegerField()
     total_members = serializers.IntegerField()
+    completed_issues = serializers.IntegerField()
     active_sprints = DashboardSprintSerializer(many=True)
     active_sprint_count = serializers.IntegerField()
     open_issues = serializers.IntegerField()
-    completed_issues = serializers.IntegerField()
+    latest_projects = DashboardProjectSerializer(many=True)
 
 
 class UpdateOrganizationSettingsSerializer(
