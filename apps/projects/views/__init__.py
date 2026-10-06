@@ -69,4 +69,5 @@ from .document_attachment_views import (
     DocumentAttachmentUploadView,
     DocumentAttachmentUploadCompleteView,
     DocumentAttachmentListView,
+    DocumentAttachmentDetailView,
 )

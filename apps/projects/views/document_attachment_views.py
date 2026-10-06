@@ -9,6 +9,7 @@ from apps.shared.utils.pagination import StandardPagination
 
 from ..exceptions import (
     AttachmentInvalidException,
+    AttachmentNotFoundException,
     AttachmentUploadException,
     AttachmentUploadVerificationException,
     DocumentNotFoundException,
@@ -180,3 +181,48 @@ class DocumentAttachmentListView(APIView):
         serializer = AttachmentSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class DocumentAttachmentDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, slug, project_slug, document_id, attachment_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        ProjectAccessService.validate_knowledge_base_edit_access(
+            project=project, user=request.user
+        )
+
+        try:
+            AttachmentService.delete_attachment(
+                project=project, document=document, attachment_id=attachment_id
+            )
+        except AttachmentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except AttachmentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except AttachmentUploadException as exc:
+            return Response(
+                {"error": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(
+            {"message": "Attachment deleted successfully."}, status=status.HTTP_200_OK
+        )
