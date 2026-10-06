@@ -467,12 +467,6 @@ class Document(models.Model):
     project = models.ForeignKey(
         "projects.Project", on_delete=models.CASCADE, related_name="documents"
     )
-    tags = models.ManyToManyField(
-        "projects.ProjectTag",
-        through="projects.DocumentTag",
-        related_name="documents",
-        blank=True,
-    )
     title = models.CharField(max_length=255)
     content = models.TextField()
     created_by = models.ForeignKey(

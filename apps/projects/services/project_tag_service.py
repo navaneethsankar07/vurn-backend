@@ -16,7 +16,9 @@ class ProjectTagService:
 
     @staticmethod
     def list_document_tags(*, project, document, search=None):
-        tags = ProjectTag.objects.filter(project=project, documents=document)
+        tags = ProjectTag.objects.filter(
+            project=project, document_tags__document=document
+        )
 
         if search:
             tags = tags.filter(name__icontains=search.strip())
@@ -27,6 +29,19 @@ class ProjectTagService:
     @transaction.atomic
     def create_tag(*, project, document, name):
         tag = ProjectTag.objects.filter(project=project, name=name).first()
+
+        if (
+            tag is not None
+            and DocumentTag.objects.filter(document=document, tag=tag).exists()
+        ):
+            raise ProjectTagAlreadyExistsException(
+                "This tag is already attached to the document."
+            )
+
+        if DocumentTag.objects.filter(document=document).count() >= 5:
+            raise ProjectTagInvalidException(
+                "A document can contain a maximum of 5 tags."
+            )
 
         if tag is None:
             try:
@@ -40,11 +55,6 @@ class ProjectTagService:
                 raise ProjectTagAlreadyExistsException(
                     "Unable to create the document tag."
                 ) from exc
-
-        if DocumentTag.objects.filter(document=document, tag=tag).exists():
-            raise ProjectTagAlreadyExistsException(
-                "This tag is already attached to the document."
-            )
 
         try:
             DocumentTag.objects.create(document=document, tag=tag)

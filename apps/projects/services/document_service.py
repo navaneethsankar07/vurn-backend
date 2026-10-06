@@ -165,10 +165,14 @@ class DocumentTagService:
         if remaining > 0:
             existing_ids = [tag.id for tag in suggestions]
 
+            existing_document_tag_ids = DocumentTag.objects.filter(
+                document=document
+            ).values_list("tag_id", flat=True)
+
             project_tags = (
                 ProjectTag.objects.filter(project=project)
                 .exclude(id__in=existing_ids)
-                .exclude(documents=document)
+                .exclude(id__in=existing_document_tag_ids)
                 .order_by("-created_at")[:remaining]
             )
 
