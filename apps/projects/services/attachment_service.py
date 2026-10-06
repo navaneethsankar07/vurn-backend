@@ -47,6 +47,11 @@ class AttachmentService:
                     "Cannot attach files to a deleted issue."
                 )
 
+            if Attachment.objects.filter(issue=issue).count() >= 5:
+                raise AttachmentInvalidException(
+                    "An issue can have a maximum of 5 attachments."
+                )
+
         if document is not None:
             if document.project_id != project.id:
                 raise AttachmentInvalidException(
@@ -56,6 +61,11 @@ class AttachmentService:
             if document.deleted_at is not None:
                 raise AttachmentInvalidException(
                     "Cannot attach files to a deleted document."
+                )
+
+            if Attachment.objects.filter(document=document).count() >= 5:
+                raise AttachmentInvalidException(
+                    "A document can have a maximum of 5 attachments."
                 )
 
         if issue is None and document is None:
