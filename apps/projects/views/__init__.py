@@ -65,4 +65,7 @@ from .knowledge_base_views import (
     DocumentTagSuggestionView,
 )
 
-from .document_attachment_views import DocumentAttachmentUploadView
+from .document_attachment_views import (
+    DocumentAttachmentUploadView,
+    DocumentAttachmentUploadCompleteView,
+)

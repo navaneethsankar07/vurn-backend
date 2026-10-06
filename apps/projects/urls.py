@@ -43,6 +43,7 @@ from .views import (
     DocumentAttachmentUploadView,
     IssueCommentReactionSummaryView,
     IssueAttachmentUploadCompleteView,
+    DocumentAttachmentUploadCompleteView,
 )
 
 urlpatterns = [
@@ -261,5 +262,10 @@ urlpatterns = [
         "<slug:project_slug>/documents/<int:document_id>/attachments/upload/",
         DocumentAttachmentUploadView.as_view(),
         name="document-attachment-upload",
+    ),
+    path(
+        "<slug:project_slug>/documents/<int:document_id>/attachments/upload/complete/",
+        DocumentAttachmentUploadCompleteView.as_view(),
+        name="document-attachment-upload-complete",
     ),
 ]
