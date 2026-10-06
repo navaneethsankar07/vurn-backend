@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 
 from apps.organizations.exceptions import OrganizationNotFoundException
 from apps.organizations.services.organization_service import OrganizationService
+from apps.shared.utils.pagination import StandardPagination
 
 from ..exceptions import (
     AttachmentInvalidException,
@@ -13,7 +14,11 @@ from ..exceptions import (
     DocumentNotFoundException,
     ProjectNotFoundException,
 )
-from ..serializers import AttachmentUploadSerializer, AttachmentUploadCompleteSerializer
+from ..serializers import (
+    AttachmentUploadSerializer,
+    AttachmentUploadCompleteSerializer,
+    AttachmentSerializer,
+)
 from ..services.project_service import ProjectService
 from ..services.document_service import DocumentService
 from ..services.attachment_service import AttachmentService
@@ -130,3 +135,48 @@ class DocumentAttachmentUploadCompleteView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class DocumentAttachmentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug, document_id):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            document = DocumentService.get_document(
+                project=project, document_id=document_id
+            )
+        except DocumentNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        ProjectAccessService.validate_knowledge_base_view_access(
+            project=project, user=request.user
+        )
+
+        try:
+            attachments = AttachmentService.list_attachments(
+                project=project, document=document
+            )
+        except AttachmentInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        paginator = StandardPagination()
+
+        page = paginator.paginate_queryset(attachments, request)
+
+        AttachmentService.add_download_urls(attachments=page)
+
+        serializer = AttachmentSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

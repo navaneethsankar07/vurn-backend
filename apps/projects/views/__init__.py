@@ -68,4 +68,5 @@ from .knowledge_base_views import (
 from .document_attachment_views import (
     DocumentAttachmentUploadView,
     DocumentAttachmentUploadCompleteView,
+    DocumentAttachmentListView,
 )
