@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.projects.models import Sprint
+
 from .constants import (
     LOGO_ALLOWED_TYPES,
     LOGO_MAX_SIZE,
@@ -25,38 +27,18 @@ class CreateOrganizationSerializer(
     serializers.ModelSerializer,
 ):
     icon = serializers.CharField(
-        required=False,
-        validators=[
-            validate_organization_icon,
-        ],
+        required=False, validators=[validate_organization_icon]
     )
-
     accent_color = serializers.CharField(
-        required=False,
-        validators=[
-            validate_organization_accent_color,
-        ],
+        required=False, validators=[validate_organization_accent_color]
     )
 
     class Meta:
         model = Organization
-
-        fields = [
-            "name",
-            "description",
-            "slug",
-            "icon",
-            "accent_color",
-        ]
-
+        fields = ["name", "description", "slug", "icon", "accent_color"]
         extra_kwargs = {
-            "slug": {
-                "required": True,
-            },
-            "description": {
-                "required": False,
-                "allow_blank": True,
-            },
+            "slug": {"required": True},
+            "description": {"required": False, "allow_blank": True},
         }
 
     def validate_name(self, value):
@@ -168,31 +150,39 @@ class OrganizationAccessSerializer(
     can_create_projects = serializers.BooleanField()
 
 
-class OrganizationDashboardSerializer(
-    serializers.Serializer,
-):
+class DashboardSprintSerializer(serializers.ModelSerializer):
+    project_id = serializers.IntegerField(source="project.id")
+    project_name = serializers.CharField(source="project.name")
+
+    class Meta:
+        model = Sprint
+        fields = [
+            "id",
+            "name",
+            "goal",
+            "start_date",
+            "end_date",
+            "status",
+            "project_id",
+            "project_name",
+        ]
+
+
+class OrganizationDashboardSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     description = serializers.CharField()
     slug = serializers.CharField()
     icon = serializers.CharField()
-
-    logo_url = serializers.URLField(
-        allow_null=True,
-    )
-
+    logo_url = serializers.URLField(allow_null=True)
     accent_color = serializers.CharField()
     updated_at = serializers.DateTimeField()
-
     role = serializers.CharField()
-
-    permissions = serializers.ListField(
-        child=serializers.CharField(),
-    )
-
+    permissions = serializers.ListField(child=serializers.CharField())
     total_projects = serializers.IntegerField()
     total_members = serializers.IntegerField()
-    active_sprints = serializers.IntegerField()
+    active_sprints = DashboardSprintSerializer(many=True)
+    active_sprint_count = serializers.IntegerField()
     open_issues = serializers.IntegerField()
     completed_issues = serializers.IntegerField()
 

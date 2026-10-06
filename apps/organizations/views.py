@@ -8,10 +8,7 @@ from django.conf import settings
 from apps.shared.utils.pagination import StandardPagination
 from apps.shared.services.email_service import EmailService
 
-from .constants import (
-    ORGANIZATION_SORT_FIELDS,
-    ORGANIZATION_SORT_ORDERS,
-)
+from .constants import ORGANIZATION_SORT_FIELDS, ORGANIZATION_SORT_ORDERS
 
 from .exceptions import (
     OrganizationNotFoundException,
@@ -31,20 +28,20 @@ from .exceptions import (
 )
 
 from .serializers import (
-    CreateOrganizationSerializer,
+    OrganizationRoleSerializer,
+    OrganizationListSerializer,
     OrganizationAccessSerializer,
+    CreateOrganizationSerializer,
+    OrganizationRoleListSerializer,
     OrganizationDashboardSerializer,
+    OrganizationPreferenceSerializer,
+    OrganizationMemberListSerializer,
     OrganizationDeleteConfirmSerializer,
     OrganizationDeleteRequestSerializer,
-    OrganizationInvitationCreateSerializer,
-    OrganizationListSerializer,
-    OrganizationMemberListSerializer,
-    OrganizationPreferenceSerializer,
-    OrganizationRoleListSerializer,
-    OrganizationRoleSerializer,
-    ReceivedOrganizationInvitationSerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
+    OrganizationInvitationCreateSerializer,
+    ReceivedOrganizationInvitationSerializer,
 )
 
 from .services.organization_service import OrganizationService
@@ -64,20 +61,9 @@ class OrganizationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        search = request.query_params.get(
-            "search",
-            "",
-        ).strip()
-
-        sort_by = request.query_params.get(
-            "sort_by",
-            "name",
-        ).lower()
-
-        order = request.query_params.get(
-            "order",
-            "asc",
-        ).lower()
+        search = request.query_params.get("search", "").strip()
+        sort_by = request.query_params.get("sort_by", "name").lower()
+        order = request.query_params.get("order", "asc").lower()
 
         if sort_by not in ORGANIZATION_SORT_FIELDS:
             return Response(
@@ -86,60 +72,37 @@ class OrganizationView(APIView):
                         "Invalid sort_by. "
                         "Allowed values: name, member, "
                         "project, recent."
-                    ),
+                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if order not in ORGANIZATION_SORT_ORDERS:
             return Response(
-                {
-                    "error": ("Invalid order. " "Allowed values: asc, desc."),
-                },
+                {"error": ("Invalid order. " "Allowed values: asc, desc.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         organizations = OrganizationQueryService.get_user_organizations(
-            user=request.user,
-            search=search,
-            sort_by=sort_by,
-            order=order,
+            user=request.user, search=search, sort_by=sort_by, order=order
         )
 
         paginator = StandardPagination()
 
-        page = paginator.paginate_queryset(
-            organizations,
-            request,
-            view=self,
-        )
+        page = paginator.paginate_queryset(organizations, request, view=self)
 
-        serializer = OrganizationListSerializer(
-            page,
-            many=True,
-        )
+        serializer = OrganizationListSerializer(page, many=True)
 
-        response_data = {
-            "recent": [],
-            "pinned": [],
-            "organizations": serializer.data,
-        }
+        response_data = {"recent": [], "pinned": [], "organizations": serializer.data}
 
-        return paginator.get_paginated_response(
-            response_data,
-        )
+        return paginator.get_paginated_response(response_data)
 
     def post(self, request):
-        serializer = CreateOrganizationSerializer(
-            data=request.data,
-        )
+        serializer = CreateOrganizationSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         organization = OrganizationService.create_organization(
-            owner=request.user,
-            **serializer.validated_data,
+            owner=request.user, **serializer.validated_data
         )
 
         return Response(
@@ -164,10 +127,7 @@ class OrganizationOptionsView(APIView):
     def get(self, request):
         options = OrganizationOptionsService.get_options()
 
-        return Response(
-            options,
-            status=status.HTTP_200_OK,
-        )
+        return Response(options, status=status.HTTP_200_OK)
 
 
 class OrganizationDashboardView(APIView):
@@ -176,24 +136,14 @@ class OrganizationDashboardView(APIView):
     def get(self, request, slug):
         try:
             dashboard = OrganizationDashboardService.get_dashboard(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
+            serializer = OrganizationDashboardSerializer(dashboard)
 
-            serializer = OrganizationDashboardSerializer(
-                dashboard,
-            )
-
-            return Response(
-                serializer.data,
-                status=status.HTTP_200_OK,
-            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
 
 class OrganizationSettingsView(APIView):
@@ -202,28 +152,19 @@ class OrganizationSettingsView(APIView):
     def patch(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = UpdateOrganizationSettingsSerializer(
-            instance=organization,
-            data=request.data,
-            partial=True,
+            instance=organization, data=request.data, partial=True
         )
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         organization = OrganizationService.update_settings(
-            organization=organization,
-            validated_data=serializer.validated_data,
+            organization=organization, validated_data=serializer.validated_data
         )
 
         return Response(
@@ -246,27 +187,19 @@ class OrganizationBrandingView(APIView):
     def patch(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = UpdateOrganizationBrandingSerializer(
-            data=request.data,
-            partial=True,
+            data=request.data, partial=True
         )
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         organization = OrganizationBrandingService.update_branding(
-            organization=organization,
-            validated_data=serializer.validated_data,
+            organization=organization, validated_data=serializer.validated_data
         )
 
         return Response(
@@ -289,25 +222,16 @@ class OrganizationArchiveView(APIView):
     def post(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
-            organization = OrganizationService.archive(
-                organization=organization,
-            )
+            organization = OrganizationService.archive(organization=organization)
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except OrganizationAlreadyArchivedException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {
@@ -323,22 +247,14 @@ class OrganizationDeleteRequestView(APIView):
     def post(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = OrganizationDeleteRequestSerializer(
-            data=request.data,
-        )
+        serializer = OrganizationDeleteRequestSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         OrganizationDeletionService.request_deletion(
             user=request.user,
@@ -360,22 +276,14 @@ class OrganizationDeleteConfirmView(APIView):
     def post(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = OrganizationDeleteConfirmSerializer(
-            data=request.data,
-        )
+        serializer = OrganizationDeleteConfirmSerializer(data=request.data)
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         try:
             OrganizationDeletionService.confirm_deletion(
@@ -384,15 +292,9 @@ class OrganizationDeleteConfirmView(APIView):
                 otp=serializer.validated_data["otp"],
             )
         except OrganizationAlreadyDeletedException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except InvalidOrganizationDeleteOTPException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {
@@ -408,17 +310,13 @@ class OrganizationPreferenceView(APIView):
     def get(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         preferences = OrganizationPreferenceService.get_preferences(
-            organization=organization,
+            organization=organization
         )
 
         serializer = OrganizationPreferenceSerializer(preferences)
@@ -428,25 +326,17 @@ class OrganizationPreferenceView(APIView):
     def patch(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = OrganizationPreferenceSerializer(
-            data=request.data,
-            partial=True,
-        )
+        serializer = OrganizationPreferenceSerializer(data=request.data, partial=True)
 
         serializer.is_valid(raise_exception=True)
 
         preferences = OrganizationPreferenceService.update_preferences(
-            organization=organization,
-            validated_data=serializer.validated_data,
+            organization=organization, validated_data=serializer.validated_data
         )
 
         return Response(
@@ -461,27 +351,19 @@ class OrganizationAccessView(APIView):
     def get(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             access = OrganizationAccessService.get_user_access(
-                organization=organization,
-                user=request.user,
+                organization=organization, user=request.user
             )
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = OrganizationAccessSerializer(access)
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK,
-        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class OrganizationRoleView(APIView):
@@ -490,57 +372,37 @@ class OrganizationRoleView(APIView):
     def get(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         search = request.query_params.get("search")
         sort = request.query_params.get("sort", "name")
         order = request.query_params.get("order", "asc")
 
         roles = OrganizationRoleService.list_roles(
-            organization=organization,
-            search=search,
-            sort=sort,
-            order=order,
+            organization=organization, search=search, sort=sort, order=order
         )
 
         paginator = StandardPagination()
 
-        paginated_roles = paginator.paginate_queryset(
-            roles,
-            request,
-        )
+        paginated_roles = paginator.paginate_queryset(roles, request)
 
-        serializer = OrganizationRoleListSerializer(
-            paginated_roles,
-            many=True,
-        )
+        serializer = OrganizationRoleListSerializer(paginated_roles, many=True)
 
-        return paginator.get_paginated_response(
-            serializer.data,
-        )
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, slug):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = OrganizationRoleSerializer(
-            data=request.data,
-            context={"organization": organization},
+            data=request.data, context={"organization": organization}
         )
         serializer.is_valid(raise_exception=True)
 
@@ -553,14 +415,10 @@ class OrganizationRoleView(APIView):
                 permission_codes=serializer.validated_data.get("permissions", []),
             )
         except InvalidOrganizationRolePermissionsException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            OrganizationRoleListSerializer(role).data,
-            status=status.HTTP_201_CREATED,
+            OrganizationRoleListSerializer(role).data, status=status.HTTP_201_CREATED
         )
 
 
@@ -570,22 +428,15 @@ class OrganizationRoleUpdateView(APIView):
     def patch(self, request, slug, role_id):
         try:
             organization = OrganizationService.get_owned_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = OrganizationRoleSerializer(
             data=request.data,
             partial=True,
-            context={
-                "organization": organization,
-                "role_id": role_id,
-            },
+            context={"organization": organization, "role_id": role_id},
         )
 
         serializer.is_valid(raise_exception=True)
@@ -597,8 +448,7 @@ class OrganizationRoleUpdateView(APIView):
         )
 
         return Response(
-            OrganizationRoleListSerializer(role).data,
-            status=status.HTTP_200_OK,
+            OrganizationRoleListSerializer(role).data, status=status.HTTP_200_OK
         )
 
 
@@ -609,37 +459,24 @@ class OrganizationInvitationView(APIView):
     def post(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             OrganizationAccessService.validate_member_invitation_access(
-                organization=organization,
-                user=request.user,
+                organization=organization, user=request.user
             )
 
         except OrganizationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         except OrganizationInvitationPermissionDeniedException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = OrganizationInvitationCreateSerializer(
-            data=request.data,
-            context={
-                "organization": organization,
-            },
+            data=request.data, context={"organization": organization}
         )
 
-        serializer.is_valid(
-            raise_exception=True,
-        )
+        serializer.is_valid(raise_exception=True)
 
         try:
             invitation = OrganizationInvitationService.create_invitation(
@@ -647,39 +484,24 @@ class OrganizationInvitationView(APIView):
                 invited_by=request.user,
                 email=serializer.validated_data["email"],
                 personal_message=(
-                    serializer.validated_data.get(
-                        "personal_message",
-                        "",
-                    )
+                    serializer.validated_data.get("personal_message", "")
                 ),
                 permission_role=(serializer.validated_data["permission_role"]),
                 job_role_id=(serializer.validated_data["job_role_id"]),
             )
 
         except OrganizationInvitationAlreadyExistsException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         except OrganizationInvitationRecipientAlreadyMemberException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         except OrganizationInvitationRecipientIsOwnerException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         invitation_url = f"{settings.FRONTEND_URL}" f"/invitations/{invitation.token}"
 
-        send_email = serializer.validated_data.get(
-            "send_email",
-            False,
-        )
+        send_email = serializer.validated_data.get("send_email", False)
 
         if send_email:
             EmailService.send_organization_invitation_email(
@@ -706,13 +528,10 @@ class ReceivedOrganizationInvitationView(APIView):
 
     def get(self, request):
         invitations = OrganizationInvitationService.list_received_invitations(
-            user=request.user,
+            user=request.user
         )
 
-        serializer = ReceivedOrganizationInvitationSerializer(
-            invitations,
-            many=True,
-        )
+        serializer = ReceivedOrganizationInvitationSerializer(invitations, many=True)
 
         return Response(serializer.data)
 
@@ -722,18 +541,12 @@ class OrganizationInvitationDetailView(APIView):
     def get(self, request, token):
         try:
             invitation = OrganizationInvitationService.get_invitation_by_token(
-                token=token,
+                token=token
             )
         except OrganizationInvitationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except OrganizationInvitationExpiredException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_410_GONE,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_410_GONE)
 
         return Response(
             {
@@ -743,10 +556,7 @@ class OrganizationInvitationDetailView(APIView):
                     "icon": invitation.organization.icon,
                 },
                 "job_role": (
-                    {
-                        "id": invitation.job_role.id,
-                        "name": invitation.job_role.name,
-                    }
+                    {"id": invitation.job_role.id, "name": invitation.job_role.name}
                     if invitation.job_role
                     else None
                 ),
@@ -761,29 +571,16 @@ class AcceptOrganizationInvitationView(APIView):
     def post(self, request, token):
         try:
             member = OrganizationInvitationService.accept_invitation(
-                token=token,
-                user=request.user,
+                token=token, user=request.user
             )
         except OrganizationInvitationNotFoundException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except OrganizationInvitationExpiredException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_410_GONE,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_410_GONE)
         except OrganizationInvitationEmailMismatchException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
         except OrganizationMemberAlreadyExistsException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             {
@@ -798,15 +595,10 @@ class OrganizationMemberView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(
-        self,
-        request,
-        slug,
-    ):
+    def get(self, request, slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user,
-                slug=slug,
+                user=request.user, slug=slug
             )
 
             OrganizationAccessService.validate_permission(
@@ -824,52 +616,32 @@ class OrganizationMemberView(APIView):
             )
 
         except OrganizationPermissionDeniedException as exc:
-            return Response(
-                {"error": str(exc)},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         if not OrganizationAccessService.has_permission(
-            organization=organization,
-            user=request.user,
-            permission_code="member.view",
+            organization=organization, user=request.user, permission_code="member.view"
         ):
             return Response(
                 {
                     "error": (
                         "You do not have permission " "to view organization members."
-                    ),
+                    )
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        search = request.query_params.get(
-            "search",
-        )
+        search = request.query_params.get("search")
 
-        role = request.query_params.get(
-            "role",
-            "all",
-        )
+        role = request.query_params.get("role", "all")
 
         members = OrganizationMemberService.list_members(
-            organization=organization,
-            search=search,
-            role=role,
+            organization=organization, search=search, role=role
         )
 
         paginator = StandardPagination()
 
-        paginated_members = paginator.paginate_queryset(
-            members,
-            request,
-        )
+        paginated_members = paginator.paginate_queryset(members, request)
 
-        serializer = OrganizationMemberListSerializer(
-            paginated_members,
-            many=True,
-        )
+        serializer = OrganizationMemberListSerializer(paginated_members, many=True)
 
-        return paginator.get_paginated_response(
-            serializer.data,
-        )
+        return paginator.get_paginated_response(serializer.data)

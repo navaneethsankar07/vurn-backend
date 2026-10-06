@@ -82,11 +82,7 @@ class OrganizationService:
         return organization
 
     @staticmethod
-    def get_user_organization(
-        *,
-        user,
-        slug,
-    ):
+    def get_user_organization(*, user, slug):
         organization = (
             Organization.objects.filter(
                 Q(owner=user) | Q(members__user=user),
@@ -104,10 +100,7 @@ class OrganizationService:
         return organization
 
     @staticmethod
-    def archive(
-        *,
-        organization: Organization,
-    ) -> Organization:
+    def archive(*, organization: Organization) -> Organization:
 
         if organization.is_archived:
             raise OrganizationAlreadyArchivedException(
