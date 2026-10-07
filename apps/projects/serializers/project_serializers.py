@@ -185,9 +185,24 @@ class ProjectDeleteSerializer(serializers.Serializer):
 
 
 class ProjectDashboardSprintSerializer(serializers.ModelSerializer):
+    created_by_name = serializers.CharField(
+        source="created_by.full_name", read_only=True
+    )
+
     class Meta:
         model = Sprint
-        fields = ["id", "name", "start_date", "end_date", "status"]
+        fields = [
+            "id",
+            "name",
+            "goal",
+            "description",
+            "created_by_name",
+            "created_at",
+            "updated_at",
+            "start_date",
+            "end_date",
+            "status",
+        ]
 
 
 class ProjectDetailSerializer(serializers.Serializer):
