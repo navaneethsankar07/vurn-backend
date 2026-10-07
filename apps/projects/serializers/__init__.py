@@ -1,10 +1,12 @@
 from .project_serializers import (
-    ProjectCreateSerializer,
-    ProjectResponseSerializer,
     ProjectListSerializer,
-    ProjectUpdateSerializer,
-    ProjectSettingsSerializer,
+    ProjectCreateSerializer,
     ProjectDeleteSerializer,
+    ProjectUpdateSerializer,
+    ProjectDetailSerializer,
+    ProjectResponseSerializer,
+    ProjectSettingsSerializer,
+    ProjectDashboardSprintSerializer,
 )
 
 from .project_member_serializers import (

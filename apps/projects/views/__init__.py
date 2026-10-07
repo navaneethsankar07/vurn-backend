@@ -6,6 +6,7 @@ from .project_views import (
     ProjectUnarchiveView,
     ProjectArchiveStatusView,
     ProjectDeleteView,
+    ProjectDetailView,
 )
 
 from .project_member_views import ProjectMemberView

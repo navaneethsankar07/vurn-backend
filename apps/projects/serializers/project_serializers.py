@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from ..constants import PROJECT_ICONS, PROJECT_STATUS_CHOICES
 
-from ..models import Project
+from ..models import Project, Sprint
 
 
 class ProjectCreateSerializer(serializers.Serializer):
@@ -182,3 +182,19 @@ class ProjectSettingsSerializer(serializers.Serializer):
 
 class ProjectDeleteSerializer(serializers.Serializer):
     confirmation = serializers.CharField(required=True, trim_whitespace=False)
+
+
+class ProjectDashboardSprintSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sprint
+        fields = ["id", "name", "start_date", "end_date", "status"]
+
+
+class ProjectDetailSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    key = serializers.CharField()
+    status = serializers.CharField()
+    description = serializers.CharField()
+    open_issues = serializers.IntegerField()
+    completed_issues = serializers.IntegerField()
+    active_sprint = ProjectDashboardSprintSerializer(allow_null=True)

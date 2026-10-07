@@ -27,12 +27,14 @@ from ..serializers import (
     ProjectListSerializer,
     ProjectDeleteSerializer,
     ProjectUpdateSerializer,
+    ProjectDetailSerializer,
     ProjectCreateSerializer,
     ProjectResponseSerializer,
     ProjectSettingsSerializer,
 )
 from ..services.project_service import ProjectService
 from ..services.project_access_service import ProjectAccessService
+from ..services.project_dashboard_service import ProjectDashboardService
 
 
 class ProjectView(APIView):
@@ -108,6 +110,39 @@ class ProjectView(APIView):
         response_serializer = ProjectResponseSerializer(project)
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug, project_slug):
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=slug
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
+            )
+
+            ProjectAccessService.validate_project_view_access(
+                project=project, user=request.user
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        except ProjectPermissionDeniedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        details = ProjectDashboardService.get_project_details(project=project)
+
+        serializer = ProjectDetailSerializer(details)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ProjectOptionsView(APIView):
