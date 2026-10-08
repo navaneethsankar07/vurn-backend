@@ -148,6 +148,7 @@ class GitPullRequest(models.Model):
     source_branch = models.CharField(max_length=255, blank=True, null=True)
     target_branch = models.CharField(max_length=255, blank=True, null=True)
     url = models.URLField(max_length=1000)
+    draft = models.BooleanField(default=False)
     opened_at = models.DateTimeField()
     merged_at = models.DateTimeField(blank=True, null=True)
     closed_at = models.DateTimeField(blank=True, null=True)

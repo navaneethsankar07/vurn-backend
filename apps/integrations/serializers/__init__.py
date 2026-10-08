@@ -12,3 +12,5 @@ from .github_repository import (
     GitHubRepositorySerializer,
     GitHubRepositoryOverviewSerializer,
 )
+
+from .github_pull_request import GitPullRequestQuerySerializer, GitPullRequestSerializer

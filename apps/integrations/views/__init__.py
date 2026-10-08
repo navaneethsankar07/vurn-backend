@@ -8,3 +8,5 @@ from .github_repository import (
     GitHubRepositoryOverviewView,
     GitHubRepositoryConnectionView,
 )
+
+from .github_pull_request import GitHubPullRequestListView

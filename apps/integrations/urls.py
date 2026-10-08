@@ -5,6 +5,7 @@ from .views import (
     GitHubBranchListView,
     GitHubCommitListView,
     GitHubRepositoryListView,
+    GitHubPullRequestListView,
     GitHubIntegrationStatusView,
     GitHubRepositoryOverviewView,
     GitHubRepositoryConnectionView,
@@ -51,5 +52,10 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/branches/",
         GitHubBranchListView.as_view(),
         name="github-repository-branches",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/pull-requests/",
+        GitHubPullRequestListView.as_view(),
+        name="github-repository-pull-requests",
     ),
 ]

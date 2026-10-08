@@ -53,8 +53,16 @@ class GitHubProvider(GitProvider):
 
         return client.get_branches(owner=repository.owner, repository=repository.name)
 
-    def get_pull_requests(self, repository):
-        raise NotImplementedError
+    def get_pull_requests(self, repository, query):
+        client = self._get_client()
+
+        return client.get_pull_requests(
+            owner=repository.owner,
+            repository=repository.name,
+            state=query.state,
+            page=query.page,
+            per_page=query.per_page,
+        )
 
     def create_webhook(self, repository):
         raise NotImplementedError

@@ -89,3 +89,19 @@ class GitHubClient:
         return self._request(
             method="GET", endpoint=f"/repos/{owner}/{repository}/branches"
         )
+
+    def get_pull_requests(
+        self, *, owner, repository, state="open", page=1, per_page=30
+    ):
+        params = {"state": state, "page": page, "per_page": per_page}
+
+        pull_requests, headers = self._request(
+            method="GET",
+            endpoint=f"/repos/{owner}/{repository}/pulls",
+            params=params,
+            return_headers=True,
+        )
+
+        pagination = self._parse_pagination_headers(headers)
+
+        return {"pull_requests": pull_requests, "pagination": pagination}

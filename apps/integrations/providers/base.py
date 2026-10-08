@@ -9,6 +9,13 @@ class GitCommitQuery:
     per_page: int = 30
 
 
+@dataclass
+class GitPullRequestQuery:
+    state: str = "open"
+    page: int = 1
+    per_page: int = 30
+
+
 class GitProvider(ABC):
 
     @abstractmethod
@@ -28,7 +35,7 @@ class GitProvider(ABC):
         pass
 
     @abstractmethod
-    def get_pull_requests(self, repository):
+    def get_pull_requests(self, repository, query):
         pass
 
     @abstractmethod
