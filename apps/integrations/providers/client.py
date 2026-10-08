@@ -30,3 +30,6 @@ class GitHubClient:
 
     def get_installation_repositories(self):
         return self._request(method="GET", endpoint="/installation/repositories")
+
+    def get_repository(self, *, owner, repository):
+        return self._request(method="GET", endpoint=f"/repos/{owner}/{repository}")

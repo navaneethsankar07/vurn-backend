@@ -2,8 +2,9 @@ from django.urls import path
 
 from .views import (
     GitHubConnectView,
-    GitHubInstallationCallbackView,
     GitHubRepositoryListView,
+    GitHubRepositoryDetailView,
+    GitHubInstallationCallbackView,
 )
 
 urlpatterns = [
@@ -21,5 +22,10 @@ urlpatterns = [
         "integrations/github/callback/",
         GitHubInstallationCallbackView.as_view(),
         name="github-installation-callback",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",
+        GitHubRepositoryDetailView.as_view(),
+        name="github-repository-detail",
     ),
 ]
