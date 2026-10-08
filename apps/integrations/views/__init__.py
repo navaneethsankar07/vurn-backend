@@ -2,7 +2,7 @@ from .github_connection import GitHubConnectView, GitHubInstallationCompleteView
 
 from .github_repository import (
     GitHubRepositoryListView,
-    GitHubRepositoryDetailView,
+    GitHubRepositoryOverviewView,
     GitHubRepositoryConnectionView,
     GitHubIntegrationStatusView,
 )

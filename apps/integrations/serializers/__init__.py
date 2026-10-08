@@ -5,4 +5,7 @@ from .github_repository_connection import (
     GitHubInstallationCompleteSerializer,
 )
 
-from .github_repository import GitHubRepositorySerializer
+from .github_repository import (
+    GitHubRepositorySerializer,
+    GitHubRepositoryOverviewSerializer,
+)

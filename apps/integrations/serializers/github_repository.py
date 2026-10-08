@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from ..models import GitRepository
+
 
 class GitHubRepositorySerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -9,3 +11,44 @@ class GitHubRepositorySerializer(serializers.Serializer):
     html_url = serializers.URLField()
     description = serializers.CharField(allow_blank=True, allow_null=True)
     default_branch = serializers.CharField(allow_blank=True, allow_null=True)
+
+
+class GitHubRepositoryOverviewSerializer(serializers.ModelSerializer):
+    stars = serializers.IntegerField(
+        source="github_repository.stargazers_count", read_only=True
+    )
+    forks = serializers.IntegerField(
+        source="github_repository.forks_count", read_only=True
+    )
+    open_issues = serializers.IntegerField(
+        source="github_repository.open_issues_count", read_only=True
+    )
+    language = serializers.CharField(
+        source="github_repository.language", allow_null=True, read_only=True
+    )
+    github_created_at = serializers.DateTimeField(
+        source="github_repository.created_at", read_only=True
+    )
+    github_updated_at = serializers.DateTimeField(
+        source="github_repository.updated_at", read_only=True
+    )
+
+    class Meta:
+        model = GitRepository
+        fields = [
+            "id",
+            "external_repository_id",
+            "name",
+            "full_name",
+            "repository_url",
+            "default_branch",
+            "visibility",
+            "description",
+            "is_archived",
+            "stars",
+            "forks",
+            "open_issues",
+            "language",
+            "github_created_at",
+            "github_updated_at",
+        ]

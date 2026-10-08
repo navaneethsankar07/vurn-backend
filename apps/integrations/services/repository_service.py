@@ -1,6 +1,6 @@
 from django.db import IntegrityError, transaction
 
-from ..exceptions import GitRepositoryAlreadyConnectedException
+from ..exceptions import GitRepositoryAlreadyConnectedException, GitRepositoryException
 
 from ..models import GitIntegration, GitRepository
 from ..providers.registry import GitProviderRegistry
@@ -35,18 +35,6 @@ class GitRepositoryService:
         )
 
         return provider.get_repositories()
-
-    @classmethod
-    def get_repository(cls, *, project, repository_id):
-        integration = cls._get_github_integration(project=project)
-
-        provider_class = GitProviderRegistry.get(integration.provider)
-
-        provider = provider_class(
-            installation_id=(integration.installation.external_installation_id)
-        )
-
-        return provider.get_repository(repository_id)
 
     @classmethod
     @transaction.atomic
@@ -125,3 +113,28 @@ class GitRepositoryService:
             "account": account,
             "repositories": integration.repositories.all(),
         }
+
+    @classmethod
+    def get_repository_overview(cls, *, project, repository_id):
+        integration = cls._get_github_integration(project=project)
+
+        repository = GitRepository.objects.filter(
+            id=repository_id, integration=integration
+        ).first()
+
+        if repository is None:
+            raise GitRepositoryException("Connected repository not found.")
+
+        provider_class = GitProviderRegistry.get(integration.provider)
+
+        provider = provider_class(
+            installation_id=(integration.installation.external_installation_id)
+        )
+
+        github_repository = provider.get_repository_details(
+            owner=repository.owner, repository=repository.name
+        )
+
+        repository.github_repository = github_repository
+
+        return repository

@@ -32,6 +32,11 @@ class GitHubProvider(GitProvider):
 
         raise GitProviderException("GitHub repository not found.")
 
+    def get_repository_details(self, *, owner, repository):
+        client = self._get_client()
+
+        return client.get_repository(owner=owner, repository=repository)
+
     def get_commits(self, repository):
         raise NotImplementedError
 

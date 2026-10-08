@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     GitHubConnectView,
     GitHubRepositoryListView,
-    GitHubRepositoryDetailView,
+    GitHubRepositoryOverviewView,
     GitHubIntegrationStatusView,
     GitHubRepositoryConnectionView,
     GitHubInstallationCompleteView,
@@ -27,7 +27,7 @@ urlpatterns = [
     ),
     path(
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",
-        GitHubRepositoryDetailView.as_view(),
+        GitHubRepositoryOverviewView.as_view(),
         name="github-repository-detail",
     ),
     path(
