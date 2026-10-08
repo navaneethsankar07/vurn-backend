@@ -229,3 +229,11 @@ LOGGING = {
         "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+
+# -----------------------------------------------------------------------------
+# Github Configuration
+# -----------------------------------------------------------------------------
+GITHUB_APP_ID = env("GITHUB_APP_ID")
+GITHUB_PRIVATE_KEY_PATH = env("GITHUB_PRIVATE_KEY_PATH")
+GITHUB_WEBHOOK_SECRET = env("GITHUB_WEBHOOK_SECRET")
