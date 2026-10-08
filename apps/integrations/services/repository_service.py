@@ -89,3 +89,39 @@ class GitRepositoryService:
             ) from exc
 
         return git_repository
+
+    @staticmethod
+    def get_github_integration_status(*, project):
+        integration = (
+            GitIntegration.objects.select_related("installation")
+            .prefetch_related("repositories")
+            .filter(project=project, provider="github")
+            .first()
+        )
+
+        if integration is None:
+            return {
+                "connected": False,
+                "provider": "github",
+                "status": None,
+                "account": None,
+                "repositories": [],
+            }
+
+        installation = getattr(integration, "installation", None)
+
+        account = None
+
+        if installation is not None:
+            account = {
+                "login": installation.account_login,
+                "type": installation.account_type,
+            }
+
+        return {
+            "connected": True,
+            "provider": integration.provider,
+            "status": integration.status,
+            "account": account,
+            "repositories": integration.repositories.all(),
+        }

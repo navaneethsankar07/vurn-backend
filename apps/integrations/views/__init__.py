@@ -4,4 +4,5 @@ from .github_repository import (
     GitHubRepositoryListView,
     GitHubRepositoryDetailView,
     GitHubRepositoryConnectionView,
+    GitHubIntegrationStatusView,
 )

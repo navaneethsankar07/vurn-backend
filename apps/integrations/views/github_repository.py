@@ -9,6 +9,7 @@ from apps.projects.services.project_access_service import ProjectAccessService
 from ..serializers import (
     GitHubRepositorySerializer,
     GitHubRepositoryConnectionSerializer,
+    GitHubIntegrationStatusSerializer,
 )
 
 from ..exceptions import GitRepositoryAlreadyConnectedException
@@ -133,3 +134,36 @@ class GitHubRepositoryConnectionView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class GitHubIntegrationStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, organization_slug, project_slug):
+        project = (
+            Project.objects.select_related("organization")
+            .filter(
+                organization__slug=organization_slug,
+                slug=project_slug,
+                deleted_at__isnull=True,
+                is_archived=False,
+            )
+            .first()
+        )
+
+        if project is None:
+            return Response(
+                {"detail": "Project not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        ProjectAccessService.validate_project_edit_access(
+            project=project, user=request.user
+        )
+
+        integration_status = GitRepositoryService.get_github_integration_status(
+            project=project
+        )
+
+        serializer = GitHubIntegrationStatusSerializer(integration_status)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
