@@ -20,3 +20,7 @@ class GitRepositoryException(GitProviderException):
 
 class GitWebhookException(GitProviderException):
     pass
+
+
+class GitRepositoryAlreadyConnectedException(GitRepositoryException):
+    pass

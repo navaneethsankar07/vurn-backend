@@ -4,6 +4,7 @@ from .views import (
     GitHubConnectView,
     GitHubRepositoryListView,
     GitHubRepositoryDetailView,
+    GitHubRepositoryConnectionView,
     GitHubInstallationCallbackView,
 )
 
@@ -27,5 +28,10 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",
         GitHubRepositoryDetailView.as_view(),
         name="github-repository-detail",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/connect/",
+        GitHubRepositoryConnectionView.as_view(),
+        name="github-repository-connect",
     ),
 ]

@@ -1,4 +1,8 @@
-from ..models import GitIntegration
+from django.db import IntegrityError, transaction
+
+from ..exceptions import GitRepositoryAlreadyConnectedException
+
+from ..models import GitIntegration, GitRepository
 from ..providers.registry import GitProviderRegistry
 
 
@@ -43,3 +47,45 @@ class GitRepositoryService:
         )
 
         return provider.get_repository(repository_id)
+
+    @classmethod
+    @transaction.atomic
+    def connect_repository(cls, *, project, repository_id):
+        integration = cls._get_github_integration(project=project)
+
+        provider_class = GitProviderRegistry.get(integration.provider)
+
+        provider = provider_class(
+            installation_id=(integration.installation.external_installation_id)
+        )
+
+        repository = provider.get_repository(repository_id)
+
+        existing_repository = GitRepository.objects.filter(
+            integration=integration, external_repository_id=str(repository["id"])
+        ).first()
+
+        if existing_repository is not None:
+            raise GitRepositoryAlreadyConnectedException(
+                "This repository is already connected."
+            )
+
+        try:
+            git_repository = GitRepository.objects.create(
+                integration=integration,
+                external_repository_id=str(repository["id"]),
+                owner=repository["owner"]["login"],
+                name=repository["name"],
+                full_name=repository["full_name"],
+                repository_url=repository["html_url"],
+                default_branch=repository.get("default_branch"),
+                visibility=("private" if repository.get("private") else "public"),
+                description=repository.get("description") or "",
+                is_archived=repository.get("archived", False),
+            )
+        except IntegrityError as exc:
+            raise GitRepositoryAlreadyConnectedException(
+                "This repository is already connected."
+            ) from exc
+
+        return git_repository
