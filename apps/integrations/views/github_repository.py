@@ -11,6 +11,7 @@ from apps.shared.utils.pagination import StandardPagination
 
 from ..serializers import (
     GitCommitSerializer,
+    GitHubBranchSerializer,
     GitCommitQuerySerializer,
     GitHubRepositorySerializer,
     GitHubIntegrationStatusSerializer,
@@ -21,6 +22,7 @@ from ..serializers import (
 from ..exceptions import GitRepositoryAlreadyConnectedException, GitRepositoryException
 
 from ..services.commit_service import GitCommitService
+from ..services.branch_service import GitBranchService
 from ..services.repository_service import GitRepositoryService
 
 
@@ -255,6 +257,49 @@ class GitHubCommitListView(APIView):
                 "page_size": page_size,
                 "pagination": github_response["pagination"],
                 "commits": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class GitHubBranchListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, organization_slug, project_slug, repository_id):
+        project = (
+            Project.objects.select_related("organization")
+            .filter(
+                organization__slug=organization_slug,
+                slug=project_slug,
+                deleted_at__isnull=True,
+                is_archived=False,
+            )
+            .first()
+        )
+
+        if project is None:
+            return Response(
+                {"detail": "Project not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        ProjectAccessService.validate_project_view_access(
+            project=project, user=request.user
+        )
+
+        try:
+            repository, branches = GitBranchService.get_repository_branches(
+                project=project, repository_id=repository_id
+            )
+        except GitRepositoryException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = GitHubBranchSerializer(branches, many=True)
+
+        return Response(
+            {
+                "repository_id": repository.id,
+                "default_branch": repository.default_branch,
+                "branches": serializer.data,
             },
             status=status.HTTP_200_OK,
         )

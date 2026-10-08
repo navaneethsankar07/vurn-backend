@@ -7,6 +7,7 @@ from .github_repository_connection import (
 
 from .github_repository import (
     GitCommitSerializer,
+    GitHubBranchSerializer,
     GitCommitQuerySerializer,
     GitHubRepositorySerializer,
     GitHubRepositoryOverviewSerializer,

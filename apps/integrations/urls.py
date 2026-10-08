@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     GitHubConnectView,
+    GitHubBranchListView,
     GitHubCommitListView,
     GitHubRepositoryListView,
     GitHubIntegrationStatusView,
@@ -45,5 +46,10 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/commits/",
         GitHubCommitListView.as_view(),
         name="github-repository-commits",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/branches/",
+        GitHubBranchListView.as_view(),
+        name="github-repository-branches",
     ),
 ]

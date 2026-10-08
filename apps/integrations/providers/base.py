@@ -24,6 +24,10 @@ class GitProvider(ABC):
         pass
 
     @abstractmethod
+    def get_branches(self, repository):
+        pass
+
+    @abstractmethod
     def get_pull_requests(self, repository):
         pass
 

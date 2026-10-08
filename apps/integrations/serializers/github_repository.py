@@ -77,3 +77,9 @@ class GitCommitSerializer(serializers.ModelSerializer):
             "committed_at",
             "created_at",
         ]
+
+
+class GitHubBranchSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    protected = serializers.BooleanField()
+    is_default = serializers.BooleanField()

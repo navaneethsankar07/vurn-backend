@@ -84,3 +84,8 @@ class GitHubClient:
                 pagination["last"] = url
 
         return pagination
+
+    def get_branches(self, *, owner, repository):
+        return self._request(
+            method="GET", endpoint=f"/repos/{owner}/{repository}/branches"
+        )

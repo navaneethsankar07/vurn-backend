@@ -48,6 +48,11 @@ class GitHubProvider(GitProvider):
             per_page=query.per_page,
         )
 
+    def get_branches(self, repository):
+        client = self._get_client()
+
+        return client.get_branches(owner=repository.owner, repository=repository.name)
+
     def get_pull_requests(self, repository):
         raise NotImplementedError
 
