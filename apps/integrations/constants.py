@@ -27,3 +27,7 @@ GIT_WEBHOOK_STATUS_CHOICES = (
     ("processed", "Processed"),
     ("failed", "Failed"),
 )
+
+
+STATE_SALT = "github-app-installation"
+STATE_MAX_AGE = 600

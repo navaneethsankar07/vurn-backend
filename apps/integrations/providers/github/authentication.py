@@ -55,3 +55,31 @@ class GitHubAuthenticationService:
             )
 
         return token
+
+    @staticmethod
+    def get_installation_details(*, installation_id):
+        app_jwt = GitHubAuthenticationService.generate_app_jwt()
+
+        response = requests.get(
+            f"https://api.github.com/app/installations/{installation_id}",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {app_jwt}",
+                "X-GitHub-Api-Version": "2026-03-10",
+            },
+            timeout=15,
+        )
+
+        if not response.ok:
+            raise GitAuthenticationException(
+                "Unable to validate GitHub App installation."
+            )
+
+        data = response.json()
+        account = data.get("account") or {}
+
+        return {
+            "installation_id": data.get("id"),
+            "account_login": account.get("login"),
+            "account_type": account.get("type"),
+        }

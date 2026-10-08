@@ -21,16 +21,8 @@ from .views import (
 )
 
 urlpatterns = [
-    path(
-        "",
-        OrganizationView.as_view(),
-        name="organization",
-    ),
-    path(
-        "options/",
-        OrganizationOptionsView.as_view(),
-        name="organization-options",
-    ),
+    path("", OrganizationView.as_view(), name="organization"),
+    path("options/", OrganizationOptionsView.as_view(), name="organization-options"),
     path(
         "<slug:slug>/access/",
         OrganizationAccessView.as_view(),
@@ -72,9 +64,7 @@ urlpatterns = [
         name="organization-preferences",
     ),
     path(
-        "<slug:slug>/roles/",
-        OrganizationRoleView.as_view(),
-        name="organization-roles",
+        "<slug:slug>/roles/", OrganizationRoleView.as_view(), name="organization-roles"
     ),
     path(
         "<slug:slug>/roles/<int:role_id>/",
@@ -106,8 +96,5 @@ urlpatterns = [
         OrganizationMemberView.as_view(),
         name="organization-members",
     ),
-    path(
-        "<slug:slug>/projects/",
-        include("apps.projects.urls"),
-    ),
+    path("<slug:slug>/projects/", include("apps.projects.urls")),
 ]

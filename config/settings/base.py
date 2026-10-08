@@ -235,5 +235,6 @@ LOGGING = {
 # Github Configuration
 # -----------------------------------------------------------------------------
 GITHUB_APP_ID = env("GITHUB_APP_ID")
+GITHUB_APP_SLUG = env("GITHUB_APP_SLUG")
 GITHUB_PRIVATE_KEY_PATH = env("GITHUB_PRIVATE_KEY_PATH")
 GITHUB_WEBHOOK_SECRET = env("GITHUB_WEBHOOK_SECRET")
