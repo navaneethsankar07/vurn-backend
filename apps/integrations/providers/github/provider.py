@@ -1,7 +1,7 @@
 from ..base import GitProvider
 from ...exceptions import GitProviderException
 from .authentication import GitHubAuthenticationService
-from ..client import GitHubClient
+from .client import GitHubClient
 
 
 class GitHubProvider(GitProvider):
@@ -37,8 +37,16 @@ class GitHubProvider(GitProvider):
 
         return client.get_repository(owner=owner, repository=repository)
 
-    def get_commits(self, repository):
-        raise NotImplementedError
+    def get_commits(self, repository, query):
+        client = self._get_client()
+
+        return client.get_commits(
+            owner=repository.owner,
+            repository=repository.name,
+            branch=query.branch,
+            page=query.page,
+            per_page=query.per_page,
+        )
 
     def get_pull_requests(self, repository):
         raise NotImplementedError

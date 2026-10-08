@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import GitRepository
+from ..models import GitCommit, GitRepository
 
 
 class GitHubRepositorySerializer(serializers.Serializer):
@@ -51,4 +51,29 @@ class GitHubRepositoryOverviewSerializer(serializers.ModelSerializer):
             "language",
             "github_created_at",
             "github_updated_at",
+        ]
+
+
+class GitCommitQuerySerializer(serializers.Serializer):
+    branch = serializers.CharField(required=False, allow_blank=False, max_length=255)
+    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    page_size = serializers.IntegerField(
+        required=False, min_value=1, max_value=100, default=5
+    )
+
+
+class GitCommitSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GitCommit
+        fields = [
+            "id",
+            "sha",
+            "message",
+            "author_name",
+            "author_email",
+            "author_username",
+            "branch",
+            "url",
+            "committed_at",
+            "created_at",
         ]

@@ -1,4 +1,12 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+
+
+@dataclass
+class GitCommitQuery:
+    branch: str | None = None
+    page: int = 1
+    per_page: int = 30
 
 
 class GitProvider(ABC):
@@ -12,7 +20,7 @@ class GitProvider(ABC):
         pass
 
     @abstractmethod
-    def get_commits(self, repository):
+    def get_commits(self, repository, query):
         pass
 
     @abstractmethod
