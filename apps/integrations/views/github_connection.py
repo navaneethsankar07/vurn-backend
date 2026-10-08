@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from apps.projects.models import Project
 
 from ..services.github_connection_service import GitHubConnectionService
+from ..serializers import GitHubInstallationCompleteSerializer
 
 
 class GitHubConnectView(APIView):
@@ -38,42 +39,60 @@ class GitHubConnectView(APIView):
         )
 
 
-class GitHubInstallationCallbackView(APIView):
+class GitHubInstallationCompleteView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
-        state = request.query_params.get("state")
-        installation_id = request.query_params.get("installation_id")
-        setup_action = request.query_params.get("setup_action")
+    def post(self, request):
+        serializer = GitHubInstallationCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if not state or not installation_id:
-            return Response(
-                {"detail": ("Missing GitHub installation parameters.")},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        organization_slug = None
+        project_slug = None
 
         try:
-            integration, installation = (
+            project = GitHubConnectionService.get_project_from_state(
+                user=request.user, state=serializer.validated_data["state"]
+            )
+
+            organization_slug = project.organization.slug
+            project_slug = project.slug
+
+            project, integration, installation = (
                 GitHubConnectionService.handle_installation_callback(
                     user=request.user,
-                    state=state,
-                    installation_id=installation_id,
-                    setup_action=setup_action,
+                    state=serializer.validated_data["state"],
+                    installation_id=(serializer.validated_data["installation_id"]),
+                    setup_action=(serializer.validated_data["setup_action"]),
                 )
             )
+
         except signing.BadSignature:
             return Response(
-                {"detail": "Invalid or expired installation state."},
+                {
+                    "detail": ("Invalid or expired GitHub installation state."),
+                    "organization_slug": organization_slug,
+                    "project_slug": project_slug,
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
         except ValueError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {
+                    "detail": str(exc),
+                    "organization_slug": organization_slug,
+                    "project_slug": project_slug,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(
             {
-                "message": ("GitHub App installed successfully."),
+                "message": "GitHub App installed successfully.",
                 "integration_id": integration.id,
                 "provider": integration.provider,
+                "organization_slug": project.organization.slug,
+                "project_slug": project.slug,
                 "account": {
                     "login": installation["account_login"],
                     "type": installation["account_type"],

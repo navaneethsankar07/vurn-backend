@@ -25,7 +25,7 @@ class GitHubConnectionService:
                 "user_id": user.id,
                 "nonce": secrets.token_urlsafe(16),
             },
-            salt=cls.STATE_SALT,
+            salt=STATE_SALT,
         )
 
         query_string = urlencode({"state": state})
@@ -76,9 +76,29 @@ class GitHubConnectionService:
             defaults={
                 "provider": "github",
                 "external_installation_id": str(installation["installation_id"]),
-                "account_login": installation["account_login"] or "",
-                "account_type": installation["account_type"] or "",
+                "account_login": (installation["account_login"] or ""),
+                "account_type": (installation["account_type"] or ""),
             },
         )
 
-        return integration, installation
+        return project, integration, installation
+
+    @classmethod
+    def get_project_from_state(cls, *, user, state):
+        payload = signing.loads(state, salt=STATE_SALT, max_age=STATE_MAX_AGE)
+
+        if payload["user_id"] != user.id:
+            raise ValueError("Invalid GitHub installation state.")
+
+        project = (
+            Project.objects.filter(
+                id=payload["project_id"], deleted_at__isnull=True, is_archived=False
+            )
+            .select_related("organization")
+            .first()
+        )
+
+        if project is None:
+            raise ValueError("Project not found.")
+
+        return project

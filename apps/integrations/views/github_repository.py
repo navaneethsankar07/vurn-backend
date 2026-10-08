@@ -42,7 +42,7 @@ class GitHubRepositoryListView(APIView):
         )
 
         repositories = GitRepositoryService.get_available_repositories(
-            project=project, user=request.user
+            project=project
         )
 
         serializer = GitHubRepositorySerializer(repositories, many=True)

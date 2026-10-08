@@ -57,12 +57,6 @@ class GitProviderInstallation(models.Model):
 
     class Meta:
         db_table = "git_provider_installations"
-        constraints = [
-            models.UniqueConstraint(
-                fields=("provider", "external_installation_id"),
-                name="uq_git_provider_installation_external",
-            )
-        ]
         indexes = [
             models.Index(fields=("provider",), name="idx_git_installations_provider"),
             models.Index(

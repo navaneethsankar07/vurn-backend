@@ -6,7 +6,7 @@ from .views import (
     GitHubRepositoryDetailView,
     GitHubIntegrationStatusView,
     GitHubRepositoryConnectionView,
-    GitHubInstallationCallbackView,
+    GitHubInstallationCompleteView,
 )
 
 urlpatterns = [
@@ -21,9 +21,9 @@ urlpatterns = [
         name="github-repositories",
     ),
     path(
-        "integrations/github/callback/",
-        GitHubInstallationCallbackView.as_view(),
-        name="github-installation-callback",
+        "integrations/github/complete/",
+        GitHubInstallationCompleteView.as_view(),
+        name="github-installation-complete",
     ),
     path(
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",

@@ -31,3 +31,9 @@ class GitHubIntegrationStatusSerializer(serializers.Serializer):
     status = serializers.CharField(allow_null=True)
     account = serializers.DictField(allow_null=True)
     repositories = GitHubConnectedRepositorySerializer(many=True)
+
+
+class GitHubInstallationCompleteSerializer(serializers.Serializer):
+    installation_id = serializers.IntegerField(min_value=1)
+    setup_action = serializers.CharField(max_length=20)
+    state = serializers.CharField()
