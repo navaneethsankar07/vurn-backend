@@ -39,6 +39,7 @@ from .issue_views import (
     IssueDetailView,
     IssueSubtaskView,
     IssueSprintHistoryView,
+    WorkItemOptionListView,
 )
 
 from .issue_label_views import IssueLabelView, IssueLabelDetailView

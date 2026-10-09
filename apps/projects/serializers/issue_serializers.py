@@ -171,3 +171,12 @@ class IssueSprintHistorySerializer(serializers.ModelSerializer):
             return "Backlog"
 
         return obj.sprint.name
+
+
+class WorkItemOptionSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(read_only=True)
+    status_name = serializers.CharField(source="status.name", read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ["id", "key", "title", "status_name"]

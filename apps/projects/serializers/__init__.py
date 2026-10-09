@@ -43,10 +43,11 @@ from .kanban_serializers import (
 )
 
 from .issue_serializers import (
-    IssueCreateSerializer,
-    IssueListQuerySerializer,
-    IssueResponseSerializer,
     IssueUpdateSerializer,
+    IssueCreateSerializer,
+    IssueResponseSerializer,
+    IssueListQuerySerializer,
+    WorkItemOptionSerializer,
     SubtaskListQuerySerializer,
     IssueSprintHistorySerializer,
 )

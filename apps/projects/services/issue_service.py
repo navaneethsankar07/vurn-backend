@@ -1,8 +1,8 @@
 import logging
 
 from django.db import IntegrityError, transaction
-from django.db.models import Q, CharField
-from django.db.models.functions import Cast
+from django.db.models import Q, CharField, Value
+from django.db.models.functions import Cast, Concat
 from django.utils import timezone
 
 from apps.projects.exceptions import (
@@ -496,6 +496,27 @@ class IssueService:
                 issue.issue_type,
             )
             raise
+
+    @staticmethod
+    def list_work_item_options(*, project, search=None):
+        issues = (
+            Issue.objects.filter(project=project, deleted_at__isnull=True)
+            .exclude(issue_type="subtask")
+            .select_related("status")
+        )
+
+        if search:
+            search = search.strip()
+
+            issues = issues.annotate(
+                issue_key=Concat(
+                    Value(f"{project.key}-"),
+                    Cast("issue_number", output_field=CharField()),
+                    output_field=CharField(),
+                )
+            ).filter(Q(title__icontains=search) | Q(issue_key__icontains=search))
+
+        return issues.order_by("issue_number")
 
     @staticmethod
     def _validate_parent(*, issue_type, parent):

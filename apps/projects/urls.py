@@ -32,6 +32,7 @@ from .views import (
     KanbanSprintFilterView,
     IssueSprintHistoryView,
     IssueCommentDetailView,
+    WorkItemOptionListView,
     IssueAttachmentListView,
     KanbanIssuePositionView,
     ProjectArchiveStatusView,
@@ -151,6 +152,11 @@ urlpatterns = [
         name="kanban-issue-position",
     ),
     path("<slug:project_slug>/issues/", IssueView.as_view(), name="issues"),
+    path(
+        "<slug:project_slug>/work-item-options/",
+        WorkItemOptionListView.as_view(),
+        name="work-item-options",
+    ),
     path(
         "<slug:project_slug>/issues/<int:issue_id>/",
         IssueDetailView.as_view(),
