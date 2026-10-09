@@ -10,7 +10,15 @@ class GitHubWebhookProcessor:
     def process_delivery(cls, *, delivery):
         try:
             with transaction.atomic():
-                cls._dispatch_event(delivery=delivery)
+                repositories = cls._get_matching_repositories(delivery=delivery)
+
+                if not repositories:
+                    raise ValueError(
+                        "No connected VURN repositories match this delivery."
+                    )
+
+                for repository in repositories:
+                    cls._dispatch_event(delivery=delivery, repository=repository)
 
                 delivery.status = "processed"
                 delivery.error_message = None
@@ -23,24 +31,34 @@ class GitHubWebhookProcessor:
             delivery.save(update_fields=["status", "error_message", "processed_at"])
             raise
 
+    @staticmethod
+    def _get_matching_repositories(*, delivery):
+        payload = delivery.payload
+        repository_data = payload.get("repository") or {}
+        installation_data = payload.get("installation") or {}
+
+        repository_id = repository_data.get("id")
+        installation_id = installation_data.get("id")
+
+        if not repository_id or not installation_id:
+            raise ValueError(
+                "Webhook payload is missing repository or installation data."
+            )
+
+        return list(
+            GitRepository.objects.filter(
+                external_repository_id=str(repository_id),
+                integration__provider="github",
+                integration__installation__external_installation_id=str(
+                    installation_id
+                ),
+            ).select_related("integration")
+        )
+
     @classmethod
-    def _dispatch_event(cls, *, delivery):
+    def _dispatch_event(cls, *, delivery, repository):
         payload = delivery.payload
         event_type = delivery.event_type
-
-        repository_data = payload.get("repository") or {}
-        external_repository_id = repository_data.get("id")
-
-        if not external_repository_id:
-            raise ValueError("Webhook payload has no repository ID.")
-
-        repository = GitRepository.objects.filter(
-            integration=delivery.integration,
-            external_repository_id=str(external_repository_id),
-        ).first()
-
-        if repository is None:
-            raise ValueError("Repository is not connected to this VURN integration.")
 
         if event_type == "push":
             cls._sync_commits(repository=repository, payload=payload)
@@ -48,8 +66,6 @@ class GitHubWebhookProcessor:
             cls._sync_pull_request(repository=repository, payload=payload)
         elif event_type == "issues":
             cls._sync_issue(repository=repository, payload=payload)
-        else:
-            return
 
     @staticmethod
     def _sync_commits(*, repository, payload):

@@ -41,17 +41,13 @@ class GitHubWebhookService:
                 "Webhook payload is missing installation or repository data."
             )
 
-        repository = (
-            GitRepository.objects.select_related("integration")
-            .filter(
-                external_repository_id=str(repository_id),
-                integration__provider="github",
-                integration__installation__external_installation_id=str(
-                    installation_id
-                ),
-            )
-            .first()
-        )
+        repositories = GitRepository.objects.filter(
+            external_repository_id=str(repository_id),
+            integration__provider="github",
+            integration__installation__external_installation_id=str(installation_id),
+        ).select_related("integration")
+
+        repository = repositories.first()
 
         if repository is None:
             raise GitIntegrationException(
