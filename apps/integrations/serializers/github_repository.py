@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.projects.models import Issue
+
 from ..models import GitCommit, GitIssue, GitIssueWorkItem, GitRepository
 
 
@@ -105,6 +107,9 @@ class GitIssueQuerySerializer(serializers.Serializer):
 
 
 class GitIssueSerializer(serializers.ModelSerializer):
+    is_linked = serializers.SerializerMethodField()
+    work_item = serializers.SerializerMethodField()
+
     class Meta:
         model = GitIssue
         fields = [
@@ -120,7 +125,20 @@ class GitIssueSerializer(serializers.ModelSerializer):
             "closed_at",
             "created_at",
             "updated_at",
+            "is_linked",
+            "work_item",
         ]
+
+    def get_is_linked(self, obj):
+        return getattr(obj, "work_item_link", None) is not None
+
+    def get_work_item(self, obj):
+        link = getattr(obj, "work_item_link", None)
+
+        if link is None or link.issue.deleted_at is not None:
+            return None
+
+        return LinkedWorkItemSerializer(link.issue).data
 
 
 class GitIssueLinkSerializer(serializers.Serializer):
@@ -161,3 +179,12 @@ class GitIssueWorkItemSerializer(serializers.ModelSerializer):
             "linked_at",
         ]
         read_only_fields = fields
+
+
+class LinkedWorkItemSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(read_only=True)
+    status_name = serializers.CharField(source="status.name", read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ["id", "key", "issue_number", "title", "issue_type", "status_name"]

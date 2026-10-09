@@ -68,4 +68,10 @@ class GitIssueService:
 
             issues.append(issue)
 
-        return issues
+        return (
+            GitIssue.objects.filter(id__in=[issue.id for issue in issues])
+            .select_related(
+                "work_item_link__issue__project", "work_item_link__issue__status"
+            )
+            .order_by("issue_number")
+        )
