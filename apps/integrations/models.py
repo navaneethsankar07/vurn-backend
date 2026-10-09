@@ -232,6 +232,20 @@ class GitCommitIssue(models.Model):
         ]
 
 
+class GitIssueWorkItem(models.Model):
+    git_issue = models.OneToOneField(
+        "integrations.GitIssue", on_delete=models.CASCADE, related_name="work_item_link"
+    )
+    issue = models.ForeignKey(
+        "projects.Issue", on_delete=models.CASCADE, related_name="git_issue_links"
+    )
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "git_issue_work_items"
+        indexes = [models.Index(fields=("issue",), name="idx_git_issue_work_item")]
+
+
 class GitPullRequestIssue(models.Model):
     pull_request = models.ForeignKey(
         GitPullRequest, on_delete=models.CASCADE, related_name="issue_links"

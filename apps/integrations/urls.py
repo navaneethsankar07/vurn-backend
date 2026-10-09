@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    GitIssueLinkView,
     GitHubConnectView,
     GitHubIssueListView,
     GitHubCommitListView,
@@ -63,5 +64,10 @@ urlpatterns = [
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/issues/",
         GitHubIssueListView.as_view(),
         name="github-repository-issues",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/issues/<int:git_issue_id>/link/",
+        GitIssueLinkView.as_view(),
+        name="github-issue-link",
     ),
 ]

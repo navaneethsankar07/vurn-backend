@@ -6,9 +6,20 @@ from rest_framework.views import APIView
 from apps.projects.models import Project
 from apps.projects.services.project_access_service import ProjectAccessService
 
-from ..exceptions import GitRepositoryException
-from ..serializers import GitIssueQuerySerializer, GitIssueSerializer
+
+from ..exceptions import (
+    GitIssueAlreadyLinkedException,
+    GitIssueAutoMatchException,
+    GitRepositoryException,
+)
+from ..serializers import (
+    GitIssueSerializer,
+    GitIssueLinkSerializer,
+    GitIssueQuerySerializer,
+    GitIssueWorkItemSerializer,
+)
 from ..services.issue_service import GitIssueService
+from ..services.git_issue_link_service import GitIssueLinkService
 
 
 class GitHubIssueListView(APIView):
@@ -71,4 +82,58 @@ class GitHubIssueListView(APIView):
                 "issues": serializer.data,
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class GitIssueLinkView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(
+        self, request, organization_slug, project_slug, repository_id, git_issue_id
+    ):
+        project = (
+            Project.objects.select_related("organization")
+            .filter(
+                organization__slug=organization_slug,
+                slug=project_slug,
+                deleted_at__isnull=True,
+                is_archived=False,
+            )
+            .first()
+        )
+
+        if project is None:
+            return Response(
+                {"detail": "Project not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        ProjectAccessService.validate_project_edit_access(
+            project=project, user=request.user
+        )
+
+        serializer = GitIssueLinkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            link, matched_by = GitIssueLinkService.link_work_item(
+                project=project,
+                repository_id=repository_id,
+                git_issue_id=git_issue_id,
+                issue_id=serializer.validated_data.get("issue_id"),
+                auto_match=serializer.validated_data.get("auto_match", False),
+            )
+        except GitIssueAlreadyLinkedException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+        except GitIssueAutoMatchException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except GitRepositoryException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "message": "GitHub issue linked successfully.",
+                "matched_by": matched_by,
+                "link": GitIssueWorkItemSerializer(link).data,
+            },
+            status=status.HTTP_201_CREATED,
         )

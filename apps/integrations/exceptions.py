@@ -24,3 +24,15 @@ class GitWebhookException(GitProviderException):
 
 class GitRepositoryAlreadyConnectedException(GitRepositoryException):
     pass
+
+
+class GitIssueLinkException(GitIntegrationException):
+    pass
+
+
+class GitIssueAlreadyLinkedException(GitIssueLinkException):
+    pass
+
+
+class GitIssueAutoMatchException(GitIssueLinkException):
+    pass

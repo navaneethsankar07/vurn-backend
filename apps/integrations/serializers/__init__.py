@@ -9,9 +9,11 @@ from .github_repository import (
     GitIssueSerializer,
     GitCommitSerializer,
     GitHubBranchSerializer,
+    GitIssueLinkSerializer,
     GitIssueQuerySerializer,
     GitCommitQuerySerializer,
     GitHubRepositorySerializer,
+    GitIssueWorkItemSerializer,
     GitHubRepositoryOverviewSerializer,
 )
 

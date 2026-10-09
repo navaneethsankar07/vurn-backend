@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import GitCommit, GitIssue, GitRepository
+from ..models import GitCommit, GitIssue, GitIssueWorkItem, GitRepository
 
 
 class GitHubRepositorySerializer(serializers.Serializer):
@@ -121,3 +121,43 @@ class GitIssueSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class GitIssueLinkSerializer(serializers.Serializer):
+    issue_id = serializers.IntegerField(required=False, min_value=1)
+    auto_match = serializers.BooleanField(required=False, default=False)
+
+    def validate(self, attrs):
+        issue_id = attrs.get("issue_id")
+        auto_match = attrs.get("auto_match", False)
+
+        if auto_match and issue_id is not None:
+            raise serializers.ValidationError(
+                "Provide issue_id or auto_match, not both."
+            )
+
+        if not auto_match and issue_id is None:
+            raise serializers.ValidationError(
+                "Provide an issue_id or enable auto_match."
+            )
+
+        return attrs
+
+
+class GitIssueWorkItemSerializer(serializers.ModelSerializer):
+    issue_key = serializers.CharField(source="issue.key", read_only=True)
+    issue_title = serializers.CharField(source="issue.title", read_only=True)
+    issue_type = serializers.CharField(source="issue.issue_type", read_only=True)
+
+    class Meta:
+        model = GitIssueWorkItem
+        fields = [
+            "id",
+            "git_issue",
+            "issue",
+            "issue_key",
+            "issue_title",
+            "issue_type",
+            "linked_at",
+        ]
+        read_only_fields = fields
