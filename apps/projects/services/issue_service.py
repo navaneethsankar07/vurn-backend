@@ -5,7 +5,10 @@ from django.db.models import Q, CharField, Value
 from django.db.models.functions import Cast, Concat
 from django.utils import timezone
 
-from apps.projects.exceptions import (
+from apps.notifications.models import NotificationType
+from apps.notifications.services.notification_service import NotificationService
+
+from ..exceptions import (
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -282,6 +285,15 @@ class IssueService:
 
         if sprint is not None:
             IssueSprintHistoryService.create_history(issue=issue, sprint=sprint)
+
+        NotificationService.notify_project_members(
+            project=project,
+            notification_type=NotificationType.ISSUE_CREATED,
+            title="New issue created",
+            message=f"{issue.key}: {issue.title}",
+            actor=user,
+            issue=issue,
+        )
 
         return issue
 

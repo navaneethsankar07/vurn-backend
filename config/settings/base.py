@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.organizations.apps.OrganizationsConfig",
     "apps.projects.apps.ProjectsConfig",
     "apps.integrations.apps.IntegrationsConfig",
+    "apps.notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [

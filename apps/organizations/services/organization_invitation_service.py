@@ -1,6 +1,8 @@
 from django.db import transaction
 from django.utils import timezone
 from apps.accounts.models import User
+from apps.notifications.models import NotificationType
+from apps.notifications.services.notification_service import NotificationService
 
 from ..constants import ORGANIZATION_INVITATION_EXPIRY_DELTA
 from ..exceptions import (
@@ -85,6 +87,18 @@ class OrganizationInvitationService:
             invited_by=invited_by,
             expires_at=(timezone.now() + ORGANIZATION_INVITATION_EXPIRY_DELTA),
         )
+        if user is not None:
+            NotificationService.create_notification(
+                user=user,
+                notification_type=NotificationType.ORGANIZATION_INVITATION,
+                title="Organization invitation",
+                message=(
+                    f"{invited_by.get_full_name() or invited_by.email} "
+                    f"invited you to join {organization.name}."
+                ),
+                organization=organization,
+                invitation=invitation,
+            )
 
         return invitation
 

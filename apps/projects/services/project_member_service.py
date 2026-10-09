@@ -3,6 +3,8 @@ from django.db import IntegrityError, transaction
 from apps.accounts.models import User
 from apps.organizations.models import OrganizationMember
 from apps.projects.models import ProjectMember
+from apps.notifications.models import NotificationType
+from apps.notifications.services.notification_service import NotificationService
 
 from ..exceptions import (
     ProjectMemberAlreadyExistsException,
@@ -62,13 +64,23 @@ class ProjectMemberService:
                     project_role = "Member"
 
         try:
-            return ProjectMember.objects.create(
+            project_member = ProjectMember.objects.create(
                 project=project, user=user, project_role=project_role
             )
         except IntegrityError as exc:
             raise ProjectMemberAlreadyExistsException(
                 "User is already a member of this project."
             ) from exc
+
+        NotificationService.create_notification(
+            user=user,
+            notification_type=NotificationType.PROJECT_MEMBER_ADDED,
+            title="Added to a project",
+            message=f"You have been added to {project.name}.",
+            project=project,
+        )
+
+        return project_member
 
     @staticmethod
     def list_members(*, project, search=None, sort="recently_added"):

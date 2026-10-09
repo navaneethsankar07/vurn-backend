@@ -4,6 +4,9 @@ import re
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
+from apps.notifications.models import NotificationType
+from apps.notifications.services.notification_service import NotificationService
+
 
 from ..exceptions import (
     SprintAlreadyExistsException,
@@ -91,7 +94,7 @@ class SprintService:
         )
 
         try:
-            return Sprint.objects.create(
+            sprint = Sprint.objects.create(
                 project=project,
                 name=name,
                 goal=goal,
@@ -104,6 +107,17 @@ class SprintService:
             )
         except IntegrityError as exc:
             raise SprintAlreadyExistsException("Unable to create the sprint.") from exc
+
+        NotificationService.notify_project_members(
+            project=project,
+            notification_type=NotificationType.SPRINT_CREATED,
+            title="New sprint created",
+            message=f"Sprint {sprint.name} has been created.",
+            actor=user,
+            sprint=sprint,
+        )
+
+        return sprint
 
     @staticmethod
     def _validate_sprint_dates(*, project, start_date, end_date, sprint_id=None):
@@ -180,7 +194,7 @@ class SprintService:
 
     @staticmethod
     @transaction.atomic
-    def start_sprint(*, sprint):
+    def start_sprint(*, sprint, user):
         if sprint.status != "planned":
             raise SprintInvalidException("Only planned sprints can be started.")
 
@@ -195,6 +209,15 @@ class SprintService:
 
         sprint.status = "active"
         sprint.save(update_fields=["status", "updated_at"])
+
+        NotificationService.notify_project_members(
+            project=sprint.project,
+            notification_type=NotificationType.SPRINT_STARTED,
+            title="Sprint started",
+            message=f"Sprint {sprint.name} has started.",
+            actor=user,
+            sprint=sprint,
+        )
 
         return sprint
 
