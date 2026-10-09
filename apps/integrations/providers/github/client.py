@@ -105,3 +105,57 @@ class GitHubClient:
         pagination = self._parse_pagination_headers(headers)
 
         return {"pull_requests": pull_requests, "pagination": pagination}
+
+    def get_issues(
+        self,
+        *,
+        owner,
+        repository,
+        state="open",
+        sort="created",
+        direction="desc",
+        page=1,
+        per_page=30,
+    ):
+        issues = []
+        github_page = 1
+        required_count = page * per_page
+        pagination = {"next": None, "previous": None, "first": None, "last": None}
+
+        while len(issues) < required_count:
+            params = {
+                "state": state,
+                "sort": sort,
+                "direction": direction,
+                "page": github_page,
+                "per_page": 100,
+            }
+
+            results, headers = self._request(
+                method="GET",
+                endpoint=f"/repos/{owner}/{repository}/issues",
+                params=params,
+                return_headers=True,
+            )
+
+            issues.extend(issue for issue in results if "pull_request" not in issue)
+
+            pagination = self._parse_pagination_headers(headers)
+
+            if pagination["next"] is None:
+                break
+
+            github_page += 1
+
+        start = (page - 1) * per_page
+        page_issues = issues[start : start + per_page]
+
+        has_next = len(issues) > start + per_page
+
+        return {
+            "issues": page_issues,
+            "pagination": {
+                "next_page": page + 1 if has_next else None,
+                "previous_page": page - 1 if page > 1 else None,
+            },
+        }

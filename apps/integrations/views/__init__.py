@@ -10,3 +10,4 @@ from .github_repository import (
 )
 
 from .github_pull_request import GitHubPullRequestListView
+from .github_issue import GitHubIssueListView

@@ -16,6 +16,15 @@ class GitPullRequestQuery:
     per_page: int = 30
 
 
+@dataclass
+class GitIssueQuery:
+    state: str = "open"
+    sort: str = "created"
+    direction: str = "desc"
+    page: int = 1
+    per_page: int = 30
+
+
 class GitProvider(ABC):
 
     @abstractmethod
@@ -36,6 +45,10 @@ class GitProvider(ABC):
 
     @abstractmethod
     def get_pull_requests(self, repository, query):
+        pass
+
+    @abstractmethod
+    def get_issues(self, repository, query):
         pass
 
     @abstractmethod

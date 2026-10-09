@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import GitCommit, GitRepository
+from ..models import GitCommit, GitIssue, GitRepository
 
 
 class GitHubRepositorySerializer(serializers.Serializer):
@@ -83,3 +83,41 @@ class GitHubBranchSerializer(serializers.Serializer):
     name = serializers.CharField()
     protected = serializers.BooleanField()
     is_default = serializers.BooleanField()
+
+
+from rest_framework import serializers
+
+
+class GitIssueQuerySerializer(serializers.Serializer):
+    state = serializers.ChoiceField(
+        choices=("open", "closed", "all"), required=False, default="open"
+    )
+    sort = serializers.ChoiceField(
+        choices=("created", "updated", "comments"), required=False, default="created"
+    )
+    direction = serializers.ChoiceField(
+        choices=("asc", "desc"), required=False, default="desc"
+    )
+    page = serializers.IntegerField(required=False, min_value=1, default=1)
+    page_size = serializers.IntegerField(
+        required=False, min_value=1, max_value=100, default=5
+    )
+
+
+class GitIssueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GitIssue
+        fields = [
+            "id",
+            "external_id",
+            "issue_number",
+            "title",
+            "description",
+            "state",
+            "author_username",
+            "url",
+            "opened_at",
+            "closed_at",
+            "created_at",
+            "updated_at",
+        ]

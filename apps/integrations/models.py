@@ -174,6 +174,42 @@ class GitPullRequest(models.Model):
         return f"{self.repository.full_name}#{self.pr_number}"
 
 
+class GitIssue(models.Model):
+    repository = models.ForeignKey(
+        "integrations.GitRepository", on_delete=models.CASCADE, related_name="issues"
+    )
+    external_id = models.CharField(max_length=100)
+    issue_number = models.PositiveIntegerField()
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    state = models.CharField(max_length=20)
+    author_username = models.CharField(max_length=255, blank=True, null=True)
+    url = models.URLField(max_length=1000)
+    opened_at = models.DateTimeField()
+    closed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "git_issues"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("repository", "issue_number"),
+                name="uq_git_issue_repository_number",
+            ),
+            models.UniqueConstraint(
+                fields=("repository", "external_id"),
+                name="uq_git_issue_repository_external_id",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("repository",), name="idx_git_issues_repository"),
+            models.Index(
+                fields=("repository", "state"), name="idx_git_issues_repo_state"
+            ),
+        ]
+
+
 class GitCommitIssue(models.Model):
     commit = models.ForeignKey(
         GitCommit, on_delete=models.CASCADE, related_name="issue_links"

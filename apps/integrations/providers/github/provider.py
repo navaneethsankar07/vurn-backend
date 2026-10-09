@@ -64,6 +64,19 @@ class GitHubProvider(GitProvider):
             per_page=query.per_page,
         )
 
+    def get_issues(self, repository, query):
+        client = self._get_client()
+
+        return client.get_issues(
+            owner=repository.owner,
+            repository=repository.name,
+            state=query.state,
+            sort=query.sort,
+            direction=query.direction,
+            page=query.page,
+            per_page=query.per_page,
+        )
+
     def create_webhook(self, repository):
         raise NotImplementedError
 

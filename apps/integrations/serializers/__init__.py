@@ -6,8 +6,10 @@ from .github_repository_connection import (
 )
 
 from .github_repository import (
+    GitIssueSerializer,
     GitCommitSerializer,
     GitHubBranchSerializer,
+    GitIssueQuerySerializer,
     GitCommitQuerySerializer,
     GitHubRepositorySerializer,
     GitHubRepositoryOverviewSerializer,
