@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     GitIssueLinkView,
     GitHubConnectView,
+    GitHubWebhookView,
     GitHubIssueListView,
     GitHubCommitListView,
     GitHubBranchListView,
@@ -29,6 +30,11 @@ urlpatterns = [
         "integrations/github/complete/",
         GitHubInstallationCompleteView.as_view(),
         name="github-installation-complete",
+    ),
+    path(
+        "integrations/github/webhook/",
+        GitHubWebhookView.as_view(),
+        name="github-webhook",
     ),
     path(
         "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",
