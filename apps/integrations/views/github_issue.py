@@ -5,11 +5,17 @@ from rest_framework.views import APIView
 
 from apps.projects.models import Project
 from apps.projects.services.project_access_service import ProjectAccessService
+from apps.organizations.exceptions import OrganizationNotFoundException
+from apps.organizations.services.organization_service import OrganizationService
+from apps.projects.exceptions import ProjectNotFoundException
+from apps.projects.services.project_service import ProjectService
 
 
 from ..exceptions import (
     GitIssueAlreadyLinkedException,
     GitIssueAutoMatchException,
+    GitIssueClosedException,
+    GitIssueLinkLimitException,
     GitRepositoryException,
 )
 from ..serializers import (
@@ -91,21 +97,17 @@ class GitIssueLinkView(APIView):
     def post(
         self, request, organization_slug, project_slug, repository_id, git_issue_id
     ):
-        project = (
-            Project.objects.select_related("organization")
-            .filter(
-                organization__slug=organization_slug,
-                slug=project_slug,
-                deleted_at__isnull=True,
-                is_archived=False,
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
             )
-            .first()
-        )
-
-        if project is None:
-            return Response(
-                {"detail": "Project not found."}, status=status.HTTP_404_NOT_FOUND
+            project = ProjectService.get_project(
+                organization=organization, slug=project_slug
             )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         ProjectAccessService.validate_project_edit_access(
             project=project, user=request.user
@@ -122,12 +124,16 @@ class GitIssueLinkView(APIView):
                 issue_id=serializer.validated_data.get("issue_id"),
                 auto_match=serializer.validated_data.get("auto_match", False),
             )
+        except GitIssueClosedException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except GitIssueAlreadyLinkedException as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+            return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
         except GitIssueAutoMatchException as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         except GitRepositoryException as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except GitIssueLinkLimitException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_409_CONFLICT)
 
         return Response(
             {

@@ -253,19 +253,16 @@ class IssueSprintHistoryView(APIView):
 class WorkItemOptionListView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, organization_slug, project_slug):
+    def get(self, request, slug, project_slug):
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user, slug=organization_slug
+                user=request.user, slug=slug
             )
-
             project = ProjectService.get_project(
                 organization=organization, slug=project_slug
             )
-
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-
         except ProjectNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
@@ -273,7 +270,7 @@ class WorkItemOptionListView(APIView):
             project=project, user=request.user
         )
 
-        search = request.query_params.get("search", "").strip()
+        search = request.query_params.get("search")
 
         issues = IssueService.list_work_item_options(
             project=project, search=search or None
@@ -281,7 +278,6 @@ class WorkItemOptionListView(APIView):
 
         paginator = StandardPagination()
         page = paginator.paginate_queryset(issues, request)
-
         serializer = WorkItemOptionSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)

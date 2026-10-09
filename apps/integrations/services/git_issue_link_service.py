@@ -5,6 +5,8 @@ from apps.projects.models import Issue
 from ..exceptions import (
     GitIssueAlreadyLinkedException,
     GitIssueAutoMatchException,
+    GitIssueClosedException,
+    GitIssueLinkLimitException,
     GitRepositoryException,
 )
 from ..models import GitIssue, GitIssueWorkItem
@@ -12,7 +14,6 @@ from .repository_service import GitRepositoryService
 
 
 class GitIssueLinkService:
-
     @classmethod
     @transaction.atomic
     def link_work_item(
@@ -33,6 +34,11 @@ class GitIssueLinkService:
         if git_issue is None:
             raise GitRepositoryException("GitHub issue not found.")
 
+        if git_issue.state == "closed":
+            raise GitIssueClosedException(
+                "Cannot link a closed GitHub issue to a work item."
+            )
+
         existing_link = (
             GitIssueWorkItem.objects.select_related("issue")
             .filter(git_issue=git_issue)
@@ -50,7 +56,7 @@ class GitIssueLinkService:
 
         if auto_match:
             matches = list(
-                Issue.objects.filter(
+                Issue.objects.select_for_update().filter(
                     project=project,
                     deleted_at__isnull=True,
                     title__iexact=git_issue.title,
@@ -65,16 +71,24 @@ class GitIssueLinkService:
 
             work_item = matches[0]
             matched_by = "title"
-
         else:
-            work_item = Issue.objects.filter(
-                id=issue_id, project=project, deleted_at__isnull=True
-            ).first()
+            work_item = (
+                Issue.objects.select_for_update()
+                .filter(id=issue_id, project=project, deleted_at__isnull=True)
+                .first()
+            )
 
             if work_item is None:
                 raise GitIssueAutoMatchException("Work item not found in this project.")
 
             matched_by = "manual"
+
+        linked_count = GitIssueWorkItem.objects.filter(issue=work_item).count()
+
+        if linked_count >= 5:
+            raise GitIssueLinkLimitException(
+                "A work item can have a maximum of 5 linked GitHub issues."
+            )
 
         try:
             link = GitIssueWorkItem.objects.create(git_issue=git_issue, issue=work_item)

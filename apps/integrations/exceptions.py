@@ -30,9 +30,17 @@ class GitIssueLinkException(GitIntegrationException):
     pass
 
 
+class GitIssueClosedException(GitIssueLinkException):
+    pass
+
+
 class GitIssueAlreadyLinkedException(GitIssueLinkException):
     pass
 
 
 class GitIssueAutoMatchException(GitIssueLinkException):
+    pass
+
+
+class GitIssueLinkLimitException(GitIssueLinkException):
     pass

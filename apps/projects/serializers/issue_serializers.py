@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from apps.integrations.serializers.github_repository import (
+    GitIssueWorkItemDetailSerializer,
+)
+
 from .issue_label_serializers import LabelSerializer
 
 from ..constants import ISSUE_PRIORITY_CHOICES, ISSUE_SORT_CHOICES, ISSUE_TYPE_CHOICES
@@ -84,6 +88,9 @@ class IssueResponseSerializer(serializers.ModelSerializer):
     )
     reporter_name = serializers.CharField(source="reporter.full_name", read_only=True)
     labels = LabelSerializer(many=True, read_only=True)
+    linked_github_issues = GitIssueWorkItemDetailSerializer(
+        source="git_issue_links", many=True, read_only=True
+    )
 
     class Meta:
         model = Issue
@@ -111,6 +118,7 @@ class IssueResponseSerializer(serializers.ModelSerializer):
             "story_points",
             "position",
             "labels",
+            "linked_github_issues",
             "created_at",
             "updated_at",
         ]

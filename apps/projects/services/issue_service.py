@@ -27,7 +27,7 @@ class IssueService:
             .select_related(
                 "project", "parent", "sprint", "status", "assignee", "reporter"
             )
-            .prefetch_related("labels")
+            .prefetch_related("labels", "git_issue_links__git_issue__repository")
             .first()
         )
 

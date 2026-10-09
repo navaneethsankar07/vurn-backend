@@ -14,6 +14,8 @@ from .github_repository import (
     GitCommitQuerySerializer,
     GitHubRepositorySerializer,
     GitIssueWorkItemSerializer,
+    LinkedGitHubIssueSerializer,
+    GitIssueWorkItemDetailSerializer,
     GitHubRepositoryOverviewSerializer,
 )
 

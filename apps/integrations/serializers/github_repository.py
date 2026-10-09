@@ -188,3 +188,30 @@ class LinkedWorkItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Issue
         fields = ["id", "key", "issue_number", "title", "issue_type", "status_name"]
+
+
+class LinkedGitHubIssueSerializer(serializers.ModelSerializer):
+    repository_name = serializers.CharField(
+        source="repository.full_name", read_only=True
+    )
+
+    class Meta:
+        model = GitIssue
+        fields = [
+            "id",
+            "external_id",
+            "issue_number",
+            "title",
+            "state",
+            "author_username",
+            "url",
+            "repository_name",
+        ]
+
+
+class GitIssueWorkItemDetailSerializer(serializers.ModelSerializer):
+    git_issue = LinkedGitHubIssueSerializer(read_only=True)
+
+    class Meta:
+        model = GitIssueWorkItem
+        fields = ["id", "linked_at", "git_issue"]
