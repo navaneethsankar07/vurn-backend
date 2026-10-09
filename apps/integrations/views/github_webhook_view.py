@@ -5,8 +5,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
 from ..exceptions import GitIntegrationException
 from ..services.github_webhook_service import GitHubWebhookService
+from ..services.github_webhook_processor import GitHubWebhookProcessor
 
 
 class GitHubWebhookView(APIView):
@@ -46,16 +48,27 @@ class GitHubWebhookView(APIView):
         except GitIntegrationException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        delivery = result["delivery"]
+
+        if result["created"] or delivery.status in ("received", "failed"):
+            try:
+                GitHubWebhookProcessor.process_delivery(delivery=delivery)
+            except Exception:
+                return Response(
+                    {"error": "Webhook processing failed. Please retry delivery."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
         return Response(
             {
                 "message": (
-                    "Webhook delivery already received."
-                    if not result["created"]
-                    else "Webhook delivery received successfully."
+                    "Webhook delivery processed successfully."
+                    if delivery.status == "processed"
+                    else "Webhook delivery already received."
                 ),
                 "delivery_id": delivery_id,
                 "event": event_type,
-                "duplicate": not result["created"],
+                "status": delivery.status,
             },
             status=status.HTTP_200_OK,
         )

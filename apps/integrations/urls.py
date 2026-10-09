@@ -32,6 +32,11 @@ urlpatterns = [
         name="github-installation-complete",
     ),
     path(
+        "integrations/github/webhook",
+        GitHubWebhookView.as_view(),
+        name="github-webhook-no-slash",
+    ),
+    path(
         "integrations/github/webhook/",
         GitHubWebhookView.as_view(),
         name="github-webhook",
