@@ -38,3 +38,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class FCMDeviceRegistrationSerializer(serializers.Serializer):
+    token = serializers.CharField(trim_whitespace=True, max_length=4096)

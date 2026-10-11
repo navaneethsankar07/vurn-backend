@@ -1,6 +1,8 @@
 from django.urls import path
 
-from apps.notifications.views import (
+from .views import (
+    FCMDeviceRegistrationView,
+    FCMDeviceUnregistrationView,
     NotificationListView,
     NotificationMarkAllReadView,
     NotificationMarkReadView,
@@ -23,5 +25,15 @@ urlpatterns = [
         "<int:notification_id>/read/",
         NotificationMarkReadView.as_view(),
         name="notification-mark-read",
+    ),
+    path(
+        "devices/register/",
+        FCMDeviceRegistrationView.as_view(),
+        name="fcm-device-register",
+    ),
+    path(
+        "devices/unregister/",
+        FCMDeviceUnregistrationView.as_view(),
+        name="fcm-device-unregister",
     ),
 ]
