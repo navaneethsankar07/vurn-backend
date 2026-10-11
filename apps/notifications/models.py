@@ -73,3 +73,23 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user_id}: {self.title}"
+
+
+class FCMDevice(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fcm_devices"
+    )
+    token = models.TextField(unique=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "fcm_devices"
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="idx_fcm_user_active")
+        ]
+
+    def __str__(self):
+        return f"FCM device for user {self.user_id}"
