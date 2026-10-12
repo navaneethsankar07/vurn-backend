@@ -53,12 +53,16 @@ class NotificationService:
         issue=None,
         sprint=None
     ):
-        recipient_ids = ProjectMember.objects.filter(project=project).values_list(
-            "user_id", flat=True
+        recipient_ids = set(
+            ProjectMember.objects.filter(project=project).values_list(
+                "user_id", flat=True
+            )
         )
 
+        recipient_ids.update([project.owner_id, project.project_lead_id])
+
         if actor is not None:
-            recipient_ids = recipient_ids.exclude(user_id=actor.id)
+            recipient_ids.discard(actor.id)
 
         notifications = [
             Notification(
@@ -70,7 +74,7 @@ class NotificationService:
                 issue=issue,
                 sprint=sprint,
             )
-            for user_id in set(recipient_ids)
+            for user_id in recipient_ids
         ]
 
         if notifications:
