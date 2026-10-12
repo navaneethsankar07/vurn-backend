@@ -1,3 +1,4 @@
+from django.db import transaction
 from elasticsearch.helpers import bulk
 
 from apps.projects.models import Issue, Project, Sprint
@@ -145,3 +146,114 @@ class SearchIndexingService:
             )
 
         return success_count
+
+
+    @classmethod
+    def _save_document(cls, document):
+        client = SearchIndexManagementService.get_client()
+
+        client.index(
+            index=GLOBAL_SEARCH_INDEX,
+            id=document["id"],
+            document=document,
+        )
+
+    @classmethod
+    def _delete_document(cls, document_id):
+        client = SearchIndexManagementService.get_client()
+
+        client.options(ignore_status=404).delete(
+            index=GLOBAL_SEARCH_INDEX,
+            id=document_id,
+        )
+
+    @classmethod
+    def index_project(cls, project_id):
+        project = Project.objects.filter(
+            pk=project_id,
+            deleted_at__isnull=True,
+        ).first()
+
+        if project is None:
+            cls.delete_project_documents(project_id)
+            return
+
+        cls._save_document(cls._project_document(project))
+
+        for issue_id in Issue.objects.filter(
+            project_id=project_id
+        ).values_list("pk", flat=True).iterator():
+            cls.index_issue(issue_id)
+
+        for sprint_id in Sprint.objects.filter(
+            project_id=project_id
+        ).values_list("pk", flat=True).iterator():
+            cls.index_sprint(sprint_id)
+
+    @classmethod
+    def index_issue(cls, issue_id):
+        issue = Issue.objects.filter(
+            pk=issue_id,
+            deleted_at__isnull=True,
+            project__deleted_at__isnull=True,
+        ).select_related(
+            "project",
+            "project__organization",
+            "status",
+        ).first()
+
+        if issue is None:
+            cls._delete_document(f"issue-{issue_id}")
+            return
+
+        cls._save_document(cls._issue_document(issue))
+
+    @classmethod
+    def index_sprint(cls, sprint_id):
+        sprint = Sprint.objects.filter(
+            pk=sprint_id,
+            project__deleted_at__isnull=True,
+        ).select_related(
+            "project",
+            "project__organization",
+        ).first()
+
+        if sprint is None:
+            cls._delete_document(f"sprint-{sprint_id}")
+            return
+
+        cls._save_document(cls._sprint_document(sprint))
+
+    @classmethod
+    def delete_project_documents(cls, project_id):
+        client = SearchIndexManagementService.get_client()
+
+        client.options(ignore_status=404).delete_by_query(
+            index=GLOBAL_SEARCH_INDEX,
+            query={
+                "term": {
+                    "project_id": str(project_id)
+                }
+            },
+            refresh=True,
+            conflicts="proceed",
+        )
+
+    @classmethod
+    def schedule_indexing(cls, entity_type, entity_id):
+        indexers = {
+            "project": cls.index_project,
+            "issue": cls.index_issue,
+            "sprint": cls.index_sprint,
+        }
+
+        if entity_type not in indexers:
+            raise ValueError(
+                f"Unsupported search entity type: {entity_type}"
+            )
+
+        indexer = indexers[entity_type]
+
+        transaction.on_commit(
+            lambda: indexer(entity_id)
+        )

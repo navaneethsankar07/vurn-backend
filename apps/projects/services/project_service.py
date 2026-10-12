@@ -5,6 +5,7 @@ from django.utils.text import slugify
 from django.utils import timezone
 
 from apps.shared.services.cloudinary_service import CloudinaryService
+from apps.search.services.indexing_service import SearchIndexingService
 
 from .workflow_service import WorkflowService
 
@@ -132,7 +133,8 @@ class ProjectService:
             )
 
             WorkflowService.create_default_workflow(project=project)
-            
+            SearchIndexingService.schedule_indexing("project", project.id)
+
         except IntegrityError as exc:
             raise ProjectAlreadyExistsException(
                 "Unable to create the project."
@@ -183,6 +185,7 @@ class ProjectService:
 
         try:
             project.save()
+            SearchIndexingService.schedule_indexing("project", project.id)
         except IntegrityError as exc:
             raise ProjectAlreadyExistsException(
                 "Unable to update the project because "
@@ -198,6 +201,7 @@ class ProjectService:
         project.save(
             update_fields=["is_archived", "updated_at"],
         )
+        SearchIndexingService.schedule_indexing("project", project.id)
         return project
 
     @staticmethod
@@ -208,6 +212,7 @@ class ProjectService:
         project.save(
             update_fields=["deleted_at", "is_archived", "updated_at"],
         )
+        SearchIndexingService.schedule_indexing("project", project.id)
         return project
 
     @staticmethod

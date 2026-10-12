@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from apps.notifications.models import NotificationType
 from apps.notifications.services.notification_service import NotificationService
-
+from apps.search.services.indexing_service import SearchIndexingService
 
 from ..exceptions import (
     SprintAlreadyExistsException,
@@ -117,6 +117,8 @@ class SprintService:
             sprint=sprint,
         )
 
+        SearchIndexingService.schedule_indexing("sprint", sprint.id)
+
         return sprint
 
     @staticmethod
@@ -187,6 +189,7 @@ class SprintService:
 
         try:
             sprint.save()
+            SearchIndexingService.schedule_indexing("sprint", sprint.id)
         except IntegrityError as exc:
             raise SprintAlreadyExistsException("Unable to update the sprint.") from exc
 
@@ -209,6 +212,7 @@ class SprintService:
 
         sprint.status = "active"
         sprint.save(update_fields=["status", "updated_at"])
+        SearchIndexingService.schedule_indexing("sprint", sprint.id)
 
         NotificationService.notify_project_members(
             project=sprint.project,
@@ -347,6 +351,7 @@ class SprintService:
         ]
 
         target_sprint = None
+        issues_to_reindex = set()
 
         if incomplete_issues:
             if incomplete_issue_action is None:
@@ -379,12 +384,19 @@ class SprintService:
             if target_sprint is None:
                 Issue.objects.filter(id__in=incomplete_issue_ids).update(sprint=None)
 
-                Issue.objects.filter(
-                    project=project,
-                    parent_id__in=incomplete_issue_ids,
-                    issue_type="subtask",
-                    deleted_at__isnull=True,
-                ).update(sprint=None)
+                subtask_ids = list(
+                    Issue.objects.filter(
+                        project=project,
+                        parent_id__in=incomplete_issue_ids,
+                        issue_type="subtask",
+                        deleted_at__isnull=True,
+                    ).values_list("id", flat=True)
+                )
+
+                Issue.objects.filter(id__in=subtask_ids).update(sprint=None)
+
+                issues_to_reindex.update(incomplete_issue_ids)
+                issues_to_reindex.update(subtask_ids)
             else:
                 incomplete_issues_with_subtasks = list(
                     Issue.objects.filter(id__in=incomplete_issue_ids)
@@ -398,6 +410,11 @@ class SprintService:
                         deleted_at__isnull=True,
                     )
                 )
+
+                issues_to_reindex.update(
+                    issue.id for issue in incomplete_issues_with_subtasks
+                )
+                issues_to_reindex.update(issue.id for issue in incomplete_subtasks)
 
                 Issue.objects.filter(id__in=incomplete_issue_ids).update(
                     sprint=target_sprint
@@ -434,6 +451,13 @@ class SprintService:
 
         sprint.status = "completed"
         sprint.save(update_fields=["status", "updated_at"])
+        SearchIndexingService.schedule_indexing("sprint", sprint.id)
+
+        for issue_id in issues_to_reindex:
+            SearchIndexingService.schedule_indexing("issue", issue_id)
+
+        if target_sprint is not None:
+            SearchIndexingService.schedule_indexing("sprint", target_sprint.id)
 
         return sprint, target_sprint
 

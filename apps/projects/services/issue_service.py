@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.notifications.models import NotificationType
 from apps.notifications.services.notification_service import NotificationService
+from apps.search.services.indexing_service import SearchIndexingService
 
 from ..exceptions import (
     IssueAlreadyExistsException,
@@ -286,6 +287,7 @@ class IssueService:
         if sprint is not None:
             IssueSprintHistoryService.create_history(issue=issue, sprint=sprint)
 
+        SearchIndexingService.schedule_indexing("issue", issue.id)
         NotificationService.notify_project_members(
             project=project,
             notification_type=NotificationType.ISSUE_CREATED,
@@ -404,6 +406,7 @@ class IssueService:
             setattr(issue, field, value)
 
         issue.save()
+        SearchIndexingService.schedule_indexing("issue", issue.id)
 
         if sprint_changed:
             subtasks = list(
@@ -500,6 +503,7 @@ class IssueService:
 
             issue.deleted_at = deleted_at
             issue.save(update_fields=["deleted_at", "updated_at"])
+            SearchIndexingService.schedule_indexing("issue", issue.id)
         except Exception:
             logger.exception(
                 "Failed to delete issue | issue=%s project=%s type=%s",
