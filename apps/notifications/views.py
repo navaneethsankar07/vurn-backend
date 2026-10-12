@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.shared.utils.pagination import StandardPagination
+
 from .serializers import FCMDeviceRegistrationSerializer, NotificationSerializer
 
 from .services.notification_service import NotificationService
@@ -14,10 +16,17 @@ class NotificationListView(APIView):
 
     def get(self, request):
         notifications = NotificationService.list_notifications(user=request.user)
-        serializer = NotificationSerializer(notifications, many=True)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(notifications, request, view=self)
+
+        serializer = NotificationSerializer(page, many=True)
 
         return Response(
             {
+                "count": paginator.page.paginator.count,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link(),
                 "unread_count": NotificationService.get_unread_count(user=request.user),
                 "results": serializer.data,
             }
