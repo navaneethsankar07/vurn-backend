@@ -246,3 +246,8 @@ GITHUB_WEBHOOK_SECRET = env("GITHUB_WEBHOOK_SECRET")
 # Firebase
 # -----------------------------------------------------------------------------
 FIREBASE_SERVICE_ACCOUNT_PATH = env("FIREBASE_SERVICE_ACCOUNT_PATH")
+
+# -----------------------------------------------------------------------------
+# ELASTICSEARCH
+# -----------------------------------------------------------------------------
+ELASTICSEARCH_URL = env("ELASTICSEARCH_URL")
