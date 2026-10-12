@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class SearchIndexingService:
+
     @staticmethod
     def _project_document(project):
         return {
@@ -18,7 +19,9 @@ class SearchIndexingService:
             "entity_type": "project",
             "entity_id": str(project.pk),
             "organization_id": str(project.organization_id),
+            "organization_slug": project.organization.slug,
             "project_id": str(project.pk),
+            "project_slug": project.slug,
             "project_key": project.key,
             "key": project.key,
             "slug": project.slug,
@@ -44,7 +47,9 @@ class SearchIndexingService:
             "entity_type": "issue",
             "entity_id": str(issue.pk),
             "organization_id": str(project.organization_id),
+            "organization_slug": project.organization.slug,
             "project_id": str(project.pk),
+            "project_slug": project.slug,
             "project_key": project.key,
             "identifier": issue.key,
             "title": issue.title,
@@ -66,7 +71,9 @@ class SearchIndexingService:
             "entity_type": "sprint",
             "entity_id": str(sprint.pk),
             "organization_id": str(project.organization_id),
+            "organization_slug": project.organization.slug,
             "project_id": str(project.pk),
+            "project_slug": project.slug,
             "project_key": project.key,
             "title": sprint.name,
             "description": sprint.description,
@@ -79,14 +86,25 @@ class SearchIndexingService:
 
     @classmethod
     def _get_documents(cls):
-        projects = Project.objects.filter(deleted_at__isnull=True)
+        projects = Project.objects.filter(deleted_at__isnull=True).select_related(
+            "organization"
+        )
+
         issues = Issue.objects.filter(
             deleted_at__isnull=True,
             project__deleted_at__isnull=True,
-        ).select_related("project", "status")
+        ).select_related(
+            "project",
+            "project__organization",
+            "status",
+        )
+
         sprints = Sprint.objects.filter(
             project__deleted_at__isnull=True
-        ).select_related("project")
+        ).select_related(
+            "project",
+            "project__organization",
+        )
 
         for project in projects.iterator():
             yield cls._project_document(project)

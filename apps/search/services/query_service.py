@@ -136,6 +136,8 @@ class SearchQueryService:
                     "entity_id": hit["_source"]["entity_id"],
                     "project_id": hit["_source"]["project_id"],
                     "project_key": hit["_source"].get("project_key"),
+                    "organization_slug": hit["_source"].get("organization_slug"),
+                    "project_slug": hit["_source"].get("project_slug"),
                     "key": hit["_source"].get("key"),
                     "identifier": hit["_source"].get("identifier"),
                     "title": hit["_source"]["title"],

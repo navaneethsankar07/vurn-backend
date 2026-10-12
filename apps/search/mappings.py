@@ -9,6 +9,8 @@ GLOBAL_SEARCH_MAPPING = {
         "organization_id": {"type": "keyword"},
         "project_id": {"type": "keyword"},
         "project_key": {"type": "keyword"},
+        "organization_slug": {"type": "keyword"},
+        "project_slug": {"type": "keyword"},
         "key": {"type": "keyword"},
         "slug": {"type": "keyword"},
         "identifier": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
