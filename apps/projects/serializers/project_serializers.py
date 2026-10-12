@@ -206,6 +206,7 @@ class ProjectDashboardSprintSerializer(serializers.ModelSerializer):
 
 
 class ProjectDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     name = serializers.CharField()
     key = serializers.CharField()
     status = serializers.CharField()

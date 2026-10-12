@@ -23,6 +23,7 @@ class ProjectDashboardService:
         )
 
         return {
+            "id": project.id,
             "name": project.name,
             "key": project.key,
             "status": project.status,

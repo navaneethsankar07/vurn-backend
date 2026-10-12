@@ -195,7 +195,7 @@ class SprintStartView(APIView):
             return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
 
         try:
-            sprint = SprintService.start_sprint(sprint=sprint)
+            sprint = SprintService.start_sprint(sprint=sprint, user=request.user)
         except SprintInvalidException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -52,8 +52,8 @@ from .views import (
 
 urlpatterns = [
     path("", ProjectView.as_view(), name="projects"),
-    path("<slug:project_slug>/", ProjectDetailView.as_view(), name="project-detail"),
     path("options/", ProjectOptionsView.as_view(), name="project-options"),
+    path("<slug:project_slug>/", ProjectDetailView.as_view(), name="project-detail"),
     path(
         "<slug:project_slug>/settings/",
         ProjectSettingsView.as_view(),

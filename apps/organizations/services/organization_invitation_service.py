@@ -93,7 +93,7 @@ class OrganizationInvitationService:
                 notification_type=NotificationType.ORGANIZATION_INVITATION,
                 title="Organization invitation",
                 message=(
-                    f"{invited_by.get_full_name() or invited_by.email} "
+                    f"{invited_by.full_name or invited_by.email} "
                     f"invited you to join {organization.name}."
                 ),
                 organization=organization,

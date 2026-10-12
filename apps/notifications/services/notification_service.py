@@ -1,8 +1,9 @@
 from django.db import transaction
 from django.utils import timezone
 
-from apps.notifications.models import Notification, NotificationType
+from ..models import Notification, NotificationType
 from apps.projects.models import ProjectMember
+from .push_delivery_service import PushDeliveryService
 
 
 class NotificationService:
@@ -19,7 +20,7 @@ class NotificationService:
         issue=None,
         sprint=None
     ):
-        return Notification.objects.create(
+        notification = Notification.objects.create(
             user=user,
             type=notification_type,
             title=title,
@@ -30,6 +31,16 @@ class NotificationService:
             issue=issue,
             sprint=sprint,
         )
+
+        transaction.on_commit(
+            lambda notification_id=notification.id: (
+                PushDeliveryService.send_notification(
+                    notification=Notification.objects.get(id=notification_id)
+                )
+            )
+        )
+
+        return notification
 
     @staticmethod
     def notify_project_members(
@@ -64,6 +75,13 @@ class NotificationService:
 
         if notifications:
             Notification.objects.bulk_create(notifications)
+
+            for notification in notifications:
+                transaction.on_commit(
+                    lambda notification_id=notification.id: PushDeliveryService.send_notification(
+                        notification=Notification.objects.get(id=notification_id)
+                    )
+                )
 
         return len(notifications)
 

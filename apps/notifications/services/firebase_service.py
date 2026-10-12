@@ -33,17 +33,16 @@ class FirebasePushService:
     def send_to_token(*, token, title, body, data=None):
         app = get_firebase_app()
 
-        message = messaging.Message(
-            notification=messaging.Notification(title=title, body=body),
-            data={
+        message_data = {
+            "title": title,
+            "body": body,
+            **{
                 str(key): str(value)
                 for key, value in (data or {}).items()
                 if value is not None
             },
-            token=token,
-            webpush=messaging.WebpushConfig(
-                notification=messaging.WebpushNotification(title=title, body=body)
-            ),
-        )
+        }
+
+        message = messaging.Message(data=message_data, token=token)
 
         return messaging.send(message, app=app)
