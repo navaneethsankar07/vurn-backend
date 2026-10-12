@@ -251,3 +251,13 @@ FIREBASE_SERVICE_ACCOUNT_PATH = env("FIREBASE_SERVICE_ACCOUNT_PATH")
 # ELASTICSEARCH
 # -----------------------------------------------------------------------------
 ELASTICSEARCH_URL = env("ELASTICSEARCH_URL")
+
+
+# -----------------------------------------------------------------------------
+# Celery Configurations
+# -----------------------------------------------------------------------------
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True

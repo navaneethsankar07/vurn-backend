@@ -1,11 +1,13 @@
+import logging
+
 from django.db import transaction
 from elasticsearch.helpers import bulk
 
 from apps.projects.models import Issue, Project, Sprint
-from apps.search.mappings import GLOBAL_SEARCH_INDEX
-from apps.search.services.index_management_service import (
-    SearchIndexManagementService,
-)
+from ..mappings import GLOBAL_SEARCH_INDEX
+from .index_management_service import SearchIndexManagementService
+
+logger = logging.getLogger(__name__)
 
 
 class SearchIndexingService:
@@ -147,7 +149,6 @@ class SearchIndexingService:
 
         return success_count
 
-
     @classmethod
     def _save_document(cls, document):
         client = SearchIndexManagementService.get_client()
@@ -180,27 +181,35 @@ class SearchIndexingService:
 
         cls._save_document(cls._project_document(project))
 
-        for issue_id in Issue.objects.filter(
-            project_id=project_id
-        ).values_list("pk", flat=True).iterator():
+        for issue_id in (
+            Issue.objects.filter(project_id=project_id)
+            .values_list("pk", flat=True)
+            .iterator()
+        ):
             cls.index_issue(issue_id)
 
-        for sprint_id in Sprint.objects.filter(
-            project_id=project_id
-        ).values_list("pk", flat=True).iterator():
+        for sprint_id in (
+            Sprint.objects.filter(project_id=project_id)
+            .values_list("pk", flat=True)
+            .iterator()
+        ):
             cls.index_sprint(sprint_id)
 
     @classmethod
     def index_issue(cls, issue_id):
-        issue = Issue.objects.filter(
-            pk=issue_id,
-            deleted_at__isnull=True,
-            project__deleted_at__isnull=True,
-        ).select_related(
-            "project",
-            "project__organization",
-            "status",
-        ).first()
+        issue = (
+            Issue.objects.filter(
+                pk=issue_id,
+                deleted_at__isnull=True,
+                project__deleted_at__isnull=True,
+            )
+            .select_related(
+                "project",
+                "project__organization",
+                "status",
+            )
+            .first()
+        )
 
         if issue is None:
             cls._delete_document(f"issue-{issue_id}")
@@ -210,13 +219,17 @@ class SearchIndexingService:
 
     @classmethod
     def index_sprint(cls, sprint_id):
-        sprint = Sprint.objects.filter(
-            pk=sprint_id,
-            project__deleted_at__isnull=True,
-        ).select_related(
-            "project",
-            "project__organization",
-        ).first()
+        sprint = (
+            Sprint.objects.filter(
+                pk=sprint_id,
+                project__deleted_at__isnull=True,
+            )
+            .select_related(
+                "project",
+                "project__organization",
+            )
+            .first()
+        )
 
         if sprint is None:
             cls._delete_document(f"sprint-{sprint_id}")
@@ -230,30 +243,29 @@ class SearchIndexingService:
 
         client.options(ignore_status=404).delete_by_query(
             index=GLOBAL_SEARCH_INDEX,
-            query={
-                "term": {
-                    "project_id": str(project_id)
-                }
-            },
+            query={"term": {"project_id": str(project_id)}},
             refresh=True,
             conflicts="proceed",
         )
 
     @classmethod
     def schedule_indexing(cls, entity_type, entity_id):
-        indexers = {
-            "project": cls.index_project,
-            "issue": cls.index_issue,
-            "sprint": cls.index_sprint,
-        }
+        supported_types = {"project", "issue", "sprint"}
 
-        if entity_type not in indexers:
-            raise ValueError(
-                f"Unsupported search entity type: {entity_type}"
-            )
+        if entity_type not in supported_types:
+            raise ValueError(f"Unsupported search entity type: {entity_type}")
 
-        indexer = indexers[entity_type]
+        def enqueue_task():
+            from apps.search.tasks import index_search_entity
 
-        transaction.on_commit(
-            lambda: indexer(entity_id)
-        )
+            try:
+                index_search_entity.delay(entity_type, entity_id)
+            except Exception:
+                logger.exception(
+                    "Failed to enqueue search indexing task | "
+                    "entity_type=%s entity_id=%s",
+                    entity_type,
+                    entity_id,
+                )
+
+        transaction.on_commit(enqueue_task)
