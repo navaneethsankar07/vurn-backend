@@ -18,6 +18,7 @@ GLOBAL_SEARCH_MAPPING = {
         "status": {"type": "keyword"},
         "priority": {"type": "keyword"},
         "issue_type": {"type": "keyword"},
+        "status_category": {"type": "keyword"},
         "is_archived": {"type": "boolean"},
         "sprint_id": {"type": "keyword"},
         "start_date": {"type": "date"},
