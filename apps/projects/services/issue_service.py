@@ -44,6 +44,22 @@ class IssueService:
         return issue
 
     @staticmethod
+    def get_issue_by_id(*, issue_id):
+        issue = (
+            Issue.objects.filter(id=issue_id, deleted_at__isnull=True)
+            .select_related(
+                "project", "parent", "sprint", "status", "assignee", "reporter"
+            )
+            .prefetch_related("labels", "git_issue_links__git_issue__repository")
+            .first()
+        )
+
+        if issue is None:
+            raise IssueNotFoundException("Issue not found.")
+
+        return issue
+
+    @staticmethod
     def list_issues(
         *,
         project,
