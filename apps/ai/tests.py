@@ -11,6 +11,7 @@ from apps.ai.exceptions import (
     AIProviderTimeoutError,
     AIStructuredOutputError,
 )
+from .services.story_point_estimation_service import StoryPointEstimationService
 from .views import TaskBreakdownView
 from .services.openrouter_service import OpenRouterService
 from .services.task_breakdown_service import TaskBreakdownService
@@ -210,3 +211,49 @@ class TaskBreakdownViewTests(SimpleTestCase):
         response = TaskBreakdownView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class FakeProject:
+    key = "VUR"
+
+
+class FakeIssue:
+    key = "VUR-10"
+    project = FakeProject()
+    issue_type = "task"
+    title = "Implement user login"
+    description = "Support email and password authentication."
+    priority = "medium"
+
+
+class StoryPointEstimationServiceTests(SimpleTestCase):
+    @patch(
+        "apps.ai.services.story_point_estimation_service.OpenRouterService.generate_json"
+    )
+    def test_returns_valid_estimate(self, mock_generate):
+        expected = {
+            "estimated_story_points": 5,
+            "rationale": "The task involves backend and frontend work.",
+            "assumptions": ["Authentication uses the existing user model."],
+            "confidence": "medium",
+        }
+        mock_generate.return_value = expected
+
+        result = StoryPointEstimationService.estimate(issue=FakeIssue())
+
+        self.assertEqual(result, expected)
+        mock_generate.assert_called_once()
+
+    @patch(
+        "apps.ai.services.story_point_estimation_service.OpenRouterService.generate_json"
+    )
+    def test_rejects_unsupported_estimate(self, mock_generate):
+        mock_generate.return_value = {
+            "estimated_story_points": 4,
+            "rationale": "Moderate work.",
+            "assumptions": [],
+            "confidence": "medium",
+        }
+
+        with self.assertRaises(AIStructuredOutputError):
+            StoryPointEstimationService.estimate(issue=FakeIssue())

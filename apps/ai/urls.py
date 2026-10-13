@@ -1,7 +1,12 @@
 from django.urls import path
 
-from apps.ai.views import TaskBreakdownView
+from .views import StoryPointEstimationView, TaskBreakdownView
 
 urlpatterns = [
-    path("task-breakdown/", TaskBreakdownView.as_view(), name="ai-task-breakdown")
+    path("task-breakdown/", TaskBreakdownView.as_view(), name="ai-task-breakdown"),
+    path(
+        "estimate-story-points/",
+        StoryPointEstimationView.as_view(),
+        name="issue-estimate-story-points",
+    ),
 ]
