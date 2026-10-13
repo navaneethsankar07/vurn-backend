@@ -23,6 +23,24 @@ class HelpTopicListView(APIView):
 
     def get(self, request):
         query = request.query_params.get("q", "").strip().casefold()
+        limit_param = request.query_params.get("limit")
+
+        if limit_param is not None:
+            try:
+                limit = int(limit_param)
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "Limit must be a positive integer."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if limit < 1:
+                return Response(
+                    {"detail": "Limit must be a positive integer."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            limit = None
 
         topics = list(HELP_TOPICS.values())
 
@@ -34,6 +52,9 @@ class HelpTopicListView(APIView):
                 or query in topic["description"].casefold()
                 or query in topic["slug"].casefold()
             ]
+
+        if limit is not None:
+            topics = topics[:limit]
 
         serializer = HelpTopicListSerializer(topics, many=True)
 
@@ -47,7 +68,9 @@ class HelpTopicDetailView(APIView):
         topic = HELP_TOPICS.get(slug)
 
         if topic is None:
-            return Response({"detail": "Help topic not found."}, status=404)
+            return Response(
+                {"detail": "Help topic not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = HelpTopicDetailSerializer(topic)
 
