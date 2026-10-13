@@ -2,14 +2,18 @@ from unittest.mock import Mock, patch
 
 import httpx
 from django.test import SimpleTestCase, override_settings
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.test import APIRequestFactory, force_authenticate
+
 
 from apps.ai.exceptions import (
     AIConfigurationError,
     AIProviderTimeoutError,
     AIStructuredOutputError,
 )
-from apps.ai.services.openrouter_service import OpenRouterService
+from .views import TaskBreakdownView
+from .services.openrouter_service import OpenRouterService
+from .services.task_breakdown_service import TaskBreakdownService
 
 
 class ExampleOutputSerializer(serializers.Serializer):
@@ -95,3 +99,114 @@ class OpenRouterServiceTests(SimpleTestCase):
     def test_timeout_raises_provider_timeout_error(self, mock_post):
         with self.assertRaises(AIProviderTimeoutError):
             OpenRouterService.generate(messages=[{"role": "user", "content": "Hello"}])
+
+
+class TaskBreakdownServiceTests(SimpleTestCase):
+    @patch("apps.ai.services.task_breakdown_service.OpenRouterService.generate_json")
+    def test_generate_breakdown_returns_validated_result(self, mock_generate):
+        expected = {
+            "summary": "Implement user login.",
+            "subtasks": [
+                {
+                    "title": "Create login endpoint",
+                    "description": "Implement the login API.",
+                },
+                {
+                    "title": "Validate credentials",
+                    "description": "Validate submitted credentials.",
+                },
+                {
+                    "title": "Build login form",
+                    "description": "Create the frontend login form.",
+                },
+            ],
+        }
+        mock_generate.return_value = expected
+
+        result = TaskBreakdownService.generate_breakdown(
+            issue_title="Implement user login",
+            issue_description="Support email and password authentication.",
+        )
+
+        self.assertEqual(result, expected)
+        mock_generate.assert_called_once()
+
+    @patch("apps.ai.services.task_breakdown_service.OpenRouterService.generate_json")
+    def test_rejects_too_few_subtasks(self, mock_generate):
+        mock_generate.return_value = {
+            "summary": "Implement login.",
+            "subtasks": [
+                {"title": "Build login", "description": "Build the login flow."}
+            ],
+        }
+
+        with self.assertRaises(AIStructuredOutputError):
+            TaskBreakdownService.generate_breakdown(issue_title="Implement login")
+
+
+class TaskBreakdownViewTests(SimpleTestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.user = Mock(is_authenticated=True)
+
+    @patch("apps.ai.views.TaskBreakdownService.generate_breakdown")
+    def test_returns_generated_breakdown(self, mock_generate):
+        mock_generate.return_value = {
+            "summary": "Implement login.",
+            "subtasks": [
+                {
+                    "title": "Create login endpoint",
+                    "description": "Implement the login API.",
+                },
+                {
+                    "title": "Validate credentials",
+                    "description": "Validate submitted credentials.",
+                },
+                {
+                    "title": "Build login form",
+                    "description": "Create the frontend login form.",
+                },
+            ],
+        }
+
+        request = self.factory.post(
+            "/api/v1/ai/task-breakdown/",
+            {
+                "issue_title": "Implement user login",
+                "issue_description": "Support email authentication.",
+            },
+            format="json",
+        )
+        force_authenticate(request, user=self.user)
+
+        response = TaskBreakdownView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["subtasks"]), 3)
+        mock_generate.assert_called_once_with(
+            issue_title="Implement user login",
+            issue_description="Support email authentication.",
+        )
+
+    def test_rejects_missing_issue_title(self):
+        request = self.factory.post(
+            "/api/v1/ai/task-breakdown/",
+            {"issue_description": "Implement authentication."},
+            format="json",
+        )
+        force_authenticate(request, user=self.user)
+
+        response = TaskBreakdownView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_rejects_unauthenticated_request(self):
+        request = self.factory.post(
+            "/api/v1/ai/task-breakdown/",
+            {"issue_title": "Implement login"},
+            format="json",
+        )
+
+        response = TaskBreakdownView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
