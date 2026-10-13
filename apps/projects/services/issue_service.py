@@ -596,6 +596,4 @@ class IssueService:
     def _is_project_member(*, project, user_id):
         if project.owner_id == user_id:
             return True
-        print(user_id)
-        print("project members     ", project.members.all())
         return project.members.filter(user_id=user_id).exists()

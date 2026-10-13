@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.projects.apps.ProjectsConfig",
     "apps.integrations.apps.IntegrationsConfig",
     "apps.notifications.apps.NotificationsConfig",
+    "apps.help_center.apps.HelpCenterConfig",
     "apps.search.apps.SearchConfig",
 ]
 
