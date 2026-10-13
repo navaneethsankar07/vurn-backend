@@ -10,3 +10,15 @@ class HelpTopicListSerializer(serializers.Serializer):
 
 class HelpTopicDetailSerializer(HelpTopicListSerializer):
     content = serializers.CharField()
+
+
+class HelpArticleListSerializer(serializers.Serializer):
+    slug = serializers.SlugField()
+    title = serializers.CharField()
+    category = serializers.CharField()
+    description = serializers.CharField()
+    read_time_minutes = serializers.IntegerField()
+
+
+class HelpArticleDetailSerializer(HelpArticleListSerializer):
+    content = serializers.CharField()

@@ -1,21 +1,17 @@
 from django.urls import path
 
-from apps.help_center.views import (
+from .views import (
+    HelpArticleDetailView,
+    HelpArticleListView,
     HelpTopicDetailView,
     HelpTopicListView,
 )
 
-app_name = "help_center"
-
 urlpatterns = [
+    path("topics/", HelpTopicListView.as_view(), name="topic-list"),
+    path("topics/<slug:slug>/", HelpTopicDetailView.as_view(), name="topic-detail"),
+    path("articles/", HelpArticleListView.as_view(), name="article-list"),
     path(
-        "topics/",
-        HelpTopicListView.as_view(),
-        name="topic-list",
-    ),
-    path(
-        "topics/<slug:slug>/",
-        HelpTopicDetailView.as_view(),
-        name="topic-detail",
+        "articles/<slug:slug>/", HelpArticleDetailView.as_view(), name="article-detail"
     ),
 ]
