@@ -134,6 +134,10 @@ class IssueInvalidException(IssueException):
     pass
 
 
+class InvalidStoryPointsException(IssueException):
+    pass
+
+
 class IssueSprintHistoryException(ProjectException):
     """Base exception for all history-related business exceptions."""
 

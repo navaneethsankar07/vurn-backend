@@ -9,7 +9,10 @@ from apps.notifications.models import NotificationType
 from apps.notifications.services.notification_service import NotificationService
 from apps.search.services.indexing_service import SearchIndexingService
 
+from ..constants import ALLOWED_STORY_POINTS
+
 from ..exceptions import (
+    InvalidStoryPointsException,
     IssueAlreadyExistsException,
     IssueInvalidException,
     IssueNotFoundException,
@@ -257,6 +260,8 @@ class IssueService:
 
         position = Issue.objects.filter(project=project, status=status).count()
 
+        IssueService._validate_story_points(story_points)
+
         try:
             issue = Issue.objects.create(
                 project=project,
@@ -407,6 +412,9 @@ class IssueService:
 
         issue.save()
         SearchIndexingService.schedule_indexing("issue", issue.id)
+
+        if "story_points" in validated_data:
+            IssueService._validate_story_points(validated_data["story_points"])
 
         if sprint_changed:
             subtasks = list(
@@ -597,3 +605,10 @@ class IssueService:
         if project.owner_id == user_id:
             return True
         return project.members.filter(user_id=user_id).exists()
+
+    @staticmethod
+    def _validate_story_points(story_points):
+        if story_points is not None and story_points not in ALLOWED_STORY_POINTS:
+            raise InvalidStoryPointsException(
+                "Story points must be one of: 1, 2, 3, 5, 8, or 13."
+            )

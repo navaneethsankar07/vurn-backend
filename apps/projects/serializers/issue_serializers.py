@@ -6,7 +6,12 @@ from apps.integrations.serializers.github_repository import (
 
 from .issue_label_serializers import LabelSerializer
 
-from ..constants import ISSUE_PRIORITY_CHOICES, ISSUE_SORT_CHOICES, ISSUE_TYPE_CHOICES
+from ..constants import (
+    ALLOWED_STORY_POINTS,
+    ISSUE_PRIORITY_CHOICES,
+    ISSUE_SORT_CHOICES,
+    ISSUE_TYPE_CHOICES,
+)
 
 from ..models import Issue, IssueSprintHistory, Sprint
 
@@ -27,7 +32,7 @@ class IssueCreateSerializer(serializers.Serializer):
         choices=ISSUE_PRIORITY_CHOICES, required=False, default="medium"
     )
     story_points = serializers.IntegerField(
-        required=False, allow_null=True, min_value=0
+        required=False, allow_null=True, min_value=1
     )
 
     def validate_title(self, value):
@@ -35,6 +40,14 @@ class IssueCreateSerializer(serializers.Serializer):
 
         if not value:
             raise serializers.ValidationError("Issue title cannot be empty.")
+
+        return value
+
+    def validate_story_points(self, value):
+        if value is not None and value not in ALLOWED_STORY_POINTS:
+            raise serializers.ValidationError(
+                "Story points must be one of: 1, 2, 3, 5, 8, or 13."
+            )
 
         return value
 
@@ -137,7 +150,7 @@ class IssueUpdateSerializer(serializers.Serializer):
     assignee_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
     priority = serializers.ChoiceField(choices=ISSUE_PRIORITY_CHOICES, required=False)
     story_points = serializers.IntegerField(
-        required=False, allow_null=True, min_value=0
+        required=False, allow_null=True, min_value=1
     )
 
     def validate_title(self, value):
@@ -145,6 +158,14 @@ class IssueUpdateSerializer(serializers.Serializer):
 
         if not value:
             raise serializers.ValidationError("Issue title cannot be empty.")
+
+        return value
+
+    def validate_story_points(self, value):
+        if value is not None and value not in ALLOWED_STORY_POINTS:
+            raise serializers.ValidationError(
+                "Story points must be one of: 1, 2, 3, 5, 8, or 13."
+            )
 
         return value
 

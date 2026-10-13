@@ -134,3 +134,15 @@ ALLOWED_ATTACHMENT_MIME_TYPES = {
 }
 
 ATTACHMENT_UPLOAD_EXPIRY = 900
+
+
+STORY_POINT_CHOICES = (
+    (1, "1 point"),
+    (2, "2 points"),
+    (3, "3 points"),
+    (5, "5 points"),
+    (8, "8 points"),
+    (13, "13 points"),
+)
+
+ALLOWED_STORY_POINTS = {value for value, _ in STORY_POINT_CHOICES}
