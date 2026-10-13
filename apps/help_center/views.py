@@ -1,5 +1,4 @@
-from django.shortcuts import get_object_or_404
-
+from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -19,7 +18,7 @@ from .constants.quick_actions_constants import HELP_TOPICS
 
 
 class HelpTopicListView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         query = request.query_params.get("q", "").strip().casefold()
@@ -62,7 +61,7 @@ class HelpTopicListView(APIView):
 
 
 class HelpTopicDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request, slug):
         topic = HELP_TOPICS.get(slug)
