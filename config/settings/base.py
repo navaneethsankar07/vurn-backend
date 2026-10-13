@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.notifications.apps.NotificationsConfig",
     "apps.help_center.apps.HelpCenterConfig",
     "apps.search.apps.SearchConfig",
+    "apps.ai.apps.AiConfig"
 ]
 
 MIDDLEWARE = [
