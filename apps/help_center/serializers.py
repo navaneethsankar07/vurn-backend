@@ -22,3 +22,9 @@ class HelpArticleListSerializer(serializers.Serializer):
 
 class HelpArticleDetailSerializer(HelpArticleListSerializer):
     content = serializers.CharField()
+
+
+class FAQSerializer(serializers.Serializer):
+    id = serializers.SlugField()
+    question = serializers.CharField()
+    answer = serializers.CharField()

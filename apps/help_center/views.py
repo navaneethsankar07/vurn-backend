@@ -5,12 +5,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
 from .serializers import (
+    FAQSerializer,
     HelpArticleDetailSerializer,
     HelpArticleListSerializer,
     HelpTopicDetailSerializer,
     HelpTopicListSerializer,
 )
+from .constants.faq_constants import FAQ_ITEMS
 from .constants.article_constants import POPULAR_ARTICLES
 from .constants.quick_actions_constants import HELP_TOPICS
 
@@ -96,3 +99,12 @@ class HelpArticleDetailView(APIView):
         serializer = HelpArticleDetailSerializer(article)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FAQListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = FAQSerializer(FAQ_ITEMS, many=True)
+
+        return Response({"results": serializer.data})

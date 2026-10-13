@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    FAQListView,
     HelpArticleDetailView,
     HelpArticleListView,
     HelpTopicDetailView,
@@ -14,4 +15,5 @@ urlpatterns = [
     path(
         "articles/<slug:slug>/", HelpArticleDetailView.as_view(), name="article-detail"
     ),
+    path("faqs/", FAQListView.as_view(), name="faq-list"),
 ]
