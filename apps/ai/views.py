@@ -10,6 +10,7 @@ from .exceptions import (
     AIStructuredOutputError,
 )
 from .serializers import (
+    StoryPointEstimationRequestSerializer,
     StoryPointEstimationResponseSerializer,
     TaskBreakdownRequestSerializer,
     TaskBreakdownResponseSerializer,
@@ -64,19 +65,14 @@ class TaskBreakdownView(APIView):
 class StoryPointEstimationView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, slug, project_slug, issue_id):
+    def post(self, request):
+        request_serializer = StoryPointEstimationRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+
+        issue_id = request_serializer.validated_data["issue_id"]
+
         try:
-            organization = OrganizationService.get_user_organization(
-                user=request.user, slug=slug
-            )
-            project = ProjectService.get_project(
-                organization=organization, slug=project_slug
-            )
-            issue = IssueService.get_issue(project=project, issue_id=issue_id)
-        except OrganizationNotFoundException as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
-        except ProjectNotFoundException as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+            issue = IssueService.get_issue_by_id(issue_id=issue_id)
         except IssueNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
@@ -87,14 +83,14 @@ class StoryPointEstimationView(APIView):
                 {"error": "AI service is not configured."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        except AIProviderError:
-            return Response(
-                {"error": "AI provider is temporarily unavailable."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
         except AIStructuredOutputError:
             return Response(
                 {"error": "AI returned an invalid story-point estimate."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIProviderError:
+            return Response(
+                {"error": "AI provider is temporarily unavailable."},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
         except AIResponseError:

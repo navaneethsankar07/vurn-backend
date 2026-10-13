@@ -35,3 +35,7 @@ class StoryPointEstimationResponseSerializer(serializers.Serializer):
             )
 
         return value
+
+
+class StoryPointEstimationRequestSerializer(serializers.Serializer):
+    issue_id = serializers.IntegerField(min_value=1)
