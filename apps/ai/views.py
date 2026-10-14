@@ -10,7 +10,6 @@ from apps.organizations.services.organization_service import OrganizationService
 from apps.projects.services.project_service import ProjectService
 from apps.projects.models import Sprint
 from apps.integrations.models import GitRepository
-from backend.apps.ai.services.wallet_service import OrganizationAIWalletService
 
 from .exceptions import (
     AIConfigurationError,
@@ -20,6 +19,8 @@ from .exceptions import (
     InsufficientAICreditsError,
 )
 from .serializers import (
+    AIUsageStatisticsRequestSerializer,
+    AIUsageStatisticsSerializer,
     DuplicateDetectionRequestSerializer,
     ReleaseNotesRequestSerializer,
     SprintSummaryRequestSerializer,
@@ -29,8 +30,10 @@ from .serializers import (
     TaskBreakdownResponseSerializer,
 )
 from .services.release_notes_service import ReleaseNotesService
+from .services.wallet_service import OrganizationAIWalletService
 from .services.sprint_summary_service import SprintSummaryService
 from .services.task_breakdown_service import TaskBreakdownService
+from .services.usage_statistics_service import AIUsageStatisticsService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
 
@@ -362,3 +365,29 @@ class ReleaseNotesView(APIView):
             )
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class AIUsageStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = AIUsageStatisticsRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+
+        organization_slug = request_serializer.validated_data["organization_slug"]
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        statistics = AIUsageStatisticsService.get_statistics(organization=organization)
+
+        response_serializer = AIUsageStatisticsSerializer(data=statistics)
+        response_serializer.is_valid(raise_exception=True)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

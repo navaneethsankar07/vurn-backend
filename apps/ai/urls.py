@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AIUsageStatisticsView,
     ReleaseNotesView,
     SprintSummaryView,
     TaskBreakdownView,
@@ -29,5 +30,10 @@ urlpatterns = [
         "generate-release-notes/",
         ReleaseNotesView.as_view(),
         name="generate-release-notes",
+    ),
+    path(
+        "usage-statistics/",
+        AIUsageStatisticsView.as_view(),
+        name="ai-usage-statistics",
     ),
 ]

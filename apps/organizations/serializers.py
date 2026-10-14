@@ -131,6 +131,7 @@ class OrganizationAccessSerializer(
 class DashboardSprintSerializer(serializers.ModelSerializer):
     project_id = serializers.IntegerField(source="project.id")
     project_name = serializers.CharField(source="project.name")
+    project_key = serializers.CharField(source="project.key")
 
     class Meta:
         model = Sprint
@@ -143,6 +144,7 @@ class DashboardSprintSerializer(serializers.ModelSerializer):
             "status",
             "project_id",
             "project_name",
+            "project_key",
         ]
 
 
