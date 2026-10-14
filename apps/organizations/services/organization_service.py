@@ -2,10 +2,13 @@ from django.db import transaction
 from django.db.models import Q
 
 from apps.accounts.models import User
+from apps.ai.constants import FREE_ORGANIZATION_AI_CREDITS
+from apps.ai.models import OrganizationAIWallet
+
 from ..models import Organization, OrganizationPreference
 from ..exceptions import (
-    OrganizationAlreadyArchivedException,
     OrganizationNotFoundException,
+    OrganizationAlreadyArchivedException,
 )
 from ..constants import ORGANIZATION_PREFERENCE_DEFAULTS
 
@@ -36,6 +39,12 @@ class OrganizationService:
         OrganizationPreference.objects.create(
             organization=organization,
             **ORGANIZATION_PREFERENCE_DEFAULTS,
+        )
+
+        OrganizationAIWallet.objects.create(
+            organization=organization,
+            balance=FREE_ORGANIZATION_AI_CREDITS,
+            total_credited=FREE_ORGANIZATION_AI_CREDITS,
         )
 
         return organization

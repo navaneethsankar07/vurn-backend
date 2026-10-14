@@ -222,3 +222,22 @@ The example values are illustrative only. Do not invent changes or references
 to fill the example structure. Use empty arrays when no evidence supports
 a category.
 """
+
+
+FREE_ORGANIZATION_AI_CREDITS = 100
+
+AI_FEATURE_CREDIT_COSTS = {
+    "task_breakdown": 5,
+    "story_point_estimation": 2,
+    "duplicate_issue_detection": 5,
+    "sprint_summary": 10,
+    "release_notes": 10,
+}
+
+AI_FEATURE_CHOICES = [
+    ("task_breakdown", "Task Breakdown"),
+    ("story_point_estimation", "Story Point Estimation"),
+    ("duplicate_issue_detection", "Duplicate Issue Detection"),
+    ("sprint_summary", "Sprint Summary"),
+    ("release_notes", "Release Notes"),
+]
