@@ -10,12 +10,14 @@ from apps.organizations.services.organization_service import OrganizationService
 from apps.projects.services.project_service import ProjectService
 from apps.projects.models import Sprint
 from apps.integrations.models import GitRepository
+from backend.apps.ai.services.wallet_service import OrganizationAIWalletService
 
 from .exceptions import (
     AIConfigurationError,
     AIProviderError,
     AIResponseError,
     AIStructuredOutputError,
+    InsufficientAICreditsError,
 )
 from .serializers import (
     DuplicateDetectionRequestSerializer,
@@ -45,10 +47,18 @@ class TaskBreakdownView(APIView):
         request_serializer = TaskBreakdownRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
 
+        validated_data = request_serializer.validated_data
+        organization_slug = validated_data.pop("organization_slug")
+
         try:
-            result = TaskBreakdownService.generate_breakdown(
-                **request_serializer.validated_data
+            organization = OrganizationService.get_organization_by_slug(
+                slug=organization_slug
             )
+
+            result = TaskBreakdownService.generate_breakdown(**validated_data)
+
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except AIConfigurationError:
             return Response(
                 {"detail": "AI service is not configured."},
@@ -72,6 +82,15 @@ class TaskBreakdownView(APIView):
 
         response_serializer = TaskBreakdownResponseSerializer(data=result)
         response_serializer.is_valid(raise_exception=True)
+
+        try:
+            OrganizationAIWalletService.consume_credits(
+                organization=organization, user=request.user, feature="task_breakdown"
+            )
+        except InsufficientAICreditsError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED
+            )
 
         return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
 
