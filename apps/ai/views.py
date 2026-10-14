@@ -277,6 +277,15 @@ class SprintSummaryView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
+        try:
+            OrganizationAIWalletService.consume_credits(
+                organization=organization, user=request.user, feature="sprint_summary"
+            )
+        except InsufficientAICreditsError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED
+            )
+
         return Response({"summary": result}, status=status.HTTP_200_OK)
 
 
