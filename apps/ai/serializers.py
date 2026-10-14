@@ -99,3 +99,63 @@ class AISprintSummaryResponseSerializer(serializers.Serializer):
     recommendations = serializers.ListField(
         child=serializers.CharField(max_length=500), max_length=5
     )
+
+
+class ReleaseNotesRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField(max_length=255)
+    project_slug = serializers.SlugField(max_length=255)
+    repository_id = serializers.IntegerField(min_value=1)
+    start_date = serializers.DateField()
+    end_date = serializers.DateField()
+
+    def validate(self, attrs):
+        if attrs["start_date"] > attrs["end_date"]:
+            raise serializers.ValidationError(
+                {"end_date": "End date must be on or after start date."}
+            )
+
+        if (attrs["end_date"] - attrs["start_date"]).days > 180:
+            raise serializers.ValidationError(
+                {"end_date": "The release date range cannot exceed 181 days."}
+            )
+
+        return attrs
+
+
+class ReleaseHighlightSerializer(serializers.Serializer):
+    category = serializers.ChoiceField(
+        choices=[
+            "feature",
+            "bug_fix",
+            "improvement",
+            "breaking_change",
+            "technical_change",
+        ]
+    )
+    title = serializers.CharField(max_length=200)
+    description = serializers.CharField(max_length=1000)
+    references = serializers.ListField(
+        child=serializers.CharField(max_length=100), max_length=10
+    )
+
+
+class AIReleaseNotesResponseSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=200)
+    overview = serializers.CharField(max_length=1500)
+    highlights = ReleaseHighlightSerializer(many=True, max_length=12)
+    bug_fixes = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=12
+    )
+    improvements = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=12
+    )
+    breaking_changes = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=8
+    )
+    known_issues = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=8
+    )
+    technical_changes = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=12
+    )
+    markdown = serializers.CharField(max_length=12000)

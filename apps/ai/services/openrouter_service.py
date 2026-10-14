@@ -165,12 +165,10 @@ class OpenRouterService:
         serializer = serializer_class(data=parsed_data)
 
         if not serializer.is_valid():
-            logger.warning(
-                "AI response failed schema validation. Invalid fields: %s",
-                list(serializer.errors.keys()),
-            )
+            logger.error("AI response validation errors: %s", serializer.errors)
+            logger.debug("AI response payload: %s", parsed_data)
             raise AIStructuredOutputError(
                 "The AI response did not match the required schema."
             )
 
-        return dict(serializer.validated_data)
+        return serializer.validated_data

@@ -9,6 +9,7 @@ from apps.organizations.exceptions import OrganizationNotFoundException
 from apps.organizations.services.organization_service import OrganizationService
 from apps.projects.services.project_service import ProjectService
 from apps.projects.models import Sprint
+from apps.integrations.models import GitRepository
 
 from .exceptions import (
     AIConfigurationError,
@@ -18,16 +19,23 @@ from .exceptions import (
 )
 from .serializers import (
     DuplicateDetectionRequestSerializer,
+    ReleaseNotesRequestSerializer,
     SprintSummaryRequestSerializer,
     StoryPointEstimationRequestSerializer,
     StoryPointEstimationResponseSerializer,
     TaskBreakdownRequestSerializer,
     TaskBreakdownResponseSerializer,
 )
+from .services.release_notes_service import ReleaseNotesService
 from .services.sprint_summary_service import SprintSummaryService
 from .services.task_breakdown_service import TaskBreakdownService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
+
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TaskBreakdownView(APIView):
@@ -220,3 +228,69 @@ class SprintSummaryView(APIView):
             )
 
         return Response({"summary": result}, status=status.HTTP_200_OK)
+
+
+class ReleaseNotesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = ReleaseNotesRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=data["project_slug"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        repository = GitRepository.objects.filter(
+            id=data["repository_id"],
+            integration__project=project,
+            integration__status="active",
+        ).first()
+
+        if repository is None:
+            return Response(
+                {"error": "Repository not found or not connected."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            result = ReleaseNotesService.generate(
+                repository=repository,
+                start_date=data["start_date"],
+                end_date=data["end_date"],
+            )
+        except AIConfigurationError:
+            return Response(
+                {"error": "AI service is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except AIStructuredOutputError:
+            logger.exception("AI release notes structured output failed")
+            return Response(
+                {"error": "AI returned invalid release notes."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIProviderError:
+            logger.exception("AI release notes provider request failed")
+            return Response(
+                {"error": "AI provider is temporarily unavailable."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIResponseError:
+            logger.exception("AI release notes response processing failed")
+            return Response(
+                {"error": "AI returned an invalid response."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(result, status=status.HTTP_200_OK)

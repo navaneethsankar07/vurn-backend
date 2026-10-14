@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    ReleaseNotesView,
     SprintSummaryView,
     TaskBreakdownView,
     StoryPointEstimationView,
@@ -23,5 +24,10 @@ urlpatterns = [
         "generate-sprint-summary/",
         SprintSummaryView.as_view(),
         name="ai-generate-sprint-summary",
+    ),
+    path(
+        "generate-release-notes/",
+        ReleaseNotesView.as_view(),
+        name="generate-release-notes",
     ),
 ]
