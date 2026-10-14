@@ -352,4 +352,13 @@ class ReleaseNotesView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
+        try:
+            OrganizationAIWalletService.consume_credits(
+                organization=organization, user=request.user, feature="release_notes"
+            )
+        except InsufficientAICreditsError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED
+            )
+
         return Response(result, status=status.HTTP_200_OK)
