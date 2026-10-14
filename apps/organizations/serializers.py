@@ -165,7 +165,7 @@ class OrganizationDashboardSerializer(serializers.Serializer):
     permissions = serializers.ListField(child=serializers.CharField())
     total_projects = serializers.IntegerField()
     total_members = serializers.IntegerField()
-    completed_issues = serializers.IntegerField()
+    remaining_ai_credits = serializers.IntegerField()
     active_sprints = DashboardSprintSerializer(many=True)
     active_sprint_count = serializers.IntegerField()
     open_issues = serializers.IntegerField()
