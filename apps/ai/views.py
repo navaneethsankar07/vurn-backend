@@ -102,7 +102,16 @@ class StoryPointEstimationView(APIView):
         request_serializer = StoryPointEstimationRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
 
-        issue_id = request_serializer.validated_data["issue_id"]
+        validated_data = request_serializer.validated_data
+        issue_id = validated_data["issue_id"]
+        organization_slug = validated_data["organization_slug"]
+
+        try:
+            organization = OrganizationService.get_organization_by_slug(
+                slug=organization_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             issue = IssueService.get_issue_by_id(issue_id=issue_id)
@@ -134,6 +143,17 @@ class StoryPointEstimationView(APIView):
 
         response_serializer = StoryPointEstimationResponseSerializer(data=result)
         response_serializer.is_valid(raise_exception=True)
+
+        try:
+            OrganizationAIWalletService.consume_credits(
+                organization=organization,
+                user=request.user,
+                feature="story_point_estimation",
+            )
+        except InsufficientAICreditsError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_402_PAYMENT_REQUIRED
+            )
 
         return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
 
