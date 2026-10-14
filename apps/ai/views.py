@@ -8,6 +8,7 @@ from apps.projects.services.issue_service import IssueService
 from apps.organizations.exceptions import OrganizationNotFoundException
 from apps.organizations.services.organization_service import OrganizationService
 from apps.projects.services.project_service import ProjectService
+from apps.projects.models import Sprint
 
 from .exceptions import (
     AIConfigurationError,
@@ -17,11 +18,13 @@ from .exceptions import (
 )
 from .serializers import (
     DuplicateDetectionRequestSerializer,
+    SprintSummaryRequestSerializer,
     StoryPointEstimationRequestSerializer,
     StoryPointEstimationResponseSerializer,
     TaskBreakdownRequestSerializer,
     TaskBreakdownResponseSerializer,
 )
+from .services.sprint_summary_service import SprintSummaryService
 from .services.task_breakdown_service import TaskBreakdownService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
@@ -163,3 +166,57 @@ class DuplicateIssueDetectionView(APIView):
             )
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class SprintSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = SprintSummaryRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=data["project_slug"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+
+        sprint = Sprint.objects.filter(id=data["sprint_id"], project=project).first()
+
+        if sprint is None:
+            return Response(
+                {"error": "Sprint not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            result = SprintSummaryService.generate(sprint=sprint)
+        except AIConfigurationError:
+            return Response(
+                {"error": "AI service is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except AIStructuredOutputError:
+            return Response(
+                {"error": "AI returned an invalid sprint summary."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIProviderError:
+            return Response(
+                {"error": "AI provider is temporarily unavailable."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIResponseError:
+            return Response(
+                {"error": "AI returned an invalid response."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response({"summary": result}, status=status.HTTP_200_OK)

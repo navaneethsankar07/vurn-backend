@@ -74,3 +74,28 @@ class DuplicateIssueResultSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255)
     reason = serializers.CharField(max_length=1000)
     confidence = serializers.ChoiceField(choices=("low", "medium", "high"))
+
+
+class SprintSummaryRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField(max_length=255)
+    project_slug = serializers.SlugField(max_length=255)
+    sprint_id = serializers.IntegerField(min_value=1)
+
+
+class AISprintSummaryResponseSerializer(serializers.Serializer):
+    summary = serializers.CharField(max_length=2000)
+    achievements = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=8
+    )
+    incomplete_work = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=8
+    )
+    scope_change_insights = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=5
+    )
+    risks = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=5
+    )
+    recommendations = serializers.ListField(
+        child=serializers.CharField(max_length=500), max_length=5
+    )

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    SprintSummaryView,
     TaskBreakdownView,
     StoryPointEstimationView,
     DuplicateIssueDetectionView,
@@ -17,5 +18,10 @@ urlpatterns = [
         "detect-duplicate-issues/",
         DuplicateIssueDetectionView.as_view(),
         name="ai-detect-duplicate-issues",
+    ),
+    path(
+        "generate-sprint-summary/",
+        SprintSummaryView.as_view(),
+        name="ai-generate-sprint-summary",
     ),
 ]
