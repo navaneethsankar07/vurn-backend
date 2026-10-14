@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AIUsageHistoryView,
     AIUsageStatisticsView,
     ReleaseNotesView,
     SprintSummaryView,
@@ -36,4 +37,5 @@ urlpatterns = [
         AIUsageStatisticsView.as_view(),
         name="ai-usage-statistics",
     ),
+    path("usage-history/", AIUsageHistoryView.as_view(), name="ai-usage-history"),
 ]

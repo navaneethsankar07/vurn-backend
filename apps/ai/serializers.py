@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from .models import AIUsageHistory
+
 from .constants import STORY_POINT_VALUES
 
 
@@ -170,5 +172,20 @@ class AIUsageStatisticsSerializer(serializers.Serializer):
     )
 
 
-class AIUsageStatisticsRequestSerializer(serializers.Serializer):
+class AIUsageRequestSerializer(serializers.Serializer):
     organization_slug = serializers.SlugField()
+
+
+class AIUsageHistorySerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AIUsageHistory
+        fields = ["id", "user", "feature", "credits_consumed", "created_at"]
+        read_only_fields = fields
+
+    def get_user(self, obj):
+        if obj.user is None:
+            return None
+
+        return {"id": obj.user.id, "username": obj.user.get_username()}

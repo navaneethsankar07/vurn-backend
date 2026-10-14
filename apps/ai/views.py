@@ -10,6 +10,7 @@ from apps.organizations.services.organization_service import OrganizationService
 from apps.projects.services.project_service import ProjectService
 from apps.projects.models import Sprint
 from apps.integrations.models import GitRepository
+from apps.shared.utils.pagination import StandardPagination
 
 from .exceptions import (
     AIConfigurationError,
@@ -19,7 +20,8 @@ from .exceptions import (
     InsufficientAICreditsError,
 )
 from .serializers import (
-    AIUsageStatisticsRequestSerializer,
+    AIUsageHistorySerializer,
+    AIUsageRequestSerializer,
     AIUsageStatisticsSerializer,
     DuplicateDetectionRequestSerializer,
     ReleaseNotesRequestSerializer,
@@ -33,6 +35,7 @@ from .services.release_notes_service import ReleaseNotesService
 from .services.wallet_service import OrganizationAIWalletService
 from .services.sprint_summary_service import SprintSummaryService
 from .services.task_breakdown_service import TaskBreakdownService
+from .services.ai_usage_history_service import AIUsageHistoryService
 from .services.usage_statistics_service import AIUsageStatisticsService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
@@ -371,7 +374,7 @@ class AIUsageStatisticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        request_serializer = AIUsageStatisticsRequestSerializer(data=request.data)
+        request_serializer = AIUsageRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
 
         organization_slug = request_serializer.validated_data["organization_slug"]
@@ -391,3 +394,31 @@ class AIUsageStatisticsView(APIView):
         response_serializer.is_valid(raise_exception=True)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class AIUsageHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = AIUsageRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+
+        organization_slug = request_serializer.validated_data["organization_slug"]
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        history = AIUsageHistoryService.get_usage_history(organization=organization)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(history, request, view=self)
+
+        serializer = AIUsageHistorySerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

@@ -27,3 +27,13 @@ class AIUsageHistoryService:
             feature=feature,
             credits_consumed=credits_consumed,
         )
+
+    @staticmethod
+    def get_usage_history(*, organization):
+        return (
+            AIUsageHistory.objects.filter(
+                organization=organization, feature__in=AI_FEATURE_CREDIT_COSTS.keys()
+            )
+            .select_related("user")
+            .order_by("-created_at")
+        )
