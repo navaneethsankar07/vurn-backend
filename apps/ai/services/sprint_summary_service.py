@@ -164,7 +164,6 @@ class SprintSummaryService:
     def generate(cls, *, sprint):
         issues = cls._get_sprint_issues(sprint)
 
-        # Subtasks are represented under their parent, not counted separately.
         top_level_issues = [issue for issue in issues if not cls._is_subtask(issue)]
 
         completed_issues = [

@@ -240,4 +240,5 @@ AI_FEATURE_CHOICES = [
     ("duplicate_issue_detection", "Duplicate Issue Detection"),
     ("sprint_summary", "Sprint Summary"),
     ("release_notes", "Release Notes"),
+    ("initial_free_credits", "Initial Free Credits"),
 ]

@@ -2,8 +2,8 @@ from django.db import transaction
 from django.db.models import Q
 
 from apps.accounts.models import User
-from apps.ai.constants import FREE_ORGANIZATION_AI_CREDITS
-from apps.ai.models import OrganizationAIWallet
+from apps.ai.services.wallet_service import OrganizationAIWalletService
+from apps.ai.services.ai_usage_history_service import AIUsageHistoryService
 
 from ..models import Organization, OrganizationPreference
 from ..exceptions import (
@@ -26,7 +26,6 @@ class OrganizationService:
         icon: str,
         accent_color: str,
     ) -> Organization:
-
         organization = Organization.objects.create(
             name=name,
             description=description,
@@ -37,14 +36,13 @@ class OrganizationService:
         )
 
         OrganizationPreference.objects.create(
-            organization=organization,
-            **ORGANIZATION_PREFERENCE_DEFAULTS,
+            organization=organization, **ORGANIZATION_PREFERENCE_DEFAULTS
         )
 
-        OrganizationAIWallet.objects.create(
-            organization=organization,
-            balance=FREE_ORGANIZATION_AI_CREDITS,
-            total_credited=FREE_ORGANIZATION_AI_CREDITS,
+        wallet = OrganizationAIWalletService.create_wallet(organization=organization)
+
+        AIUsageHistoryService.create_initial_credit_record(
+            organization=organization, credits_credited=wallet.balance
         )
 
         return organization

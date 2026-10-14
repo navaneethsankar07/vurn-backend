@@ -20,3 +20,15 @@ class AIResponseError(AIServiceError):
 
 class AIStructuredOutputError(AIResponseError):
     pass
+
+
+class AICreditError(AIServiceError):
+    """Base exception for AI credit management errors."""
+
+
+class UnsupportedAIFeatureError(AICreditError):
+    pass
+
+
+class InvalidAICreditCostError(AICreditError):
+    pass
