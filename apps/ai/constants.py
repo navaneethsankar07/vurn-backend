@@ -242,3 +242,11 @@ AI_FEATURE_CHOICES = [
     ("release_notes", "Release Notes"),
     ("initial_free_credits", "Initial Free Credits"),
 ]
+
+AI_FEATURE_DISPLAY_NAMES = {
+    "task_breakdown": "Task Breakdown",
+    "story_point_estimation": "Story Point Estimation",
+    "duplicate_issue_detection": "Duplicate Issue Detection",
+    "sprint_summary": "Sprint Summary",
+    "release_notes": "Release Notes",
+}

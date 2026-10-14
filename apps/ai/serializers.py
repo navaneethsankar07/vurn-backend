@@ -163,6 +163,12 @@ class AIReleaseNotesResponseSerializer(serializers.Serializer):
     markdown = serializers.CharField(max_length=12000)
 
 
+class AIFeatureInfoSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    name = serializers.CharField()
+    credit_cost = serializers.IntegerField(min_value=0)
+
+
 class AIUsageStatisticsSerializer(serializers.Serializer):
     remaining_ai_credits = serializers.IntegerField(min_value=0)
     credits_used_today = serializers.IntegerField(min_value=0)
@@ -170,6 +176,7 @@ class AIUsageStatisticsSerializer(serializers.Serializer):
     average_daily_usage = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0
     )
+    available_features = AIFeatureInfoSerializer(many=True)
 
 
 class AIUsageRequestSerializer(serializers.Serializer):

@@ -3,7 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Sum
 from django.utils import timezone
 
-from ..constants import AI_FEATURE_CREDIT_COSTS
+from ..constants import AI_FEATURE_CREDIT_COSTS, AI_FEATURE_DISPLAY_NAMES
 from ..models import AIUsageHistory, OrganizationAIWallet
 
 
@@ -44,9 +44,19 @@ class AIUsageStatisticsService:
             .first()
         )
 
+        available_features = [
+            {
+                "key": feature,
+                "name": AI_FEATURE_DISPLAY_NAMES[feature],
+                "credit_cost": cost,
+            }
+            for feature, cost in AI_FEATURE_CREDIT_COSTS.items()
+        ]
+
         return {
             "remaining_ai_credits": wallet_balance or 0,
             "credits_used_today": credits_used_today,
             "credits_used_this_month": credits_used_this_month,
             "average_daily_usage": average_daily_usage,
+            "available_features": available_features,
         }

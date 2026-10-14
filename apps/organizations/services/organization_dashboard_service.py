@@ -19,7 +19,7 @@ class OrganizationDashboardService:
         ).order_by("-updated_at")[:4]
 
         total_projects = organization.projects.count()
-        total_members = organization.members.count() + 1  # Including the owner
+        total_members = organization.members.count() + 1 
 
         ai_wallet = OrganizationAIWalletService.create_wallet(organization=organization)
 
