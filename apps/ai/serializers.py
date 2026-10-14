@@ -39,3 +39,38 @@ class StoryPointEstimationResponseSerializer(serializers.Serializer):
 
 class StoryPointEstimationRequestSerializer(serializers.Serializer):
     issue_id = serializers.IntegerField(min_value=1)
+
+
+class DuplicateDetectionRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField(max_length=255)
+    project_slug = serializers.SlugField(max_length=255)
+    title = serializers.CharField(max_length=255, trim_whitespace=True)
+    description = serializers.CharField(
+        required=False, allow_blank=True, max_length=10000
+    )
+    issue_type = serializers.CharField(max_length=20, required=False)
+    priority = serializers.CharField(max_length=20, required=False)
+
+    def validate_title(self, value):
+        if not value.strip():
+            raise serializers.ValidationError("Title cannot be empty.")
+
+        return value.strip()
+
+
+class AIDuplicateCandidateSerializer(serializers.Serializer):
+    issue_key = serializers.CharField(max_length=100)
+    reason = serializers.CharField(max_length=1000)
+    confidence = serializers.ChoiceField(choices=("low", "medium", "high"))
+
+
+class AIDuplicateDetectionResponseSerializer(serializers.Serializer):
+    duplicates = AIDuplicateCandidateSerializer(many=True, max_length=5)
+
+
+class DuplicateIssueResultSerializer(serializers.Serializer):
+    issue_id = serializers.IntegerField()
+    key = serializers.CharField(max_length=100)
+    title = serializers.CharField(max_length=255)
+    reason = serializers.CharField(max_length=1000)
+    confidence = serializers.ChoiceField(choices=("low", "medium", "high"))

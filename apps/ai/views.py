@@ -3,6 +3,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.projects.exceptions import IssueNotFoundException, ProjectNotFoundException
+from apps.projects.services.issue_service import IssueService
+from apps.organizations.exceptions import OrganizationNotFoundException
+from apps.organizations.services.organization_service import OrganizationService
+from apps.projects.services.project_service import ProjectService
+
 from .exceptions import (
     AIConfigurationError,
     AIProviderError,
@@ -10,18 +16,15 @@ from .exceptions import (
     AIStructuredOutputError,
 )
 from .serializers import (
+    DuplicateDetectionRequestSerializer,
     StoryPointEstimationRequestSerializer,
     StoryPointEstimationResponseSerializer,
     TaskBreakdownRequestSerializer,
     TaskBreakdownResponseSerializer,
 )
 from .services.task_breakdown_service import TaskBreakdownService
+from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
-from apps.organizations.exceptions import OrganizationNotFoundException
-from apps.organizations.services.organization_service import OrganizationService
-from apps.projects.exceptions import IssueNotFoundException, ProjectNotFoundException
-from apps.projects.services.issue_service import IssueService
-from apps.projects.services.project_service import ProjectService
 
 
 class TaskBreakdownView(APIView):
@@ -103,3 +106,60 @@ class StoryPointEstimationView(APIView):
         response_serializer.is_valid(raise_exception=True)
 
         return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
+
+
+class DuplicateIssueDetectionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = DuplicateDetectionRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=data["project_slug"]
+            )
+
+            result = DuplicateDetectionService.detect(
+                user=request.user,
+                project_id=project.id,
+                title=data["title"],
+                description=data.get("description", ""),
+                issue_type=data.get("issue_type", ""),
+                priority=data.get("priority", "medium"),
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except AIConfigurationError:
+            return Response(
+                {"error": "AI service is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except AIStructuredOutputError:
+            return Response(
+                {"error": "AI returned an invalid duplicate detection result."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIProviderError:
+            return Response(
+                {"error": "AI provider is temporarily unavailable."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except AIResponseError:
+            return Response(
+                {"error": "AI returned an invalid response."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(result, status=status.HTTP_200_OK)

@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import httpx
 from django.test import SimpleTestCase, override_settings
@@ -11,8 +11,11 @@ from apps.ai.exceptions import (
     AIProviderTimeoutError,
     AIStructuredOutputError,
 )
-from .services.story_point_estimation_service import StoryPointEstimationService
+
 from .views import TaskBreakdownView
+
+from .services.duplicate_detection_service import DuplicateDetectionService
+from .services.story_point_estimation_service import StoryPointEstimationService
 from .services.openrouter_service import OpenRouterService
 from .services.task_breakdown_service import TaskBreakdownService
 
@@ -257,3 +260,163 @@ class StoryPointEstimationServiceTests(SimpleTestCase):
 
         with self.assertRaises(AIStructuredOutputError):
             StoryPointEstimationService.estimate(issue=FakeIssue())
+
+
+class DuplicateDetectionServiceTests(SimpleTestCase):
+
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "SearchAccessService.get_allowed_project_ids"
+    )
+    @patch("apps.ai.services.duplicate_detection_service." "SearchQueryService.search")
+    def test_returns_empty_when_no_candidates(self, mock_search, mock_allowed_projects):
+        mock_allowed_projects.return_value = {
+            "project": [],
+            "issue": [12],
+            "sprint": [],
+        }
+        mock_search.return_value = {"total": 0, "results": []}
+
+        result = DuplicateDetectionService.detect(
+            user=MagicMock(),
+            project_id=12,
+            title="Implement authentication",
+            description="Add login support.",
+        )
+
+        self.assertEqual(result, {"duplicates": []})
+        mock_search.assert_called_once()
+
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "SearchAccessService.get_allowed_project_ids"
+    )
+    def test_rejects_inaccessible_project(self, mock_allowed_projects):
+        mock_allowed_projects.return_value = {
+            "project": [],
+            "issue": [15],
+            "sprint": [],
+        }
+
+        with self.assertRaises(PermissionError):
+            DuplicateDetectionService.detect(
+                user=MagicMock(), project_id=12, title="Implement authentication"
+            )
+
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "OpenRouterService.generate_json"
+    )
+    @patch("apps.ai.services.duplicate_detection_service." "Issue.objects.filter")
+    @patch("apps.ai.services.duplicate_detection_service." "SearchQueryService.search")
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "SearchAccessService.get_allowed_project_ids"
+    )
+    def test_returns_verified_duplicate(
+        self, mock_allowed_projects, mock_search, mock_issue_filter, mock_generate
+    ):
+        mock_allowed_projects.return_value = {
+            "project": [],
+            "issue": [12],
+            "sprint": [],
+        }
+
+        mock_search.return_value = {
+            "total": 1,
+            "results": [
+                {"entity_type": "issue", "entity_id": "42", "project_id": "12"}
+            ],
+        }
+
+        issue = MagicMock()
+        issue.id = 42
+        issue.key = "VURN-42"
+        issue.title = "Login fails after session expiry"
+        issue.description = "Users see an error after the session expires."
+        issue.issue_type = "task"
+        issue.priority = "medium"
+
+        mock_queryset = MagicMock()
+        mock_queryset.select_related.return_value = [issue]
+        mock_issue_filter.return_value = mock_queryset
+
+        mock_generate.return_value = {
+            "duplicates": [
+                {
+                    "issue_key": "VURN-42",
+                    "reason": "Both describe login failures after session expiry.",
+                    "confidence": "high",
+                }
+            ]
+        }
+
+        result = DuplicateDetectionService.detect(
+            user=MagicMock(),
+            project_id=12,
+            title="Authentication fails after token expiry",
+            description="Login stops working when the token expires.",
+        )
+
+        self.assertEqual(len(result["duplicates"]), 1)
+        self.assertEqual(result["duplicates"][0]["issue_id"], 42)
+        self.assertEqual(result["duplicates"][0]["key"], "VURN-42")
+        self.assertEqual(result["duplicates"][0]["confidence"], "high")
+        mock_generate.assert_called_once()
+
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "OpenRouterService.generate_json"
+    )
+    @patch("apps.ai.services.duplicate_detection_service." "Issue.objects.filter")
+    @patch("apps.ai.services.duplicate_detection_service." "SearchQueryService.search")
+    @patch(
+        "apps.ai.services.duplicate_detection_service."
+        "SearchAccessService.get_allowed_project_ids"
+    )
+    def test_ignores_ai_keys_not_in_candidates(
+        self, mock_allowed_projects, mock_search, mock_issue_filter, mock_generate
+    ):
+        mock_allowed_projects.return_value = {
+            "project": [],
+            "issue": [12],
+            "sprint": [],
+        }
+
+        mock_search.return_value = {
+            "total": 1,
+            "results": [
+                {"entity_type": "issue", "entity_id": "42", "project_id": "12"}
+            ],
+        }
+
+        issue = MagicMock()
+        issue.id = 42
+        issue.key = "VURN-42"
+        issue.title = "Login issue"
+        issue.description = "Login fails."
+        issue.issue_type = "task"
+        issue.priority = "medium"
+
+        mock_queryset = MagicMock()
+        mock_queryset.select_related.return_value = [issue]
+        mock_issue_filter.return_value = mock_queryset
+
+        mock_generate.return_value = {
+            "duplicates": [
+                {
+                    "issue_key": "VURN-999",
+                    "reason": "The AI suggested a key not in the candidates.",
+                    "confidence": "high",
+                }
+            ]
+        }
+
+        result = DuplicateDetectionService.detect(
+            user=MagicMock(),
+            project_id=12,
+            title="Login fails",
+            description="Users cannot log in.",
+        )
+
+        self.assertEqual(result, {"duplicates": []})

@@ -2,14 +2,10 @@ from apps.search.mappings import GLOBAL_SEARCH_INDEX
 from apps.search.services.index_management_service import (
     SearchIndexManagementService,
 )
+from ..constants import DEFAULT_PAGE_SIZE, ENTITY_TYPES, MAX_PAGE_SIZE, SUGGESTION_LIMIT
 
 
 class SearchQueryService:
-    SUGGESTION_LIMIT = 8
-    DEFAULT_PAGE_SIZE = 20
-    MAX_PAGE_SIZE = 50
-
-    ENTITY_TYPES = ("project", "issue", "sprint")
 
     @classmethod
     def _get_client(cls):
@@ -67,7 +63,7 @@ class SearchQueryService:
     def _build_access_filter(cls, allowed_project_ids):
         access_filters = []
 
-        for entity_type in cls.ENTITY_TYPES:
+        for entity_type in ENTITY_TYPES:
             project_ids = allowed_project_ids.get(entity_type, [])
 
             if not project_ids:
@@ -156,7 +152,7 @@ class SearchQueryService:
         return cls._search(
             query=query,
             allowed_project_ids=allowed_project_ids,
-            size=cls.SUGGESTION_LIMIT,
+            size=SUGGESTION_LIMIT,
         )
 
     @classmethod
@@ -169,7 +165,7 @@ class SearchQueryService:
     ):
         page = max(1, int(page))
         page_size = min(
-            cls.MAX_PAGE_SIZE,
+            MAX_PAGE_SIZE,
             max(1, int(page_size)),
         )
 
