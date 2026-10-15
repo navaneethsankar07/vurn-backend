@@ -250,3 +250,12 @@ AI_FEATURE_DISPLAY_NAMES = {
     "sprint_summary": "Sprint Summary",
     "release_notes": "Release Notes",
 }
+
+
+AI_CREDIT_PLANS = {
+    "starter": {"name": "Starter", "credits": 500, "price_inr": 99},
+    "professional": {"name": "Professional", "credits": 2500, "price_inr": 499},
+    "enterprise": {"name": "Enterprise", "credits": 10000, "price_inr": 2499},
+}
+
+PURCHASE_CHOICES = (("pending", "Pending"), ("paid", "Paid"), ("failed", "Failed"))

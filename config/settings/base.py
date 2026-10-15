@@ -259,7 +259,6 @@ ELASTICSEARCH_URL = env("ELASTICSEARCH_URL")
 # Celery Configurations
 # -----------------------------------------------------------------------------
 CELERY_BROKER_URL = env("CELERY_BROKER_URL")
-
 CELERY_TASK_IGNORE_RESULT = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
@@ -268,9 +267,15 @@ CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # -----------------------------------------------------------------------------
 # OpenRouter Configurations
 # -----------------------------------------------------------------------------
-
 OPENROUTER_API_KEY = env("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = env("OPENROUTER_MODEL")
 OPENROUTER_BASE_URL = env("OPENROUTER_BASE_URL").rstrip("/")
 OPENROUTER_TIMEOUT = float(env("OPENROUTER_TIMEOUT"))
 OPENROUTER_MAX_TOKENS = int(env("OPENROUTER_MAX_TOKENS"))
+
+
+# -----------------------------------------------------------------------------
+# Razorpay Configurations
+# -----------------------------------------------------------------------------
+RAZORPAY_KEY_ID = env("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = env("RAZORPAY_KEY_SECRET")

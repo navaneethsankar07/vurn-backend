@@ -43,11 +43,25 @@ class OrganizationAIWalletService:
             wallet.total_consumed += credits
             wallet.save(update_fields=["balance", "total_consumed", "updated_at"])
 
-            AIUsageHistoryService.objects.create(
+            AIUsageHistoryService.create_record(
                 organization=organization,
                 user=user,
                 feature=feature,
                 credits_consumed=credits,
             )
+
+            return wallet
+
+    @staticmethod
+    def add_credits(*, organization, credits):
+        with transaction.atomic():
+            wallet, _ = OrganizationAIWallet.objects.get_or_create(
+                organization=organization, defaults={"balance": 0, "total_credited": 0}
+            )
+
+            wallet = OrganizationAIWallet.objects.select_for_update().get(pk=wallet.pk)
+            wallet.balance += credits
+            wallet.total_credited += credits
+            wallet.save(update_fields=["balance", "total_credited", "updated_at"])
 
             return wallet

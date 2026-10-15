@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-from apps.ai.constants import AI_FEATURE_CHOICES
+from .constants import AI_FEATURE_CHOICES, PURCHASE_CHOICES
 
 
 class OrganizationAIWallet(models.Model):
@@ -70,3 +70,38 @@ class AIUsageHistory(models.Model):
             f"{self.feature} - {self.credits_consumed} credits "
             f"({self.organization.slug})"
         )
+
+
+class AICreditPurchase(models.Model):
+
+    organization = models.ForeignKey(
+        "organizations.Organization",
+        on_delete=models.PROTECT,
+        related_name="ai_credit_purchases",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="ai_credit_purchases",
+    )
+    plan_key = models.CharField(max_length=30)
+    credits = models.PositiveIntegerField()
+    amount = models.PositiveIntegerField()
+    currency = models.CharField(max_length=3, default="INR")
+    razorpay_order_id = models.CharField(max_length=100, unique=True)
+    razorpay_payment_id = models.CharField(
+        max_length=100, unique=True, null=True, blank=True
+    )
+    status = models.CharField(
+        max_length=10, choices=PURCHASE_CHOICES, default="pending"
+    )
+    credited_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "ai_credit_purchases"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.plan_key} - {self.razorpay_order_id}"

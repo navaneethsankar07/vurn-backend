@@ -136,5 +136,4 @@ class DuplicateDetectionService:
                     "confidence": duplicate["confidence"],
                 }
             )
-
         return {"duplicates": verified_duplicates}

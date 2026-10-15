@@ -10,6 +10,7 @@ class TaskBreakdownRequestSerializer(serializers.Serializer):
     issue_description = serializers.CharField(
         required=False, allow_blank=True, max_length=10000
     )
+    organization_slug = serializers.SlugField()
 
 
 class SuggestedSubtaskSerializer(serializers.Serializer):
@@ -41,6 +42,7 @@ class StoryPointEstimationResponseSerializer(serializers.Serializer):
 
 class StoryPointEstimationRequestSerializer(serializers.Serializer):
     issue_id = serializers.IntegerField(min_value=1)
+    organization_slug = serializers.SlugField()
 
 
 class DuplicateDetectionRequestSerializer(serializers.Serializer):
@@ -196,3 +198,17 @@ class AIUsageHistorySerializer(serializers.ModelSerializer):
             return None
 
         return {"id": obj.user.id, "username": obj.user.get_username()}
+
+
+class AICreditOrderRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField()
+    plan_key = serializers.ChoiceField(
+        choices=["starter", "professional", "enterprise"]
+    )
+
+
+class AICreditPaymentVerificationSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField()
+    razorpay_order_id = serializers.CharField()
+    razorpay_payment_id = serializers.CharField()
+    razorpay_signature = serializers.CharField()

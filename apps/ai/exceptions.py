@@ -33,5 +33,14 @@ class UnsupportedAIFeatureError(AICreditError):
 class InvalidAICreditCostError(AICreditError):
     pass
 
+
 class InsufficientAICreditsError(AICreditError):
+    pass
+
+
+class AICreditPurchaseError(AIServiceError):
+    pass
+
+
+class InvalidPaymentError(AICreditPurchaseError):
     pass

@@ -14,12 +14,16 @@ from apps.shared.utils.pagination import StandardPagination
 
 from .exceptions import (
     AIConfigurationError,
+    AICreditPurchaseError,
     AIProviderError,
     AIResponseError,
     AIStructuredOutputError,
     InsufficientAICreditsError,
+    InvalidPaymentError,
 )
 from .serializers import (
+    AICreditOrderRequestSerializer,
+    AICreditPaymentVerificationSerializer,
     AIUsageHistorySerializer,
     AIUsageRequestSerializer,
     AIUsageStatisticsSerializer,
@@ -37,6 +41,7 @@ from .services.sprint_summary_service import SprintSummaryService
 from .services.task_breakdown_service import TaskBreakdownService
 from .services.ai_usage_history_service import AIUsageHistoryService
 from .services.usage_statistics_service import AIUsageStatisticsService
+from .services.ai_credit_purchase_service import AICreditPurchaseService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
 
@@ -52,13 +57,12 @@ class TaskBreakdownView(APIView):
     def post(self, request):
         request_serializer = TaskBreakdownRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
-
         validated_data = request_serializer.validated_data
         organization_slug = validated_data.pop("organization_slug")
 
         try:
-            organization = OrganizationService.get_organization_by_slug(
-                slug=organization_slug
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
             )
 
             result = TaskBreakdownService.generate_breakdown(**validated_data)
@@ -113,8 +117,8 @@ class StoryPointEstimationView(APIView):
         organization_slug = validated_data["organization_slug"]
 
         try:
-            organization = OrganizationService.get_organization_by_slug(
-                slug=organization_slug
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
             )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
@@ -422,3 +426,74 @@ class AIUsageHistoryView(APIView):
         serializer = AIUsageHistorySerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class AICreditOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = AICreditOrderRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            order_data = AICreditPurchaseService.create_order(
+                organization=organization, user=request.user, plan_key=data["plan_key"]
+            )
+        except AICreditPurchaseError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response(
+                {"error": "Unable to create the payment order."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(order_data, status=status.HTTP_201_CREATED)
+
+
+class AICreditPaymentVerificationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = AICreditPaymentVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            result = AICreditPurchaseService.verify_payment(
+                organization=organization,
+                razorpay_order_id=data["razorpay_order_id"],
+                razorpay_payment_id=data["razorpay_payment_id"],
+                razorpay_signature=data["razorpay_signature"],
+            )
+        except InvalidPaymentError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except AICreditPurchaseError as exc:
+            return Response(
+                {"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception:
+            return Response(
+                {"error": "Unable to verify the payment."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        return Response(result, status=status.HTTP_200_OK)
