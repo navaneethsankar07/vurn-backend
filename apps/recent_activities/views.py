@@ -11,13 +11,14 @@ from apps.recent_activities.serializers import RecentActivitySerializer
 from apps.organizations.exceptions import OrganizationNotFoundException
 from apps.projects.exceptions import ProjectNotFoundException
 from apps.projects.models import Sprint
-
+from .services.recent_activity_service import RecentActivityService
 
 class RecentActivityView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         scope = request.query_params.get("scope", "home")
+        print(scope)
 
         try:
             if scope == "home":
@@ -31,7 +32,12 @@ class RecentActivityView(APIView):
                     user=request.user,
                     slug=request.query_params.get("organization_slug", ""),
                 )
-                activities = RecentActivity.objects.filter(organization=organization)
+                print(request.query_params.get("organization_slug", ""),'orgslug')
+                print(organization)
+                activities = RecentActivityService.get_organization_activities(
+                    organization=organization
+                )
+                print(activities)
 
             elif scope == "project":
                 organization = OrganizationService.get_user_organization(

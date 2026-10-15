@@ -8,6 +8,10 @@ from django.utils import timezone
 from apps.notifications.models import NotificationType
 from apps.notifications.services.notification_service import NotificationService
 from apps.search.services.indexing_service import SearchIndexingService
+from apps.recent_activities.models import RecentActivity
+from apps.recent_activities.services.recent_activity_service import (
+    RecentActivityService,
+)
 
 from ..constants import ALLOWED_STORY_POINTS
 
@@ -316,6 +320,20 @@ class IssueService:
             message=f"{issue.key}: {issue.title}",
             actor=user,
             issue=issue,
+        )
+
+        RecentActivityService.create_activity(
+            organization=project.organization,
+            activity_type=RecentActivity.ActivityType.ISSUE_CREATED,
+            description=f"Created issue {issue.key}: {issue.title}",
+            actor=user,
+            project=project,
+            sprint=sprint,
+            issue=issue,
+            metadata={
+                "issue_key": issue.key,
+                "issue_type": issue_type,
+            },
         )
 
         return issue

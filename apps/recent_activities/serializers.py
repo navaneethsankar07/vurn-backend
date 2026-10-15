@@ -32,4 +32,4 @@ class RecentActivitySerializer(serializers.ModelSerializer):
         if obj.actor is None:
             return None
 
-        return {"id": obj.actor_id, "username": obj.actor.get_username()}
+        return {"id": obj.actor_id, "username": obj.actor.full_name}

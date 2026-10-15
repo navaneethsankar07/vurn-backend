@@ -31,6 +31,13 @@ class RecentActivity(models.Model):
         blank=True,
         related_name="recent_activities",
     )
+    issue = models.ForeignKey(
+        "projects.Issue",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recent_activities",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
