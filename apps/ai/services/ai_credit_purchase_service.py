@@ -15,12 +15,15 @@ from ..exceptions import AICreditPurchaseError, InvalidPaymentError
 class AICreditPurchaseService:
     @staticmethod
     def get_client():
-        if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
-            raise AICreditPurchaseError("Razorpay is not configured.")
+        key_id = getattr(settings, "RAZORPAY_KEY_ID", None)
+        key_secret = getattr(settings, "RAZORPAY_KEY_SECRET", None)
 
-        return razorpay.Client(
-            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-        )
+        if not key_id or not key_secret:
+            raise AICreditPurchaseError(
+                "Razorpay is not configured. Check the API credentials."
+            )
+
+        return razorpay.Client(auth=(key_id.strip(), key_secret.strip()))
 
     @staticmethod
     def create_order(*, organization, user, plan_key):
@@ -29,12 +32,12 @@ class AICreditPurchaseService:
         if plan is None:
             raise AICreditPurchaseError("Invalid AI credit plan.")
 
-        amount_paise = plan["price_inr"] * 100
+        amount = plan["price_inr"] * 100
         client = AICreditPurchaseService.get_client()
 
         order = client.order.create(
             {
-                "amount": amount_paise,
+                "amount": amount,
                 "currency": "INR",
                 "receipt": uuid.uuid4().hex,
                 "notes": {
@@ -49,7 +52,7 @@ class AICreditPurchaseService:
             user=user,
             plan_key=plan_key,
             credits=plan["credits"],
-            amount_paise=amount_paise,
+            amount=amount,
             currency="INR",
             razorpay_order_id=order["id"],
         )
@@ -59,7 +62,7 @@ class AICreditPurchaseService:
             "plan_key": plan_key,
             "plan_name": plan["name"],
             "credits": plan["credits"],
-            "amount_paise": amount_paise,
+            "amount": amount,
             "currency": "INR",
             "razorpay_key_id": settings.RAZORPAY_KEY_ID,
             "razorpay_order_id": order["id"],
@@ -77,7 +80,7 @@ class AICreditPurchaseService:
                     organization=organization, razorpay_order_id=razorpay_order_id
                 )
 
-                if purchase.status == AICreditPurchase.Status.PAID:
+                if purchase.status == "paid":
                     if purchase.razorpay_payment_id == razorpay_payment_id:
                         return {"status": "paid", "already_processed": True}
 
@@ -99,7 +102,7 @@ class AICreditPurchaseService:
                 if payment.get("status") != "captured":
                     raise InvalidPaymentError("Payment has not been captured.")
 
-                if payment.get("amount") != purchase.amount_paise:
+                if payment.get("amount") != purchase.amount:
                     raise InvalidPaymentError(
                         "Payment amount does not match the order."
                     )
@@ -114,7 +117,7 @@ class AICreditPurchaseService:
                 )
 
                 purchase.razorpay_payment_id = razorpay_payment_id
-                purchase.status = AICreditPurchase.Status.PAID
+                purchase.status = "paid"
                 purchase.credited_at = timezone.now()
                 purchase.save(
                     update_fields=[

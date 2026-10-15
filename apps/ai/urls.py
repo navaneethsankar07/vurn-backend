@@ -41,9 +41,9 @@ urlpatterns = [
         name="ai-usage-statistics",
     ),
     path("usage-history/", AIUsageHistoryView.as_view(), name="ai-usage-history"),
-    path("ai/credit-orders/", AICreditOrderView.as_view(), name="ai-credit-order"),
+    path("credit-orders/", AICreditOrderView.as_view(), name="ai-credit-order"),
     path(
-        "ai/verify-credit-payment/",
+        "verify-credit-payment/",
         AICreditPaymentVerificationView.as_view(),
         name="ai-credit-payment-verification",
     ),
