@@ -212,3 +212,10 @@ class AICreditPaymentVerificationSerializer(serializers.Serializer):
     razorpay_order_id = serializers.CharField()
     razorpay_payment_id = serializers.CharField()
     razorpay_signature = serializers.CharField()
+
+
+class AICreditPlanSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    name = serializers.CharField()
+    credits = serializers.IntegerField(min_value=1)
+    price_inr = serializers.IntegerField(min_value=1)

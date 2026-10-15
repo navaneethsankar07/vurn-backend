@@ -12,6 +12,8 @@ from apps.projects.models import Sprint
 from apps.integrations.models import GitRepository
 from apps.shared.utils.pagination import StandardPagination
 
+from .constants import AI_CREDIT_PLANS
+
 from .exceptions import (
     AIConfigurationError,
     AICreditPurchaseError,
@@ -24,6 +26,7 @@ from .exceptions import (
 from .serializers import (
     AICreditOrderRequestSerializer,
     AICreditPaymentVerificationSerializer,
+    AICreditPlanSerializer,
     AIUsageHistorySerializer,
     AIUsageRequestSerializer,
     AIUsageStatisticsSerializer,
@@ -497,3 +500,15 @@ class AICreditPaymentVerificationView(APIView):
             )
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class AICreditPlansView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        plans = [{"key": key, **plan} for key, plan in AI_CREDIT_PLANS.items()]
+
+        serializer = AICreditPlanSerializer(data=plans, many=True)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

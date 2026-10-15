@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AICreditOrderView,
     AICreditPaymentVerificationView,
+    AICreditPlansView,
     AIUsageHistoryView,
     AIUsageStatisticsView,
     ReleaseNotesView,
@@ -46,4 +47,5 @@ urlpatterns = [
         AICreditPaymentVerificationView.as_view(),
         name="ai-credit-payment-verification",
     ),
+    path("credit-plans/", AICreditPlansView.as_view(), name="ai-credit-plans"),
 ]
