@@ -340,7 +340,10 @@ class IssueService:
 
     @staticmethod
     @transaction.atomic
-    def update_issue(*, project, issue_id, **validated_data):
+    def update_issue(*, project, issue_id, user=None, **validated_data):
+        if user is None:
+            user = validated_data.pop("user", None)
+
         issue = IssueService.get_issue(project=project, issue_id=issue_id)
 
         sprint_changed = False
@@ -474,6 +477,35 @@ class IssueService:
                 IssueSprintHistoryService.create_backlog_history(issue=issue)
 
                 IssueSprintHistoryService.create_backlog_history_bulk(issues=subtasks)
+
+        is_completed = (
+            issue.status is not None
+            and getattr(issue.status, "category", None) == "done"
+        )
+        activity_type = (
+            RecentActivity.ActivityType.ISSUE_COMPLETED
+            if is_completed
+            else RecentActivity.ActivityType.ISSUE_UPDATED
+        )
+        description = (
+            f"Completed issue {issue.key}: {issue.title}"
+            if is_completed
+            else f"Updated issue {issue.key}: {issue.title}"
+        )
+
+        RecentActivityService.create_activity(
+            organization=project.organization,
+            activity_type=activity_type,
+            description=description,
+            actor=user,
+            project=project,
+            sprint=issue.sprint,
+            issue=issue,
+            metadata={
+                "issue_key": issue.key,
+                "issue_type": issue.issue_type,
+            },
+        )
 
         return issue
 

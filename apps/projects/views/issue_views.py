@@ -146,7 +146,10 @@ class IssueDetailView(APIView):
 
         try:
             issue = IssueService.update_issue(
-                project=project, issue_id=issue_id, **serializer.validated_data
+                user=request.user,
+                project=project,
+                issue_id=issue_id,
+                **serializer.validated_data,
             )
         except IssueNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)

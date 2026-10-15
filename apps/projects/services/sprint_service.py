@@ -7,6 +7,10 @@ from django.db.models import Q
 from apps.notifications.models import NotificationType
 from apps.notifications.services.notification_service import NotificationService
 from apps.search.services.indexing_service import SearchIndexingService
+from apps.recent_activities.models import RecentActivity
+from apps.recent_activities.services.recent_activity_service import (
+    RecentActivityService,
+)
 
 from ..exceptions import (
     SprintAlreadyExistsException,
@@ -118,6 +122,19 @@ class SprintService:
         )
 
         SearchIndexingService.schedule_indexing("sprint", sprint.id)
+
+        RecentActivityService.create_activity(
+            organization=project.organization,
+            activity_type=RecentActivity.ActivityType.SPRINT_CREATED,
+            description=f"Created sprint {sprint.name}",
+            actor=user,
+            project=project,
+            sprint=sprint,
+            metadata={
+                "sprint_name": sprint.name,
+                "status": sprint.status,
+            },
+        )
 
         return sprint
 
@@ -250,7 +267,7 @@ class SprintService:
                 .exclude(status__category="done")
                 .select_related("status", "parent")
             )
-            
+
         return {
             "can_complete": (not incomplete_issues and not incomplete_subtasks),
             "incomplete_issues": incomplete_issues,

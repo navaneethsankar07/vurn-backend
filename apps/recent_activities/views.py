@@ -32,12 +32,9 @@ class RecentActivityView(APIView):
                     user=request.user,
                     slug=request.query_params.get("organization_slug", ""),
                 )
-                print(request.query_params.get("organization_slug", ""),'orgslug')
-                print(organization)
                 activities = RecentActivityService.get_organization_activities(
                     organization=organization
                 )
-                print(activities)
 
             elif scope == "project":
                 organization = OrganizationService.get_user_organization(
@@ -48,7 +45,7 @@ class RecentActivityView(APIView):
                     organization=organization,
                     slug=request.query_params.get("project_slug", ""),
                 )
-                activities = RecentActivity.objects.filter(project=project)
+                activities = RecentActivityService.get_project_activities(project=project)
 
             elif scope == "sprint":
                 organization = OrganizationService.get_user_organization(
@@ -88,7 +85,7 @@ class RecentActivityView(APIView):
         activities = (
             activities.select_related("actor", "project", "sprint", "issue")
             .order_by("-created_at")
-            .distinct()[:10]
+            .distinct()[:5]
         )
 
         serializer = RecentActivitySerializer(activities, many=True)
