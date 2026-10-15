@@ -27,6 +27,8 @@ from .serializers import (
     AICreditOrderRequestSerializer,
     AICreditPaymentVerificationSerializer,
     AICreditPlanSerializer,
+    AICreditPurchaseHistoryRequestSerializer,
+    AICreditPurchaseHistorySerializer,
     AIUsageHistorySerializer,
     AIUsageRequestSerializer,
     AIUsageStatisticsSerializer,
@@ -47,6 +49,7 @@ from .services.usage_statistics_service import AIUsageStatisticsService
 from .services.ai_credit_purchase_service import AICreditPurchaseService
 from .services.duplicate_detection_service import DuplicateDetectionService
 from .services.story_point_estimation_service import StoryPointEstimationService
+from .services.credit_purchase_history_service import AICreditPurchaseHistoryService
 
 
 import logging
@@ -514,3 +517,31 @@ class AICreditPlansView(APIView):
         serializer.is_valid(raise_exception=True)
 
         return Response({"plans": serializer.data}, status=status.HTTP_200_OK)
+
+
+class AICreditPurchaseHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = AICreditPurchaseHistoryRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+
+        organization_slug = request_serializer.validated_data["organization_slug"]
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=organization_slug
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        history = AICreditPurchaseHistoryService.get_history(organization=organization)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(history, request, view=self)
+
+        serializer = AICreditPurchaseHistorySerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

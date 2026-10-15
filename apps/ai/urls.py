@@ -4,6 +4,7 @@ from .views import (
     AICreditOrderView,
     AICreditPaymentVerificationView,
     AICreditPlansView,
+    AICreditPurchaseHistoryView,
     AIUsageHistoryView,
     AIUsageStatisticsView,
     ReleaseNotesView,
@@ -48,4 +49,9 @@ urlpatterns = [
         name="ai-credit-payment-verification",
     ),
     path("credit-plans/", AICreditPlansView.as_view(), name="ai-credit-plans"),
+    path(
+        "credit-purchase-history/",
+        AICreditPurchaseHistoryView.as_view(),
+        name="ai-credit-purchase-history",
+    ),
 ]

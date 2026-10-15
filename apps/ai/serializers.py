@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AIUsageHistory
+from .models import AICreditPurchase, AIUsageHistory
 
 from .constants import STORY_POINT_VALUES
 
@@ -219,3 +219,31 @@ class AICreditPlanSerializer(serializers.Serializer):
     name = serializers.CharField()
     credits = serializers.IntegerField(min_value=1)
     price_inr = serializers.IntegerField(min_value=1)
+
+
+class AICreditPurchaseHistoryRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField()
+
+
+class AICreditPurchaseHistorySerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AICreditPurchase
+        fields = [
+            "id",
+            "user",
+            "plan_key",
+            "credits",
+            "amount",
+            "currency",
+            "status",
+            "razorpay_order_id",
+            "razorpay_payment_id",
+            "credited_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_user(self, obj):
+        return {"id": obj.user_id, "username": obj.user.get_username()}
