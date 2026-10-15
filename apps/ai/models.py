@@ -93,7 +93,7 @@ class AICreditPurchase(models.Model):
         max_length=100, unique=True, null=True, blank=True
     )
     status = models.CharField(
-        max_length=10, choices=PURCHASE_CHOICES, default="pending"
+        max_length=10, choices=PURCHASE_CHOICES, default="failed"
     )
     credited_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

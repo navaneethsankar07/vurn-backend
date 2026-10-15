@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "apps.help_center.apps.HelpCenterConfig",
     "apps.search.apps.SearchConfig",
     "apps.ai.apps.AiConfig",
+    "apps.recent_activities.apps.RecentActivitiesConfig",
 ]
 
 MIDDLEWARE = [

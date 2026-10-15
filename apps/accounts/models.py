@@ -1,7 +1,4 @@
-from tkinter import NO
-
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 

@@ -10,4 +10,5 @@ urlpatterns = [
     path("api/v1/search/", include("apps.search.urls")),
     path("api/v1/help/", include("apps.help_center.urls")),
     path("api/v1/ai/", include("apps.ai.urls")),
+    path("api/v1/recent-activities/", include("apps.recent_activities.urls")),
 ]
