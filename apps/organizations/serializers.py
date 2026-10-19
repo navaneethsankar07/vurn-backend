@@ -475,3 +475,34 @@ class OrganizationMemberListSerializer(
     )
     joined_at = serializers.DateTimeField()
     project_count = serializers.IntegerField()
+
+
+class RecentIssueSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    key = serializers.CharField()
+    title = serializers.CharField()
+    status = serializers.CharField()
+    status_category = serializers.CharField()
+    priority = serializers.CharField()
+    issue_type = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+    project_slug = serializers.SlugField()
+    project_name = serializers.CharField()
+    organization_slug = serializers.SlugField()
+    organization_name = serializers.CharField()
+
+
+class RecentOrganizationSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    slug = serializers.SlugField()
+    icon = serializers.CharField()
+    accent_color = serializers.CharField()
+    event_type = serializers.ChoiceField(choices=["created", "joined"])
+    event_date = serializers.DateTimeField()
+
+
+class RecentActivitySerializer(serializers.Serializer):
+    recent_issues = RecentIssueSerializer(many=True)
+    recent_organizations = RecentOrganizationSerializer(many=True)

@@ -7,6 +7,7 @@ from django.conf import settings
 
 from apps.shared.utils.pagination import StandardPagination
 from apps.shared.services.email_service import EmailService
+from .services.recent_activity_service import RecentActivityService
 
 from .constants import ORGANIZATION_SORT_FIELDS, ORGANIZATION_SORT_ORDERS
 
@@ -38,6 +39,7 @@ from .serializers import (
     OrganizationMemberListSerializer,
     OrganizationDeleteConfirmSerializer,
     OrganizationDeleteRequestSerializer,
+    RecentActivitySerializer,
     UpdateOrganizationBrandingSerializer,
     UpdateOrganizationSettingsSerializer,
     OrganizationInvitationCreateSerializer,
@@ -645,3 +647,15 @@ class OrganizationMemberView(APIView):
         serializer = OrganizationMemberListSerializer(paginated_members, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class RecentActivityView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        result = RecentActivityService.get_recent_activity(user=request.user)
+
+        response_serializer = RecentActivitySerializer(data=result)
+        response_serializer.is_valid(raise_exception=True)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

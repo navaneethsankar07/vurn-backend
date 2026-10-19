@@ -1,5 +1,7 @@
 from django.urls import path
 
+from apps.organizations.views import RecentActivityView
+
 from .views import (
     GitIssueLinkView,
     GitHubConnectView,
@@ -81,4 +83,5 @@ urlpatterns = [
         GitIssueLinkView.as_view(),
         name="github-issue-link",
     ),
+    path("recent-activity/", RecentActivityView.as_view(), name="recent-activity"),
 ]

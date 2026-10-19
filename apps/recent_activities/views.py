@@ -13,6 +13,7 @@ from apps.projects.exceptions import ProjectNotFoundException
 from apps.projects.models import Sprint
 from .services.recent_activity_service import RecentActivityService
 
+
 class RecentActivityView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -44,7 +45,9 @@ class RecentActivityView(APIView):
                     organization=organization,
                     slug=request.query_params.get("project_slug", ""),
                 )
-                activities = RecentActivityService.get_project_activities(project=project)
+                activities = RecentActivityService.get_project_activities(
+                    project=project
+                )
 
             elif scope == "sprint":
                 organization = OrganizationService.get_user_organization(
@@ -64,7 +67,7 @@ class RecentActivityView(APIView):
                         {"error": "Sprint not found."}, status=status.HTTP_404_NOT_FOUND
                     )
 
-                activities = RecentActivity.objects.filter(sprint=sprint)
+                activities = RecentActivityService.get_sprint_activities(sprint=sprint)
 
             else:
                 return Response(
