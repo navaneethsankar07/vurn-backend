@@ -18,11 +18,13 @@ from ..exceptions import (
 from ..serializers import (
     IssueCreateSerializer,
     IssueUpdateSerializer,
+    BacklogIssueSerializer,
     IssueResponseSerializer,
     IssueListQuerySerializer,
     WorkItemOptionSerializer,
     SubtaskListQuerySerializer,
     IssueSprintHistorySerializer,
+    BacklogIssuesRequestSerializer,
 )
 
 from ..services.issue_service import IssueService
@@ -282,5 +284,36 @@ class WorkItemOptionListView(APIView):
         paginator = StandardPagination()
         page = paginator.paginate_queryset(issues, request)
         serializer = WorkItemOptionSerializer(page, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+
+class BacklogIssuesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = BacklogIssuesRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+            project = ProjectService.get_project(
+                organization=organization, slug=data["project_slug"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        issues = IssueService.get_backlog_issues(project=project)
+
+        paginator = StandardPagination()
+        page = paginator.paginate_queryset(issues, request, view=self)
+        serializer = BacklogIssueSerializer(page, many=True)
 
         return paginator.get_paginated_response(serializer.data)

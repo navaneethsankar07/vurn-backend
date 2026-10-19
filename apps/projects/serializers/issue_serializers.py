@@ -209,3 +209,17 @@ class WorkItemOptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Issue
         fields = ["id", "key", "title", "status_name"]
+
+
+class BacklogIssuesRequestSerializer(serializers.Serializer):
+    organization_slug = serializers.SlugField()
+    project_slug = serializers.SlugField()
+
+
+class BacklogIssueSerializer(serializers.ModelSerializer):
+    key = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Issue
+        fields = ["id", "key", "title", "issue_type"]
+        read_only_fields = fields

@@ -678,3 +678,17 @@ class IssueService:
             raise InvalidStoryPointsException(
                 "Story points must be one of: 1, 2, 3, 5, 8, or 13."
             )
+
+    @staticmethod
+    def get_backlog_issues(*, project):
+        return (
+            Issue.objects.filter(
+                project=project,
+                sprint__isnull=True,
+                status__category="backlog",
+                deleted_at__isnull=True,
+            )
+            .exclude(issue_type="epic")
+            .select_related("status")
+            .order_by("position", "id")
+        )

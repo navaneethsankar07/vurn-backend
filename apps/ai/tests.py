@@ -487,6 +487,7 @@ class SprintSummaryServiceTests(SimpleTestCase):
             "recommendations": ["Complete logout next."],
         }
 
+
         result = SprintSummaryService.generate(sprint=self.sprint)
 
         self.assertEqual(result["metrics"]["total_issues"], 2)

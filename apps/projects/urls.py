@@ -16,6 +16,7 @@ from .views import (
     ProjectDeleteView,
     ProjectDetailView,
     ProjectMemberView,
+    BacklogIssuesView,
     DocumentFolderView,
     SprintCompleteView,
     WorkflowStatusView,
@@ -288,4 +289,5 @@ urlpatterns = [
         DocumentAttachmentDetailView.as_view(),
         name="document-attachment-detail",
     ),
+    path("backlog-issues/", BacklogIssuesView.as_view(), name="backlog-issues"),
 ]

@@ -38,6 +38,7 @@ from .issue_views import (
     IssueView,
     IssueDetailView,
     IssueSubtaskView,
+    BacklogIssuesView,
     IssueSprintHistoryView,
     WorkItemOptionListView,
 )

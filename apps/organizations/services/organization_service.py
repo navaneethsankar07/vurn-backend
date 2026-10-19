@@ -41,9 +41,6 @@ class OrganizationService:
 
         wallet = OrganizationAIWalletService.create_wallet(organization=organization)
 
-        AIUsageHistoryService.create_initial_credit_record(
-            organization=organization, credits_credited=wallet.balance
-        )
 
         return organization
 
