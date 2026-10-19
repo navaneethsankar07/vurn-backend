@@ -24,7 +24,6 @@ from ..serializers import (
     WorkItemOptionSerializer,
     SubtaskListQuerySerializer,
     IssueSprintHistorySerializer,
-    BacklogIssuesRequestSerializer,
 )
 
 from ..services.issue_service import IssueService
@@ -291,17 +290,14 @@ class WorkItemOptionListView(APIView):
 class BacklogIssuesView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        request_serializer = BacklogIssuesRequestSerializer(data=request.data)
-        request_serializer.is_valid(raise_exception=True)
-        data = request_serializer.validated_data
+    def get(self, request, slug, project_slug):
 
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user, slug=data["organization_slug"]
+                user=request.user, slug=slug
             )
             project = ProjectService.get_project(
-                organization=organization, slug=data["project_slug"]
+                organization=organization, slug=project_slug
             )
         except OrganizationNotFoundException as exc:
             return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)

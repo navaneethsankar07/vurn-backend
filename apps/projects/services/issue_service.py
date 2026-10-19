@@ -688,7 +688,7 @@ class IssueService:
                 status__category="backlog",
                 deleted_at__isnull=True,
             )
-            .exclude(issue_type="epic")
+            .exclude(issue_type__in=["epic", "subtask"])
             .select_related("status")
             .order_by("position", "id")
         )

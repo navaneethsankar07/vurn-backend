@@ -173,9 +173,6 @@ class SprintCompleteSerializer(serializers.Serializer):
 
 
 class AddIssuesToSprintRequestSerializer(serializers.Serializer):
-    organization_slug = serializers.SlugField()
-    project_slug = serializers.SlugField()
-    sprint_id = serializers.IntegerField(min_value=1)
     issue_ids = serializers.ListField(
         child=serializers.IntegerField(min_value=1), allow_empty=False
     )

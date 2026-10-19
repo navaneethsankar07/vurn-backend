@@ -52,7 +52,6 @@ from .issue_serializers import (
     WorkItemOptionSerializer,
     SubtaskListQuerySerializer,
     IssueSprintHistorySerializer,
-    BacklogIssuesRequestSerializer,
 )
 
 from .issue_label_serializers import (

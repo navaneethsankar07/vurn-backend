@@ -306,18 +306,18 @@ class SprintCompleteView(APIView):
 class AddIssuesToSprintView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request, slug, project_slug, sprint_id):
         request_serializer = AddIssuesToSprintRequestSerializer(data=request.data)
         request_serializer.is_valid(raise_exception=True)
         data = request_serializer.validated_data
 
         try:
             organization = OrganizationService.get_user_organization(
-                user=request.user, slug=data["organization_slug"]
+                user=request.user, slug=slug
             )
 
             project = ProjectService.get_project(
-                organization=organization, slug=data["project_slug"]
+                organization=organization, slug=project_slug
             )
 
         except OrganizationNotFoundException as exc:
@@ -330,7 +330,7 @@ class AddIssuesToSprintView(APIView):
         try:
             result = SprintService.add_issues_to_sprint(
                 project=project,
-                sprint_id=data["sprint_id"],
+                sprint_id=sprint_id,
                 issue_ids=data["issue_ids"],
                 user=request.user,
             )

@@ -290,9 +290,13 @@ urlpatterns = [
         DocumentAttachmentDetailView.as_view(),
         name="document-attachment-detail",
     ),
-    path("backlog-issues/", BacklogIssuesView.as_view(), name="backlog-issues"),
     path(
-        "sprints/add-issues/",
+        "<slug:project_slug>/backlog-issues/",
+        BacklogIssuesView.as_view(),
+        name="backlog-issues",
+    ),
+    path(
+        "<slug:project_slug>/sprints/<int:sprint_id>/add-issues/",
         AddIssuesToSprintView.as_view(),
         name="add-issues-to-sprint",
     ),

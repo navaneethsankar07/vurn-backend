@@ -18,7 +18,6 @@ class RecentActivityView(APIView):
 
     def get(self, request):
         scope = request.query_params.get("scope", "home")
-        print(scope)
 
         try:
             if scope == "home":

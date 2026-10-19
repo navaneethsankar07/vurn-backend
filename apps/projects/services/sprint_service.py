@@ -491,7 +491,7 @@ class SprintService:
             raise SprintNotFoundException("Sprint not found.")
 
         issues = list(
-            Issue.objects.select_for_update()
+            Issue.objects.select_for_update(of=("self",))
             .filter(project=project, id__in=issue_ids, deleted_at__isnull=True)
             .select_related("status", "sprint")
         )
