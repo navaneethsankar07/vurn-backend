@@ -27,11 +27,12 @@ from .workflow_serializers import (
 
 from .sprint_serializers import (
     SprintSerializer,
-    SprintListQuerySerializer,
     SprintCreateSerializer,
     SprintUpdateSerializer,
-    SprintCompletionIssueSerializer,
     SprintCompleteSerializer,
+    SprintListQuerySerializer,
+    SprintCompletionIssueSerializer,
+    AddIssuesToSprintRequestSerializer,
 )
 
 from .kanban_serializers import (

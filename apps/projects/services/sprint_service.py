@@ -13,13 +13,14 @@ from apps.recent_activities.services.recent_activity_service import (
 )
 
 from ..exceptions import (
+    IssueInvalidException,
     SprintAlreadyExistsException,
     SprintCompletionBlockedException,
     SprintCompletionException,
     SprintInvalidException,
     SprintNotFoundException,
 )
-from apps.projects.models import Issue, Sprint
+from ..models import Issue, Sprint, WorkflowStatus
 
 from .issue_sprint_history_service import IssueSprintHistoryService
 
@@ -480,3 +481,109 @@ class SprintService:
     @staticmethod
     def list_project_sprints_for_board(*, project):
         return Sprint.objects.filter(project=project).order_by("start_date", "id")
+
+    @staticmethod
+    @transaction.atomic
+    def add_issues_to_sprint(*, project, sprint_id, issue_ids, user):
+        sprint = Sprint.objects.filter(id=sprint_id, project=project).first()
+
+        if sprint is None:
+            raise SprintNotFoundException("Sprint not found.")
+
+        issues = list(
+            Issue.objects.select_for_update()
+            .filter(project=project, id__in=issue_ids, deleted_at__isnull=True)
+            .select_related("status", "sprint")
+        )
+
+        if len(issues) != len(issue_ids):
+            raise IssueInvalidException(
+                "One or more issues were not found in this project."
+            )
+
+        for issue in issues:
+            if issue.issue_type == "epic":
+                raise IssueInvalidException(
+                    f"Epic {issue.key} cannot belong to a sprint."
+                )
+
+            if issue.sprint_id is not None:
+                raise IssueInvalidException(
+                    f"Issue {issue.key} is already assigned to a sprint."
+                )
+
+            if issue.status.category != "backlog":
+                raise IssueInvalidException(f"Issue {issue.key} is not in the backlog.")
+
+        todo_status = (
+            WorkflowStatus.objects.filter(
+                project=project, category="todo", is_archived=False
+            )
+            .order_by("position", "id")
+            .first()
+        )
+
+        if todo_status is None:
+            raise IssueInvalidException(
+                "The project does not have an active To Do workflow status."
+            )
+
+        moved_issues = []
+        moved_subtasks = []
+
+        for issue in issues:
+            issue.sprint = sprint
+            issue.status = todo_status
+            issue.save(update_fields=["sprint", "status", "updated_at"])
+
+            SearchIndexingService.schedule_indexing("issue", issue.id)
+
+            IssueSprintHistoryService.create_history(issue=issue, sprint=sprint)
+
+            subtasks = list(
+                Issue.objects.select_for_update()
+                .filter(
+                    project=project,
+                    parent=issue,
+                    issue_type="subtask",
+                    deleted_at__isnull=True,
+                )
+                .exclude(sprint_id=sprint.id)
+            )
+
+            if subtasks:
+                Issue.objects.filter(
+                    id__in=[subtask.id for subtask in subtasks]
+                ).update(sprint=sprint)
+
+                IssueSprintHistoryService.create_history_bulk(
+                    issues=subtasks, sprint=sprint
+                )
+
+                for subtask in subtasks:
+                    SearchIndexingService.schedule_indexing("issue", subtask.id)
+
+                moved_subtasks.extend(subtasks)
+
+            RecentActivityService.create_activity(
+                organization=project.organization,
+                activity_type=RecentActivity.ActivityType.ISSUE_UPDATED,
+                description=f"Added issue {issue.key} to sprint {sprint.name}",
+                actor=user,
+                project=project,
+                sprint=sprint,
+                issue=issue,
+                metadata={
+                    "issue_key": issue.key,
+                    "issue_type": issue.issue_type,
+                    "sprint_id": sprint.id,
+                },
+            )
+
+            moved_issues.append(issue)
+
+        return {
+            "sprint": sprint,
+            "issues": moved_issues,
+            "moved_subtasks": moved_subtasks,
+        }

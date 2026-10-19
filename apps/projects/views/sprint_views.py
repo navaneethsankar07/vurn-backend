@@ -8,6 +8,7 @@ from apps.organizations.exceptions import OrganizationNotFoundException
 from apps.organizations.services.organization_service import OrganizationService
 
 from ..exceptions import (
+    IssueInvalidException,
     SprintInvalidException,
     SprintNotFoundException,
     ProjectNotFoundException,
@@ -24,6 +25,7 @@ from ..serializers import (
     SprintCompleteSerializer,
     SprintListQuerySerializer,
     SprintCompletionIssueSerializer,
+    AddIssuesToSprintRequestSerializer,
 )
 
 from ..services.sprint_service import SprintService
@@ -296,6 +298,53 @@ class SprintCompleteView(APIView):
                 "status": sprint.status,
                 "target_sprint_id": (target_sprint.id if target_sprint else None),
                 "message": "Sprint completed successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AddIssuesToSprintView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request_serializer = AddIssuesToSprintRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationService.get_user_organization(
+                user=request.user, slug=data["organization_slug"]
+            )
+
+            project = ProjectService.get_project(
+                organization=organization, slug=data["project_slug"]
+            )
+
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except ProjectNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            result = SprintService.add_issues_to_sprint(
+                project=project,
+                sprint_id=data["sprint_id"],
+                issue_ids=data["issue_ids"],
+                user=request.user,
+            )
+        except SprintNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except IssueInvalidException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "message": "Issues added to sprint successfully.",
+                "sprint": {"id": result["sprint"].id, "name": result["sprint"].name},
+                "added_issue_ids": [issue.id for issue in result["issues"]],
+                "moved_subtask_ids": [issue.id for issue in result["moved_subtasks"]],
             },
             status=status.HTTP_200_OK,
         )

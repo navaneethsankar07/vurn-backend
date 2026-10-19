@@ -20,10 +20,11 @@ from .workflow_views import (
 
 from .sprint_views import (
     SprintView,
-    SprintDetailView,
     SprintStartView,
-    SprintCompletionCheckView,
+    SprintDetailView,
     SprintCompleteView,
+    AddIssuesToSprintView,
+    SprintCompletionCheckView,
 )
 
 from .kanban_views import (

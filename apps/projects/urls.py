@@ -27,6 +27,7 @@ from .views import (
     ProjectSettingsView,
     ProjectUnarchiveView,
     IssueLabelDetailView,
+    AddIssuesToSprintView,
     KanbanIssueStatusView,
     KanbanColumnIssueView,
     WorkflowTransitionView,
@@ -290,4 +291,9 @@ urlpatterns = [
         name="document-attachment-detail",
     ),
     path("backlog-issues/", BacklogIssuesView.as_view(), name="backlog-issues"),
+    path(
+        "sprints/add-issues/",
+        AddIssuesToSprintView.as_view(),
+        name="add-issues-to-sprint",
+    ),
 ]
