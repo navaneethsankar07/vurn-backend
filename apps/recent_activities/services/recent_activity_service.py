@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from apps.recent_activities.models import RecentActivity
 
 
@@ -23,6 +25,16 @@ class RecentActivityService:
             activity_type=activity_type,
             description=description,
             metadata=metadata or {},
+        )
+
+    @staticmethod
+    def get_user_home_activities(*, user):
+        return (
+            RecentActivity.objects.filter(
+                Q(organization__owner=user) | Q(organization__members__user=user)
+            )
+            .select_related("actor", "project", "sprint", "issue")
+            .order_by("-created_at")
         )
 
     @staticmethod

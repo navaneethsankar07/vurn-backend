@@ -22,9 +22,8 @@ class RecentActivityView(APIView):
 
         try:
             if scope == "home":
-                activities = RecentActivity.objects.filter(
-                    Q(organization__owner=request.user)
-                    | Q(organization__members=request.user)
+                activities = RecentActivityService.get_user_home_activities(
+                    user=request.user
                 )
 
             elif scope == "organization":
