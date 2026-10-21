@@ -92,6 +92,12 @@ class OrganizationView(APIView):
             user=request.user, search=search, sort_by=sort_by, order=order
         )
 
+        all_user_orgs = OrganizationQueryService.get_user_organizations(
+            user=request.user, sort_by="recent", order="desc"
+        )
+        recent_serializer = OrganizationListSerializer(all_user_orgs, many=True)
+        recent_data = recent_serializer.data
+
         paginator = StandardPagination()
 
         page = paginator.paginate_queryset(organizations, request, view=self)
@@ -102,14 +108,10 @@ class OrganizationView(APIView):
 
         response_data = {
             "recent": sorted(
-                [
-                    item
-                    for item in organizations_data
-                    if item["last_opened_at"] is not None
-                ],
+                [item for item in recent_data if item["last_opened_at"] is not None],
                 key=lambda item: item["last_opened_at"],
                 reverse=True,
-            )[:5],
+            )[:4],
             "pinned": [item for item in organizations_data if item["is_pinned"]],
             "organizations": organizations_data,
         }
