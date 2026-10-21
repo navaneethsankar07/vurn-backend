@@ -1,6 +1,7 @@
 from django.urls import include, path
 
 from .views import (
+    OrganizationPinView,
     OrganizationRoleView,
     OrganizationMemberView,
     OrganizationAccessView,
@@ -97,4 +98,5 @@ urlpatterns = [
         name="organization-members",
     ),
     path("<slug:slug>/projects/", include("apps.projects.urls")),
+    path("pin/", OrganizationPinView.as_view(), name="organization-pin"),
 ]

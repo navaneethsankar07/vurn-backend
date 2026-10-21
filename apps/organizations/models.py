@@ -23,6 +23,8 @@ class Organization(models.Model):
     created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(blank=True, null=True)
+    is_pinned = models.BooleanField(default=False)
+    last_opened_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "organizations"

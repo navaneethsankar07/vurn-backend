@@ -7,7 +7,6 @@ from django.conf import settings
 
 from apps.shared.utils.pagination import StandardPagination
 from apps.shared.services.email_service import EmailService
-from .services.recent_activity_service import RecentActivityService
 
 from .constants import ORGANIZATION_SORT_FIELDS, ORGANIZATION_SORT_ORDERS
 
@@ -26,9 +25,12 @@ from .exceptions import (
     OrganizationInvitationRecipientIsOwnerException,
     OrganizationInvitationPermissionDeniedException,
     OrganizationInvitationRecipientAlreadyMemberException,
+    OrganizationPinLimitExceededException,
 )
 
 from .serializers import (
+    OrganizationPinRequestSerializer,
+    OrganizationPinResponseSerializer,
     OrganizationRoleSerializer,
     OrganizationListSerializer,
     OrganizationAccessSerializer,
@@ -47,6 +49,8 @@ from .serializers import (
 )
 
 from .services.organization_service import OrganizationService
+from .services.recent_activity_service import RecentActivityService
+from .services.organization_pin_service import OrganizationPinService
 from .services.organization_role_service import OrganizationRoleService
 from .services.organization_query_service import OrganizationQueryService
 from .services.organization_access_service import OrganizationAccessService
@@ -94,7 +98,21 @@ class OrganizationView(APIView):
 
         serializer = OrganizationListSerializer(page, many=True)
 
-        response_data = {"recent": [], "pinned": [], "organizations": serializer.data}
+        organizations_data = serializer.data
+
+        response_data = {
+            "recent": sorted(
+                [
+                    item
+                    for item in organizations_data
+                    if item["last_opened_at"] is not None
+                ],
+                key=lambda item: item["last_opened_at"],
+                reverse=True,
+            )[:5],
+            "pinned": [item for item in organizations_data if item["is_pinned"]],
+            "organizations": organizations_data,
+        }
 
         return paginator.get_paginated_response(response_data)
 
@@ -659,3 +677,27 @@ class RecentActivityView(APIView):
         response_serializer.is_valid(raise_exception=True)
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class OrganizationPinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        request_serializer = OrganizationPinRequestSerializer(data=request.data)
+        request_serializer.is_valid(raise_exception=True)
+        data = request_serializer.validated_data
+
+        try:
+            organization = OrganizationPinService.update_pin(
+                user=request.user, slug=data["slug"], is_pinned=data["is_pinned"]
+            )
+        except OrganizationNotFoundException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except PermissionError as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_403_FORBIDDEN)
+        except OrganizationPinLimitExceededException as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = OrganizationPinResponseSerializer(organization)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

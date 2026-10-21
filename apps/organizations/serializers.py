@@ -65,8 +65,6 @@ class OrganizationListSerializer(
     role = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
     project_count = serializers.SerializerMethodField()
-    last_opened_at = serializers.SerializerMethodField()
-    is_pinned = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
@@ -102,12 +100,6 @@ class OrganizationListSerializer(
         )
 
         return stats["project_count"]
-
-    def get_last_opened_at(self, obj):
-        return None
-
-    def get_is_pinned(self, obj):
-        return False
 
 
 class OrganizationAccessJobRoleSerializer(
@@ -506,3 +498,14 @@ class RecentOrganizationSerializer(serializers.Serializer):
 class RecentActivitySerializer(serializers.Serializer):
     recent_issues = RecentIssueSerializer(many=True)
     recent_organizations = RecentOrganizationSerializer(many=True)
+
+
+class OrganizationPinRequestSerializer(serializers.Serializer):
+    slug = serializers.SlugField()
+    is_pinned = serializers.BooleanField()
+
+
+class OrganizationPinResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organization
+        fields = ["id", "slug", "is_pinned"]

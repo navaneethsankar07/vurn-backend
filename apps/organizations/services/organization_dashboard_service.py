@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from apps.projects.models import Issue, Sprint
 from apps.ai.services.wallet_service import OrganizationAIWalletService
 
@@ -10,6 +12,8 @@ class OrganizationDashboardService:
     @staticmethod
     def get_dashboard(*, user, slug: str) -> dict:
         organization = OrganizationService.get_user_organization(user=user, slug=slug)
+        organization.last_opened_at = timezone.now()
+        organization.save(update_fields=["last_opened_at"])
         access = OrganizationAccessService.get_user_access(
             organization=organization, user=user
         )

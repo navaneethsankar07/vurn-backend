@@ -24,6 +24,10 @@ class OrganizationDeleteRequestExpiredException(
     pass
 
 
+class OrganizationPinLimitExceededException(OrganizationException):
+    pass
+
+
 class OrganizationAlreadyArchivedException(
     OrganizationException,
 ):
