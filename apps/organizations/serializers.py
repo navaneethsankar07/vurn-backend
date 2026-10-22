@@ -85,7 +85,15 @@ class OrganizationListSerializer(
         ]
 
     def get_role(self, obj):
-        return "owner"
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return "member"
+
+        if obj.owner_id == request.user.id:
+            return "owner"
+
+        membership = obj.members.filter(user=request.user).first()
+        return membership.role if membership else "member"
 
     def get_member_count(self, obj):
         stats = MOCK_ORGANIZATION_STATS.get(

@@ -90,11 +90,7 @@ class PushDeliveryService:
             )
 
         if notification.invitation_id:
-            return (
-                f"{PushDeliveryService._get_frontend_url(organization.slug)}"
-                "/organizations/invitations"
-            )
-
+            return f"{settings.FRONTEND_URL.rstrip('/')}" "/invitations"
         if organization:
             return f"{PushDeliveryService._get_frontend_url(organization.slug)}" "/"
 

@@ -95,14 +95,18 @@ class OrganizationView(APIView):
         all_user_orgs = OrganizationQueryService.get_user_organizations(
             user=request.user, sort_by="recent", order="desc"
         )
-        recent_serializer = OrganizationListSerializer(all_user_orgs, many=True)
+        recent_serializer = OrganizationListSerializer(
+            all_user_orgs, many=True, context={"request": request}
+        )
         recent_data = recent_serializer.data
 
         paginator = StandardPagination()
 
         page = paginator.paginate_queryset(organizations, request, view=self)
 
-        serializer = OrganizationListSerializer(page, many=True)
+        serializer = OrganizationListSerializer(
+            page, many=True, context={"request": request}
+        )
 
         organizations_data = serializer.data
 
