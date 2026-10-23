@@ -437,6 +437,7 @@ class ReceivedOrganizationInvitationSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
+    invited_by_name = serializers.CharField(source="invited_by.full_name")
 
     class Meta:
         model = OrganizationInvitation
@@ -445,6 +446,7 @@ class ReceivedOrganizationInvitationSerializer(serializers.ModelSerializer):
             "organization_name",
             "organization_slug",
             "personal_message",
+            "invited_by_name",
             "permission_role",
             "token",
             "job_role_name",

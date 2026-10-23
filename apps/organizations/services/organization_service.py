@@ -4,6 +4,7 @@ from django.db.models import Q
 from apps.accounts.models import User
 from apps.ai.services.wallet_service import OrganizationAIWalletService
 from apps.ai.services.ai_usage_history_service import AIUsageHistoryService
+from apps.ai.constants import FREE_ORGANIZATION_AI_CREDITS
 
 from ..models import Organization, OrganizationPreference
 from ..exceptions import (
@@ -41,6 +42,12 @@ class OrganizationService:
 
         wallet = OrganizationAIWalletService.create_wallet(organization=organization)
 
+        AIUsageHistoryService.create_record(
+            organization=organization,
+            user=owner,
+            feature="initial_free_credits",
+            credits_consumed=FREE_ORGANIZATION_AI_CREDITS,
+        )
 
         return organization
 

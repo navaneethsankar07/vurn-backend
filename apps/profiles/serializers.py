@@ -30,7 +30,7 @@ class ProfileUserSerializer(serializers.ModelSerializer):
 
 
 class ProfileStatisticsSerializer(serializers.Serializer):
-    organizations_joined = serializers.IntegerField()
+    organizations = serializers.IntegerField()
     projects = serializers.IntegerField()
     assigned_issues = serializers.IntegerField()
     completed_issues = serializers.IntegerField()
@@ -38,19 +38,9 @@ class ProfileStatisticsSerializer(serializers.Serializer):
     github_linked_projects = serializers.IntegerField()
 
 
-class RecentActivitySerializer(serializers.Serializer):
-    type = serializers.CharField()
-    title = serializers.CharField()
-    description = serializers.CharField()
-    timestamp = serializers.DateTimeField()
-
-
 class ProfileSerializer(serializers.Serializer):
     user = ProfileUserSerializer()
     statistics = ProfileStatisticsSerializer()
-    recent_activity = RecentActivitySerializer(
-        many=True,
-    )
 
 
 class UpdateProfileSerializer(serializers.ModelSerializer):
