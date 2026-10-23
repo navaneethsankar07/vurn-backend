@@ -3,7 +3,7 @@ from django.db.models import Q
 from apps.accounts.models import User
 from apps.shared.services.cloudinary_service import CloudinaryService
 from apps.organizations.models import Organization
-from apps.projects.models import Project
+from apps.projects.models import Issue, Project
 from ..constants import CLOUDINARY_AVATAR_FOLDER
 
 
@@ -32,13 +32,28 @@ class ProfileService:
             .count()
         )
 
+        assigned_issues_count = Issue.objects.filter(
+            assignee=user,
+            deleted_at__isnull=True,
+        ).count()
+
+        completed_issues_count = (
+            Issue.objects.filter(
+                Q(assignee=user) | Q(reporter=user),
+                status__category="done",
+                deleted_at__isnull=True,
+            )
+            .distinct()
+            .count()
+        )
+
         return {
             "user": user,
             "statistics": {
                 "organizations": organizations_count,
                 "projects": projects_count,
-                "assigned_issues": 42,
-                "completed_issues": 128,
+                "assigned_issues": assigned_issues_count,
+                "completed_issues": completed_issues_count,
                 "comments": 356,
                 "github_linked_projects": 9,
             },
