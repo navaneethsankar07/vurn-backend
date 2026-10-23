@@ -4,6 +4,7 @@ from apps.accounts.models import User
 from apps.shared.services.cloudinary_service import CloudinaryService
 from apps.organizations.models import Organization
 from apps.projects.models import Comment, Issue, Project
+from apps.integrations.models import GitIntegration
 from ..constants import CLOUDINARY_AVATAR_FOLDER
 
 
@@ -52,6 +53,23 @@ class ProfileService:
             deleted_at__isnull=True,
         ).count()
 
+        github_linked_projects_count = (
+            GitIntegration.objects.filter(
+                Q(project__organization__owner=user)
+                | (
+                    Q(project__organization__members__user=user)
+                    & Q(project__members__user=user)
+                ),
+                provider="github",
+                status="active",
+                project__is_archived=False,
+                project__deleted_at__isnull=True,
+            )
+            .values("project_id")
+            .distinct()
+            .count()
+        )
+
         return {
             "user": user,
             "statistics": {
@@ -60,7 +78,7 @@ class ProfileService:
                 "assigned_issues": assigned_issues_count,
                 "completed_issues": completed_issues_count,
                 "comments": comments_count,
-                "github_linked_projects": 9,
+                "github_linked_projects": github_linked_projects_count,
             },
         }
 
