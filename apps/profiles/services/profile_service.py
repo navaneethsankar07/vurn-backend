@@ -3,7 +3,7 @@ from django.db.models import Q
 from apps.accounts.models import User
 from apps.shared.services.cloudinary_service import CloudinaryService
 from apps.organizations.models import Organization
-from apps.projects.models import Issue, Project
+from apps.projects.models import Comment, Issue, Project
 from ..constants import CLOUDINARY_AVATAR_FOLDER
 
 
@@ -47,6 +47,11 @@ class ProfileService:
             .count()
         )
 
+        comments_count = Comment.objects.filter(
+            author=user,
+            deleted_at__isnull=True,
+        ).count()
+
         return {
             "user": user,
             "statistics": {
@@ -54,7 +59,7 @@ class ProfileService:
                 "projects": projects_count,
                 "assigned_issues": assigned_issues_count,
                 "completed_issues": completed_issues_count,
-                "comments": 356,
+                "comments": comments_count,
                 "github_linked_projects": 9,
             },
         }
