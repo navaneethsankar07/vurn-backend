@@ -37,6 +37,7 @@ htmlcov/
 .pytest_cache/
 .pytest_cache/*
 .pytest_cache/**
+pytest.ini
 
 # ----------------------------------------
 # IDE
