@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "cloudinary",
+    "anymail",
     # Local Apps
     "apps.accounts.apps.AccountsConfig",
     "apps.profiles.apps.ProfilesConfig",
@@ -153,12 +154,13 @@ SIMPLE_JWT = {
 # Email Configuration
 # -----------------------------------------------------------------------------
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+
+ANYMAIL = {
+    "BREVO_API_KEY": env("BREVO_API_KEY"),
+}
 
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
-EMAIL_HOST = env("EMAIL_HOST")
-EMAIL_PORT = env.int("EMAIL_PORT")
-EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 
 # -----------------------------------------------------------------------------
 # OTP Configuration
