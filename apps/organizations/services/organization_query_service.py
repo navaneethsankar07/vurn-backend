@@ -1,13 +1,4 @@
-from django.db.models import (
-    Case,
-    Count,
-    IntegerField,
-    Q,
-    Value,
-    When,
-)
-
-from ..constants import MOCK_ORGANIZATION_STATS
+from django.db.models import Count, Q
 from ..models import Organization
 
 
@@ -39,7 +30,6 @@ class OrganizationQueryService:
 
         if search:
             search = search.strip()
-
             if search:
                 organizations = organizations.filter(
                     Q(name__icontains=search)
@@ -47,25 +37,18 @@ class OrganizationQueryService:
                     | Q(slug__icontains=search)
                 )
 
-        project_cases = [
-            When(
-                id=organization_id,
-                then=Value(
-                    stats["project_count"],
-                ),
-            )
-            for organization_id, stats in MOCK_ORGANIZATION_STATS.items()
-        ]
-
         organizations = organizations.annotate(
             member_count=Count(
                 "members",
                 distinct=True,
             ),
-            mock_project_count=Case(
-                *project_cases,
-                default=Value(0),
-                output_field=IntegerField(),
+            project_count=Count(
+                "projects",
+                filter=Q(
+                    projects__is_archived=False,
+                    projects__deleted_at__isnull=True,
+                ),
+                distinct=True,
             ),
         )
 

@@ -5,7 +5,6 @@ from apps.projects.models import Project, Sprint
 from .constants import (
     LOGO_ALLOWED_TYPES,
     LOGO_MAX_SIZE,
-    MOCK_ORGANIZATION_STATS,
     ORGANIZATION_ROLE_CHOICES,
 )
 
@@ -101,11 +100,9 @@ class OrganizationListSerializer(
         return obj.members.count()
 
     def get_project_count(self, obj):
-        stats = MOCK_ORGANIZATION_STATS.get(
-            obj.id, {"member_count": 1, "project_count": 0}
-        )
-
-        return stats["project_count"]
+        if hasattr(obj, "project_count"):
+            return obj.project_count
+        return obj.projects.filter(is_archived=False, deleted_at__isnull=True).count()
 
 
 class OrganizationAccessJobRoleSerializer(

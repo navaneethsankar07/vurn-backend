@@ -39,12 +39,6 @@ LOGO_MAX_SIZE = 5 * 1024 * 1024
 
 ORGANIZATION_DELETE_OTP_PREFIX = "organization_delete_otp"
 
-# Temporary data until organization members and projects are implemented.
-MOCK_ORGANIZATION_STATS = {
-    1: {"member_count": 42, "project_count": 18},
-    2: {"member_count": 15, "project_count": 6},
-    3: {"member_count": 9, "project_count": 4},
-}
 
 ORGANIZATION_SORT_FIELDS = {"name", "member", "project", "recent"}
 
