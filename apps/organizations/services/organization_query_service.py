@@ -7,7 +7,7 @@ class OrganizationQueryService:
     SORT_FIELDS = {
         "name": "name",
         "member": "member_count",
-        "project": "mock_project_count",
+        "project": "project_count",
         "recent": "created_at",
     }
 
@@ -61,6 +61,7 @@ class OrganizationQueryService:
             sort_field = f"-{sort_field}"
 
         return organizations.order_by(
+            "-is_pinned",
             sort_field,
             "id",
         )

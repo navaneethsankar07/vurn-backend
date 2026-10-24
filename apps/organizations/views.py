@@ -116,7 +116,6 @@ class OrganizationView(APIView):
                 key=lambda item: item["last_opened_at"],
                 reverse=True,
             )[:4],
-            "pinned": [item for item in organizations_data if item["is_pinned"]],
             "organizations": organizations_data,
         }
 
