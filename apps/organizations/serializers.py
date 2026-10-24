@@ -96,11 +96,9 @@ class OrganizationListSerializer(
         return membership.role if membership else "member"
 
     def get_member_count(self, obj):
-        stats = MOCK_ORGANIZATION_STATS.get(
-            obj.id, {"member_count": 1, "project_count": 0}
-        )
-
-        return stats["member_count"]
+        if hasattr(obj, "member_count"):
+            return obj.member_count
+        return obj.members.count()
 
     def get_project_count(self, obj):
         stats = MOCK_ORGANIZATION_STATS.get(
