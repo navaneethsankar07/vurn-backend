@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 import time
 
 import jwt
@@ -5,6 +7,25 @@ import requests
 from django.conf import settings
 
 from ...exceptions import GitAuthenticationException
+
+
+def get_github_private_key() -> bytes:
+    raw_key = os.getenv("GITHUB_PRIVATE_KEY")
+    if raw_key:
+        return raw_key.replace("\\n", "\n").encode("utf-8")
+
+    key_setting = getattr(settings, "GITHUB_PRIVATE_KEY_PATH", None) or os.getenv(
+        "GITHUB_PRIVATE_KEY_PATH"
+    )
+    if key_setting:
+        path = Path(key_setting)
+        if not path.is_absolute():
+            path = settings.BASE_DIR / path
+        if path.exists():
+            with path.open("rb") as f:
+                return f.read()
+
+    raise ValueError("GitHub private key not found in environment or file path.")
 
 
 class GitHubAuthenticationService:
@@ -15,11 +36,8 @@ class GitHubAuthenticationService:
 
         payload = {"iat": now - 60, "exp": now + 540, "iss": settings.GITHUB_APP_ID}
 
-        private_key_path = settings.BASE_DIR / settings.GITHUB_PRIVATE_KEY_PATH
         try:
-            with private_key_path.open("rb") as pem_file:
-                private_key = pem_file.read()
-
+            private_key = get_github_private_key()
             return jwt.encode(payload, private_key, algorithm="RS256")
         except Exception as exc:
             raise GitAuthenticationException(

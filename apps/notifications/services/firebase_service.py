@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from functools import lru_cache
@@ -17,6 +18,19 @@ def get_firebase_app():
         return firebase_admin.get_app(app_name)
     except ValueError:
         pass
+
+    credential_json = getattr(settings, "FIREBASE_SERVICE_ACCOUNT_JSON", None)
+    if credential_json:
+        try:
+            credential_dict = (
+                json.loads(credential_json)
+                if isinstance(credential_json, str)
+                else credential_json
+            )
+            credential = credentials.Certificate(credential_dict)
+            return firebase_admin.initialize_app(credential, name=app_name)
+        except Exception as exc:
+            logger.error("Failed to initialize Firebase from JSON environment: %s", exc)
 
     credential_path = getattr(settings, "FIREBASE_SERVICE_ACCOUNT_PATH", None)
 
