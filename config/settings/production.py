@@ -5,7 +5,13 @@ env.read_env(BASE_DIR / ".env.production")
 DEBUG = env.bool("DEBUG")
 SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://[a-zA-Z0-9-]+\.vurn\.co\.in$",
+    r"^http://[a-zA-Z0-9-]+\.lvh\.me:5173$",
+]
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
 
 DATABASES = get_database_config()
 
@@ -29,3 +35,10 @@ CACHES = {
         },
     }
 }
+BASE_DOMAIN = env("BASE_DOMAIN")
+SESSION_COOKIE_DOMAIN = f".{BASE_DOMAIN}" if BASE_DOMAIN else None
+
+AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = env("AWS_S3_REGION_NAME")
