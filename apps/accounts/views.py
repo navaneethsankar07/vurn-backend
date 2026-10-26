@@ -1,0 +1,434 @@
+from django.conf import settings
+
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+
+from .utils import delete_auth_cookie, set_auth_cookie
+
+from .exceptions import (
+    EmailAlreadyExistsException,
+    EmailNotVerifiedException,
+    InactiveAccountException,
+    InvalidAccountDeletionOTPException,
+    InvalidCredentialsException,
+    InvalidGoogleTokenException,
+    InvalidPasswordResetTokenException,
+    ResendOTPCooldownException,
+    UsernameAlreadyExistsException,
+    InvalidOTPException,
+    RegistrationDataExpiredException,
+)
+from .serializers import (
+    ConfirmAccountDeletionSerializer,
+    CurrentUserSerializer,
+    ForgotPasswordSerializer,
+    GoogleAuthSerializer,
+    LoginSerializer,
+    RequestAccountDeletionSerializer,
+    ResendOTPSerializer,
+    ResetPasswordSerializer,
+    SendOTPSerializer,
+    RegisterSerializer,
+)
+from .services.login_service import LoginService
+from .services.logout_service import LogoutService
+from .services.profile_service import ProfileService
+from .services.login_method_service import LoginMethodService
+from .services.registration_service import RegistrationService
+from .services.oauth.google_auth_service import GoogleAuthService
+from .services.password_reset_service import PasswordResetService
+from .services.account_deletion_service import AccountDeletionService
+
+
+class SendOTPView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = SendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            RegistrationService.send_registration_otp(serializer.validated_data)
+
+            return Response(
+                {"message": "OTP sent successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        except EmailAlreadyExistsException as exc:
+            return Response(
+                {"email": [str(exc)]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except UsernameAlreadyExistsException as exc:
+            return Response(
+                {"username": [str(exc)]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class RegisterView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = RegistrationService.register(**serializer.validated_data)
+
+            user = result["user"]
+
+            response = Response(
+                {
+                    "message": "User registered successfully.",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "full_name": user.full_name,
+                        "avatar": user.avatar,
+                    },
+                    "access": result["access"],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+            set_auth_cookie(response, result["refresh"])
+
+            return response
+
+        except InvalidOTPException as exc:
+            return Response(
+                {"otp": [str(exc)]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except RegistrationDataExpiredException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class ResendOTPView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ResendOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            RegistrationService.resend_registration_otp(
+                serializer.validated_data["email"]
+            )
+
+            return Response(
+                {"message": "A new OTP has been sent successfully."},
+                status=status.HTTP_200_OK,
+            )
+
+        except ResendOTPCooldownException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                    "retry_after_seconds": exc.remaining_seconds,
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        except RegistrationDataExpiredException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class LoginView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = LoginService.login(**serializer.validated_data)
+
+            user = result["user"]
+
+            response = Response(
+                {
+                    "message": "Login successful.",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "full_name": user.full_name,
+                        "avatar": user.avatar,
+                    },
+                    "access": result["access"],
+                },
+                status=status.HTTP_200_OK,
+            )
+
+            set_auth_cookie(response, result["refresh"])
+            return response
+
+        except InvalidCredentialsException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        except EmailNotVerifiedException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        except InactiveAccountException as exc:
+            return Response(
+                {"error": str(exc)},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+
+class RefreshTokenView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if refresh_token is None:
+            return Response(
+                {"error": "Refresh token not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        serializer = TokenRefreshSerializer(
+            data={
+                "refresh": refresh_token,
+            }
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        response = Response(
+            {
+                "access": serializer.validated_data["access"],
+            },
+            status=status.HTTP_200_OK,
+        )
+
+        if "refresh" in serializer.validated_data:
+            set_auth_cookie(response, serializer.validated_data["refresh"])
+
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+
+        if refresh_token is None:
+            return Response(
+                {"error": "Refresh token not found."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            LogoutService.logout(refresh_token)
+
+            response = Response(
+                {"message": "Logout successful."},
+                status=status.HTTP_200_OK,
+            )
+
+            delete_auth_cookie(response)
+
+            return response
+
+        except TokenError:
+            return Response(
+                {"error": "Invalid or expired refresh token."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = ProfileService.get_current_user(request.user)
+
+        serializer = CurrentUserSerializer(user)
+
+        return Response(serializer.data)
+
+
+class GoogleAuthView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = GoogleAuthSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = GoogleAuthService.authenticate(
+                serializer.validated_data["id_token"]
+            )
+
+            user = result["user"]
+
+            response = Response(
+                {
+                    "message": "Login successful.",
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "full_name": user.full_name,
+                        "avatar": user.avatar,
+                    },
+                    "access": result["access"],
+                },
+                status=status.HTTP_200_OK,
+            )
+
+            set_auth_cookie(response, result["refresh"])
+
+            return response
+
+        except InvalidGoogleTokenException as exc:
+            return Response(
+                {
+                    "error": str(exc),
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+
+class ForgotPasswordView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        PasswordResetService.send_reset_link(serializer.validated_data["email"])
+
+        return Response(
+            {
+                "message": (
+                    "If an account with that email exists, "
+                    "a password reset link has been sent."
+                )
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ResetPasswordView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+
+        serializer = ResetPasswordSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+
+            PasswordResetService.reset_password(
+                token=serializer.validated_data["token"],
+                password=serializer.validated_data["password"],
+            )
+
+            return Response({"message": "Password reset successfully."})
+
+        except InvalidPasswordResetTokenException as exc:
+
+            return Response(
+                {"token": [str(exc)]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+class RequestAccountDeletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = RequestAccountDeletionSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        AccountDeletionService.send_deletion_otp(
+            request.user,
+        )
+
+        return Response(
+            {
+                "message": ("A verification code has been sent to your email."),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ConfirmAccountDeletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ConfirmAccountDeletionSerializer(
+            data=request.data,
+        )
+
+        serializer.is_valid(
+            raise_exception=True,
+        )
+
+        try:
+            AccountDeletionService.delete_account(
+                user=request.user,
+                otp=serializer.validated_data["otp"],
+            )
+
+        except InvalidAccountDeletionOTPException as exc:
+            return Response(
+                {
+                    "otp": [str(exc)],
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {
+                "message": "Account deleted successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class LoginMethodView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        is_email_login = LoginMethodService.is_email_login(
+            request.user,
+        )
+
+        return Response(
+            {
+                "is_email_login": is_email_login,
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -1,0 +1,130 @@
+from django.db import transaction
+from django.db.models import Q
+
+from apps.accounts.models import User
+from apps.ai.services.wallet_service import OrganizationAIWalletService
+from apps.ai.services.ai_usage_history_service import AIUsageHistoryService
+from apps.ai.constants import FREE_ORGANIZATION_AI_CREDITS
+
+from ..models import Organization, OrganizationPreference
+from ..exceptions import (
+    OrganizationNotFoundException,
+    OrganizationAlreadyArchivedException,
+)
+from ..constants import ORGANIZATION_PREFERENCE_DEFAULTS
+
+
+class OrganizationService:
+
+    @staticmethod
+    @transaction.atomic
+    def create_organization(
+        *,
+        owner: User,
+        name: str,
+        description: str,
+        slug: str,
+        icon: str,
+        accent_color: str,
+    ) -> Organization:
+        organization = Organization.objects.create(
+            name=name,
+            description=description,
+            slug=slug,
+            owner=owner,
+            icon=icon,
+            accent_color=accent_color,
+        )
+
+        OrganizationPreference.objects.create(
+            organization=organization, **ORGANIZATION_PREFERENCE_DEFAULTS
+        )
+
+        wallet = OrganizationAIWalletService.create_wallet(organization=organization)
+
+        AIUsageHistoryService.create_record(
+            organization=organization,
+            user=owner,
+            feature="initial_free_credits",
+            credits_consumed=FREE_ORGANIZATION_AI_CREDITS,
+        )
+
+        return organization
+
+    @staticmethod
+    def update_settings(
+        *,
+        organization: Organization,
+        validated_data: dict,
+    ) -> Organization:
+
+        for field, value in validated_data.items():
+            setattr(
+                organization,
+                field,
+                value,
+            )
+
+        organization.save(
+            update_fields=[
+                *validated_data.keys(),
+                "updated_at",
+            ],
+        )
+
+        return organization
+
+    @staticmethod
+    def get_owned_organization(
+        *,
+        user,
+        slug: str,
+    ) -> Organization:
+
+        organization = Organization.objects.filter(
+            owner=user,
+            slug=slug,
+            deleted_at__isnull=True,
+        ).first()
+
+        if organization is None:
+            raise OrganizationNotFoundException("Organization not found.")
+
+        return organization
+
+    @staticmethod
+    def get_user_organization(*, user, slug):
+        organization = (
+            Organization.objects.filter(
+                Q(owner=user) | Q(members__user=user),
+                slug=slug,
+                deleted_at__isnull=True,
+                is_archived=False,
+            )
+            .distinct()
+            .first()
+        )
+
+        if organization is None:
+            raise OrganizationNotFoundException("Organization not found.")
+
+        return organization
+
+    @staticmethod
+    def archive(*, organization: Organization) -> Organization:
+
+        if organization.is_archived:
+            raise OrganizationAlreadyArchivedException(
+                "Organization is already archived."
+            )
+
+        organization.is_archived = True
+
+        organization.save(
+            update_fields=[
+                "is_archived",
+                "updated_at",
+            ],
+        )
+
+        return organization

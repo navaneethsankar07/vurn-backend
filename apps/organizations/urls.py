@@ -1,0 +1,102 @@
+from django.urls import include, path
+
+from .views import (
+    OrganizationPinView,
+    OrganizationRoleView,
+    OrganizationMemberView,
+    OrganizationAccessView,
+    OrganizationArchiveView,
+    OrganizationOptionsView,
+    OrganizationBrandingView,
+    OrganizationDashboardView,
+    OrganizationPreferenceView,
+    OrganizationRoleUpdateView,
+    OrganizationInvitationView,
+    OrganizationDeleteConfirmView,
+    OrganizationDeleteRequestView,
+    AcceptOrganizationInvitationView,
+    OrganizationInvitationDetailView,
+    OrganizationSettingsView,
+    OrganizationView,
+    ReceivedOrganizationInvitationView,
+)
+
+urlpatterns = [
+    path("", OrganizationView.as_view(), name="organization"),
+    path("options/", OrganizationOptionsView.as_view(), name="organization-options"),
+    path(
+        "<slug:slug>/access/",
+        OrganizationAccessView.as_view(),
+        name="organization-dashboard",
+    ),
+    path(
+        "<slug:slug>/dashboard/",
+        OrganizationDashboardView.as_view(),
+        name="organization-dashboard",
+    ),
+    path(
+        "<slug:slug>/settings/",
+        OrganizationSettingsView.as_view(),
+        name="organization-settings",
+    ),
+    path(
+        "<slug:slug>/branding/",
+        OrganizationBrandingView.as_view(),
+        name="organization-branding",
+    ),
+    path(
+        "<slug:slug>/archive/",
+        OrganizationArchiveView.as_view(),
+        name="organization-archive",
+    ),
+    path(
+        "<slug:slug>/delete/request/",
+        OrganizationDeleteRequestView.as_view(),
+        name="organization-delete-request",
+    ),
+    path(
+        "<slug:slug>/delete/confirm/",
+        OrganizationDeleteConfirmView.as_view(),
+        name="organization-delete-confirm",
+    ),
+    path(
+        "<slug:slug>/preferences/",
+        OrganizationPreferenceView.as_view(),
+        name="organization-preferences",
+    ),
+    path(
+        "<slug:slug>/roles/", OrganizationRoleView.as_view(), name="organization-roles"
+    ),
+    path(
+        "<slug:slug>/roles/<int:role_id>/",
+        OrganizationRoleUpdateView.as_view(),
+        name="organization-role-update",
+    ),
+    path(
+        "<slug:slug>/invitations/",
+        OrganizationInvitationView.as_view(),
+        name="organization-invitations",
+    ),
+    path(
+        "invitations/received/",
+        ReceivedOrganizationInvitationView.as_view(),
+        name="received-organization-invitations",
+    ),
+    path(
+        "invitations/<uuid:token>/",
+        OrganizationInvitationDetailView.as_view(),
+        name="organization-invitation-detail",
+    ),
+    path(
+        "invitations/<uuid:token>/accept/",
+        AcceptOrganizationInvitationView.as_view(),
+        name="accept-organization-invitation",
+    ),
+    path(
+        "<slug:slug>/members/",
+        OrganizationMemberView.as_view(),
+        name="organization-members",
+    ),
+    path("<slug:slug>/projects/", include("apps.projects.urls")),
+    path("pin/", OrganizationPinView.as_view(), name="organization-pin"),
+]

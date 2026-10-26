@@ -1,0 +1,63 @@
+from django.utils import timezone
+
+from apps.projects.models import Issue, Sprint
+from apps.ai.services.wallet_service import OrganizationAIWalletService
+
+from .organization_access_service import OrganizationAccessService
+from .organization_service import OrganizationService
+
+
+class OrganizationDashboardService:
+
+    @staticmethod
+    def get_dashboard(*, user, slug: str) -> dict:
+        organization = OrganizationService.get_user_organization(user=user, slug=slug)
+        organization.last_opened_at = timezone.now()
+        organization.save(update_fields=["last_opened_at"])
+        access = OrganizationAccessService.get_user_access(
+            organization=organization, user=user
+        )
+
+        latest_projects = organization.projects.filter(
+            deleted_at__isnull=True, is_archived=False
+        ).order_by("-updated_at")[:4]
+
+        total_projects = organization.projects.count()
+        total_members = organization.members.count() + 1 
+
+        ai_wallet = OrganizationAIWalletService.create_wallet(organization=organization)
+
+        open_issue_count = (
+            Issue.objects.filter(
+                project__organization=organization, deleted_at__isnull=True
+            )
+            .exclude(status__category="backlog")
+            .count()
+        )
+
+        active_sprints_queryset = Sprint.objects.filter(
+            project__organization=organization, status="active"
+        ).select_related("project")
+
+        active_sprint_count = active_sprints_queryset.count()
+        active_sprints = active_sprints_queryset.order_by("-created_at")[:5]
+
+        return {
+            "id": organization.id,
+            "name": organization.name,
+            "description": organization.description,
+            "slug": organization.slug,
+            "icon": organization.icon,
+            "logo_url": organization.logo_url,
+            "accent_color": organization.accent_color,
+            "updated_at": organization.updated_at,
+            "role": access["role"],
+            "permissions": access["permissions"],
+            "total_projects": total_projects,
+            "total_members": total_members,
+            "remaining_ai_credits": ai_wallet.balance,
+            "active_sprints": active_sprints,
+            "active_sprint_count": active_sprint_count,
+            "open_issues": open_issue_count,
+            "latest_projects": latest_projects,
+        }

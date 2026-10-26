@@ -1,0 +1,87 @@
+from django.urls import path
+
+from apps.organizations.views import RecentActivityView
+
+from .views import (
+    GitIssueLinkView,
+    GitHubConnectView,
+    GitHubWebhookView,
+    GitHubIssueListView,
+    GitHubCommitListView,
+    GitHubBranchListView,
+    GitHubRepositoryListView,
+    GitHubPullRequestListView,
+    GitHubIntegrationStatusView,
+    GitHubRepositoryOverviewView,
+    GitHubRepositoryConnectionView,
+    GitHubInstallationCompleteView,
+)
+
+urlpatterns = [
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/connect/",
+        GitHubConnectView.as_view(),
+        name="github-connect",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/",
+        GitHubRepositoryListView.as_view(),
+        name="github-repositories",
+    ),
+    path(
+        "integrations/github/complete/",
+        GitHubInstallationCompleteView.as_view(),
+        name="github-installation-complete",
+    ),
+    path(
+        "integrations/github/webhook",
+        GitHubWebhookView.as_view(),
+        name="github-webhook-no-slash",
+    ),
+    path(
+        "integrations/github/webhook/",
+        GitHubWebhookView.as_view(),
+        name="github-webhook",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/",
+        GitHubRepositoryOverviewView.as_view(),
+        name="github-repository-detail",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/connect/",
+        GitHubRepositoryConnectionView.as_view(),
+        name="github-repository-connect",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/",
+        GitHubIntegrationStatusView.as_view(),
+        name="github-integration-status",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/commits/",
+        GitHubCommitListView.as_view(),
+        name="github-repository-commits",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/branches/",
+        GitHubBranchListView.as_view(),
+        name="github-repository-branches",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/pull-requests/",
+        GitHubPullRequestListView.as_view(),
+        name="github-repository-pull-requests",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/issues/",
+        GitHubIssueListView.as_view(),
+        name="github-repository-issues",
+    ),
+    path(
+        "organizations/<slug:organization_slug>/projects/<slug:project_slug>/integrations/github/repositories/<int:repository_id>/issues/<int:git_issue_id>/link/",
+        GitIssueLinkView.as_view(),
+        name="github-issue-link",
+    ),
+    path("recent-activity/", RecentActivityView.as_view(), name="recent-activity"),
+]

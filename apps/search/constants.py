@@ -1,0 +1,4 @@
+SUGGESTION_LIMIT = 8
+DEFAULT_PAGE_SIZE = 20
+MAX_PAGE_SIZE = 50
+ENTITY_TYPES = ("project", "issue", "sprint")

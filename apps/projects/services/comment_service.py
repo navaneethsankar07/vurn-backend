@@ -1,0 +1,174 @@
+from django.db import models, transaction
+from django.db.models import Q, Count
+from django.utils import timezone
+
+from ..constants import COMMENT_REACTION_CHOICES
+
+from ..exceptions import (
+    CommentInvalidException,
+    CommentNotFoundException,
+    CommentPermissionException,
+)
+from ..models import Comment, CommentReaction
+
+
+class CommentService:
+
+    @staticmethod
+    @transaction.atomic
+    def create_comment(*, issue, user, content, parent_id=None):
+        parent = None
+
+        if parent_id is not None:
+            parent = Comment.objects.filter(
+                id=parent_id, issue=issue, deleted_at__isnull=True
+            ).first()
+
+            if parent is None:
+                raise CommentInvalidException(
+                    "The parent comment does not belong " "to this issue."
+                )
+
+            if parent.parent_id is not None:
+                raise CommentInvalidException("Replies cannot have replies.")
+
+        return Comment.objects.create(
+            issue=issue, author=user, parent=parent, content=content
+        )
+
+    @staticmethod
+    def list_comments(*, issue, sort="oldest"):
+        comments = (
+            Comment.objects.filter(
+                issue=issue, parent__isnull=True, deleted_at__isnull=True
+            )
+            .select_related("author")
+            .prefetch_related("replies__author")
+        )
+
+        if sort == "top":
+            comments = comments.annotate(
+                reply_count=Count("replies", filter=Q(replies__deleted_at__isnull=True))
+            ).order_by("-reply_count", "-created_at")
+        elif sort == "oldest":
+            coomments = comments.order_by("created_at")
+        else:
+            comments = comments.order_by("-created_at")
+
+        return comments
+
+    @staticmethod
+    def update_comment(*, issue, comment_id, user, content):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        if comment.author_id != user.id:
+            raise CommentPermissionException("You can only edit your own comments.")
+
+        comment.content = content
+        comment.save(update_fields=["content", "updated_at"])
+
+        return comment
+
+    @staticmethod
+    def delete_comment(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        if comment.author_id != user.id:
+            raise CommentPermissionException("You can only delete your own comments.")
+
+        deleted_at = timezone.now()
+
+        comment.deleted_at = deleted_at
+        comment.save(update_fields=["deleted_at"])
+
+        comment.replies.filter(deleted_at__isnull=True).update(deleted_at=deleted_at)
+
+    @staticmethod
+    @transaction.atomic
+    def set_reaction(*, issue, comment_id, user, reaction):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        comment_reaction, created = CommentReaction.objects.get_or_create(
+            comment=comment, user=user, defaults={"reaction": reaction}
+        )
+
+        if not created and comment_reaction.reaction != reaction:
+            comment_reaction.reaction = reaction
+            comment_reaction.save(update_fields=["reaction", "updated_at"])
+
+        return CommentService.get_reaction_summary(
+            issue=issue, comment_id=comment_id, user=user
+        )
+
+    @staticmethod
+    def remove_reaction(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        reaction = CommentReaction.objects.filter(comment=comment, user=user).first()
+
+        if reaction is None:
+            raise CommentInvalidException("You have not reacted to this comment.")
+
+        reaction.delete()
+
+    @staticmethod
+    def get_reaction_summary(*, issue, comment_id, user):
+        comment = Comment.objects.filter(
+            id=comment_id, issue=issue, deleted_at__isnull=True
+        ).first()
+
+        if comment is None:
+            raise CommentNotFoundException("Comment not found.")
+
+        reactions = (
+            CommentReaction.objects.filter(comment=comment)
+            .select_related("user")
+            .order_by("created_at")
+        )
+
+        summary = {
+            reaction: {"count": 0, "users": []}
+            for reaction, _ in COMMENT_REACTION_CHOICES
+        }
+
+        for item in reactions:
+            reaction = item.reaction
+
+            summary[reaction]["count"] += 1
+            summary[reaction]["users"].append(
+                {
+                    "id": item.user.id,
+                    "name": item.user.full_name,
+                    "avatar": item.user.avatar,
+                }
+            )
+
+        my_reaction = (
+            CommentReaction.objects.filter(comment=comment, user=user)
+            .values_list("reaction", flat=True)
+            .first()
+        )
+
+        summary["my_reaction"] = my_reaction
+
+        return summary

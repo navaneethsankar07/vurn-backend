@@ -1,0 +1,148 @@
+PROJECT_ICONS = (
+    "hexagon",
+    "building-2",
+    "briefcase-business",
+    "blocks",
+    "box",
+    "code-2",
+    "command",
+    "database",
+    "globe-2",
+    "layers-2",
+    "layout-dashboard",
+    "network",
+    "panels-top-left",
+    "rocket",
+    "server",
+    "shield-check",
+    "workflow",
+    "zap",
+)
+
+
+PROJECT_STATUS_CHOICES = (
+    ("active", "Active"),
+    ("completed", "Completed"),
+    ("archived", "Archived"),
+)
+
+
+PROJECT_CREATE_PERMISSION = "project.create"
+
+PROJECT_LIST_SORT_OPTIONS = (
+    "recently_created",
+    "recently_updated",
+    "name_asc",
+    "name_desc",
+)
+
+PROJECT_ARCHIVE_FILTERS = ("all", "active", "archived")
+
+CLOUDINARY_PROJECTS_FOLDER = "vurn/projects"
+
+PROJECT_DELETE_CONFIRMATION_PREFIX = "DELETE"
+
+PROJECT_MEMBER_SORT_OPTIONS = ("name_asc", "name_desc", "recently_added")
+
+
+STATUS_CATEGORY_CHOICES = (
+    ("backlog", "Backlog"),
+    ("todo", "To Do"),
+    ("in_progress", "In Progress"),
+    ("done", "Done"),
+)
+
+
+SPRINT_STATUS_CHOICES = (
+    ("planned", "Planned"),
+    ("active", "Active"),
+    ("completed", "Completed"),
+)
+
+
+ISSUE_TYPE_CHOICES = (
+    ("epic", "Epic"),
+    ("story", "Story"),
+    ("task", "Task"),
+    ("bug", "Bug"),
+    ("subtask", "Sub-task"),
+)
+
+ISSUE_PRIORITY_CHOICES = (
+    ("urgent", "Urgent"),
+    ("high", "High"),
+    ("medium", "Medium"),
+    ("low", "Low"),
+)
+
+KANBAN_SORT_CHOICES = (
+    ("position", "Position"),
+    ("priority_asc", "Priority Ascending"),
+    ("priority_desc", "Priority Descending"),
+    ("created_asc", "Created Oldest"),
+    ("created_desc", "Created Newest"),
+    ("updated_asc", "Updated Oldest"),
+    ("updated_desc", "Updated Newest"),
+)
+
+BOARD_VIEW_PERMISSION = "board.view"
+BOARD_MANAGE_PERMISSION = "board.manage"
+
+ISSUE_SORT_CHOICES = (
+    ("created_asc", "Created Oldest"),
+    ("created_desc", "Created Newest"),
+    ("updated_asc", "Updated Oldest"),
+    ("updated_desc", "Updated Newest"),
+    ("priority_asc", "Priority Ascending"),
+    ("priority_desc", "Priority Descending"),
+    ("position", "Position"),
+)
+
+COMMENT_REACTION_CHOICES = (
+    ("heart", "Heart"),
+    ("like", "Like"),
+    ("laugh", "Laugh"),
+    ("celebrate", "Celebrate"),
+    ("surprised", "Surprised"),
+    ("sad", "Sad"),
+)
+
+
+COMMENT_SORT_CHOICES = (("newest", "Newest"), ("top", "Top"), ("oldest", "Oldest"))
+
+
+MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024
+
+ALLOWED_ATTACHMENT_MIME_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/svg+xml",
+    "video/mp4",
+    "video/webm",
+    "video/quicktime",
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "text/csv",
+}
+
+ATTACHMENT_UPLOAD_EXPIRY = 900
+
+
+STORY_POINT_CHOICES = (
+    (1, "1 point"),
+    (2, "2 points"),
+    (3, "3 points"),
+    (5, "5 points"),
+    (8, "8 points"),
+    (13, "13 points"),
+)
+
+ALLOWED_STORY_POINTS = {value for value, _ in STORY_POINT_CHOICES}
