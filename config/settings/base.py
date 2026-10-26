@@ -84,6 +84,9 @@ def get_database_config():
             "PASSWORD": env("DATABASE_PASSWORD"),
             "HOST": env("DATABASE_HOST"),
             "PORT": env("DATABASE_PORT"),
+            "OPTIONS": {
+                "sslmode": env("DATABASE_SSLMODE", default="require"),
+            },
         }
     }
 
