@@ -201,42 +201,38 @@ CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {
-        "require_error": {"()": "apps.core.logging_filters.RequireErrorLevelFilter"}
-    },
     "formatters": {
         "standard": {
-            "format": ("{levelname} {asctime} " "{name} {message}"),
+            "format": "{levelname} {asctime} {name} {message}",
             "style": "{",
         },
-        "django_server": {"format": "{message}", "style": "{"},
+        "django_server": {
+            "format": "{message}",
+            "style": "{",
+        },
     },
     "handlers": {
-        "app_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "app.log",
-            "maxBytes": 10 * 1024 * 1024,
-            "backupCount": 5,
+        "console": {
+            "class": "logging.StreamHandler",
             "formatter": "standard",
         },
-        "error_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs" / "error.log",
-            "maxBytes": 10 * 1024 * 1024,
-            "backupCount": 5,
-            "formatter": "standard",
-            "filters": ["require_error"],
-        },
-        "console": {"class": "logging.StreamHandler", "formatter": "django_server"},
     },
     "loggers": {
         "apps": {
-            "handlers": ["app_file", "error_file"],
+            "handlers": ["console"],
             "level": "INFO",
             "propagate": False,
         },
-        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "django.server": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
