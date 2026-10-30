@@ -67,6 +67,7 @@ class AIFeatureViewTests(SimpleTestCase):
                 "issue_description": "Add JWT authentication",
             },
         )
+        print("test case for task breakdown  ai  feature")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         mock_consume.assert_called_once_with(
